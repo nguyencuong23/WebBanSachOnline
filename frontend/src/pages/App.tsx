@@ -18,6 +18,12 @@ import { AdminBooksPage } from "./admin/AdminBooksPage";
 import { AdminCategoriesPage } from "./admin/AdminCategoriesPage";
 import { AdminSettingsPage } from "./admin/AdminSettingsPage";
 import { getProfile, type Profile } from "../auth";
+import BookAuth from "./BookAuth";
+import "./App/styles/client-layout.css";
+import "./App/styles/site.css";
+import "./admin/styles/admin.css";
+import "./admin/styles/admin-common.css";
+import "./App/styles/validation.css";
 
 export function App() {
   const [email, setEmail] = useState<string | null>(null);
@@ -72,6 +78,7 @@ export function App() {
         path="/admin/settings"
         element={profile?.role === "admin" ? <AdminSettingsPage /> : <Navigate to="/" />}
       />
+      <Route path="/book-auth" element={<BookAuth />} />
     </Routes>
   );
 

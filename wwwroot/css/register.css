@@ -1,0 +1,207 @@
+:root {
+    --dainam-orange: #f58220;
+    --dainam-blue: #003366;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.6);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    height: 100vh;
+    background: #000;
+}
+
+/* --- BACKGROUND --- */
+.main-container {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2028&auto=format&fit=crop') no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+    padding: 20px 0;
+}
+
+.bg-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(0, 51, 102, 0.1) 0%, rgba(0, 30, 60, 0.4) 100%);
+    z-index: 1;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(60px) scale(0.95);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- REGISTER CARD --- */
+.register-card {
+    position: relative;
+    z-index: 2;
+    width: 700px;
+    padding: 40px 45px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 24px;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.5), 0 0 30px rgba(0, 229, 255, 0.15);
+    animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.brand-logo {
+    text-align: center;
+    margin-bottom: 5px;
+    animation: fadeInDown 1s ease-out 0.3s backwards;
+}
+
+    .brand-logo h2 {
+        font-weight: 900;
+        color: var(--dainam-blue);
+        font-size: 30px;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brand-logo span {
+        color: var(--dainam-orange);
+    }
+
+.sub-title {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 25px;
+    font-weight: 500;
+    animation: fadeInDown 1s ease-out 0.4s backwards;
+}
+
+/* --- FORM STYLES --- */
+.form-label {
+    font-weight: 600;
+    color: #444;
+    font-size: 13px;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.form-control {
+    border-radius: 12px;
+    height: 45px;
+    border: 2px solid transparent;
+    padding-left: 15px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.3s ease;
+}
+
+    .form-control:focus {
+        background: #fff;
+        border-color: var(--dainam-orange);
+        box-shadow: 0 5px 15px rgba(245, 130, 32, 0.15);
+        transform: translateY(-2px);
+    }
+
+.btn-register {
+    background-image: linear-gradient(135deg, #f58220 0%, #d96200 100%);
+    border: none;
+    width: 100%;
+    height: 50px;
+    border-radius: 25px;
+    color: white;
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(245, 130, 32, 0.3);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+    .btn-register:hover {
+        background-position: right center;
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 15px 30px rgba(245, 130, 32, 0.4);
+    }
+
+.footer-link {
+    text-align: center;
+    font-size: 14px;
+    color: #555;
+}
+
+    .footer-link a {
+        color: var(--dainam-blue);
+        text-decoration: none;
+        font-weight: 700;
+        position: relative;
+    }
+
+        .footer-link a:hover {
+            text-decoration: underline;
+        }
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #aaa;
+    }
+
+.register-hr {
+    border-top: 1px solid rgba(0,0,0,0.1);
+    margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+    .register-card {
+        width: 95%;
+        padding: 30px 20px;
+    }
+
+    .row-cols-2 > * {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}

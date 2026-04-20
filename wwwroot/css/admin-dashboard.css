@@ -1,0 +1,25 @@
+.custom-chart-legend {
+  font-size: 0.9rem;
+}
+.legend-item {
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.legend-item:hover {
+  background-color: #f8f9fa;
+  transform: translateX(5px);
+}
+.legend-value {
+  font-family: "Consolas", monospace;
+  color: #2d3748;
+}
+.dashboard-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+.dashboard-card:hover {
+  transform: translateY(-5px);
+}

@@ -1,0 +1,22 @@
+/* Hide validation summary bullet points */
+.validation-summary-errors ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.validation-summary-errors ul li {
+  margin-bottom: 0.5rem;
+}
+
+/* Hide field-level validation messages - only show summary */
+.field-validation-error,
+.text-danger[data-valmsg-for],
+span[data-valmsg-for] {
+  display: none !important;
+}
+
+/* But keep validation summary visible */
+.validation-summary-errors {
+  display: block !important;
+}

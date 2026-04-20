@@ -1,0 +1,37 @@
+/* Common admin styles for inline styles */
+
+/* Status indicator dot */
+.status-dot {
+    font-size: 0.5rem;
+}
+
+/* Chart placeholder */
+.chart-placeholder {
+    height: 300px;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Search input group */
+.search-input-group {
+    width: 300px;
+}
+
+/* Table column width */
+.table-col-action {
+    width: 150px;
+}
+
+/* Progress bar height */
+.progress-sm {
+    height: 8px;
+}
+
+/* Profile avatar */
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+}

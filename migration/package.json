@@ -1,0 +1,15 @@
+{
+  "name": "btllib-migration",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "node src/migrate.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "dotenv": "^16.4.5",
+    "mssql": "^10.0.2"
+  }
+}
+

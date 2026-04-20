@@ -1,0 +1,185 @@
+﻿:root {
+    --primary-color: #0d6efd;
+    --primary-light: #e7f1ff;
+    --text-dark: #2c3e50;
+    --card-bg: #ffffff;
+    --transition-speed: 0.3s;
+}
+
+/* --- Global Styles --- */
+body {
+    background-color: #f4f6f9; /* Màu nền xám nhẹ làm nổi bật thẻ trắng */
+}
+
+/* --- Card Styling & Hover Effects --- */
+.card {
+    border: none;
+    border-radius: 16px;
+    background: var(--card-bg);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: all var(--transition-speed) ease;
+    overflow: hidden;
+}
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+}
+
+/* --- Avatar Animation --- */
+.avatar-container {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #e6e6e6);
+    box-shadow: 5px 5px 15px #d1d1d1, -5px -5px 15px #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    position: relative;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+    .avatar-container:hover {
+        transform: scale(1.05) rotate(3deg);
+    }
+
+    .avatar-container i {
+        font-size: 80px !important; /* Ghi đè inline style cũ nếu cần */
+        background: -webkit-linear-gradient(#0d6efd, #00c6ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 4px 6px rgba(13, 110, 253, 0.3));
+    }
+
+/* --- Badge Styling --- */
+.badge {
+    padding: 0.6em 1em;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    border-radius: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* --- Form Inputs Styling --- */
+.form-control {
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    padding: 12px 15px;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+    .form-control:focus {
+        background-color: #fff;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .form-control[readonly] {
+        background-color: #e9ecef;
+        opacity: 0.8;
+        cursor: not-allowed;
+    }
+
+/* --- Buttons --- */
+.btn-primary {
+    background: linear-gradient(45deg, #0d6efd, #0b5ed7);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 24px;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+    transition: all 0.3s ease;
+}
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+    }
+
+.btn-outline-secondary {
+    border-radius: 10px;
+    padding: 10px 24px;
+}
+
+/* Nút thanh toán rung nhẹ khi hover */
+.btn-outline-danger:hover {
+    animation: shake 0.5s;
+    background-color: #dc3545;
+    color: white;
+}
+
+@keyframes shake {
+    0% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-3px) rotate(-3deg);
+    }
+
+    50% {
+        transform: translateX(3px) rotate(3deg);
+    }
+
+    75% {
+        transform: translateX(-3px) rotate(-3deg);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* --- Entrance Animations (Hiệu ứng xuất hiện) --- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Áp dụng animation cho 2 cột */
+.col-lg-4 {
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.col-lg-8 {
+    animation: fadeInUp 0.8s ease-out 0.2s forwards; /* Delay 0.2s để xuất hiện sau cột trái */
+    opacity: 0; /* Khởi đầu ẩn để đợi animation */
+}
+
+/* --- Modal Styling --- */
+.modal-overlay {
+    backdrop-filter: blur(8px); /* Hiệu ứng kính mờ phía sau modal */
+    transition: all 0.3s ease;
+}
+
+#paymentModal .bg-white {
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+/* Hiệu ứng focus vào labels */
+.form-label i {
+    color: var(--primary-color);
+    transition: transform 0.3s;
+}
+
+.form-control:focus + .form-label i, /* Nếu label đứng sau input (cần chỉnh HTML) */
+.mb-4:focus-within .form-label i {
+    transform: scale(1.2);
+}

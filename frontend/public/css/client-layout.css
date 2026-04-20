@@ -1,0 +1,355 @@
+:root {
+  --primary: #0b1d36;
+  --secondary: #2563eb;
+  --accent: #f59e0b;
+  --bg: #f4f7fb;
+  --text: #1f2937;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", sans-serif;
+}
+
+header {
+  background: linear-gradient(90deg, #0b1d36, #102a4d);
+  color: #fff;
+}
+
+header a {
+  color: #fff;
+  text-decoration: none;
+  margin-left: 22px;
+  font-weight: 500;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+/* Hiệu ứng gạch chân cho link thường */
+header a:not(.dropdown-item)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: 0.3s;
+}
+
+header a:not(.dropdown-item):hover::after {
+  width: 100%;
+}
+
+/* --- TRẠNG THÁI ACTIVE (Trang đang truy cập) --- */
+header a.nav-active {
+  color: var(--accent) !important;
+  font-weight: 700;
+}
+
+header a.nav-active::after {
+  width: 100% !important; /* Luôn hiện gạch chân khi active */
+}
+
+/* Đảm bảo dropdown button không bị gạch chân */
+header .dropdown-toggle::after {
+  display: none !important;
+}
+
+header .dropdown-toggle {
+  margin-left: 22px;
+}
+
+header .dropdown-menu {
+  padding: 0.25rem 0;
+  min-width: 200px;
+  margin: 0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+header .dropdown-item {
+  padding: 0.5rem 1rem;
+  margin: 0;
+  border-radius: 0;
+  transition: all 0.2s;
+}
+
+header .dropdown-item:hover {
+  background-color: #f1f5f9;
+  color: var(--secondary);
+}
+
+main {
+  flex: 1;
+  padding: 20px 0;
+}
+
+footer {
+  background: var(--primary);
+  color: #dbeafe;
+}
+
+footer a {
+  color: #dbeafe;
+  font-size: 20px;
+  margin-right: 14px;
+}
+
+footer a:hover {
+  color: var(--accent);
+}
+
+/* --- CHUÔNG THÔNG BÁO --- */
+.notification-container .btn-link:hover {
+  opacity: 0.9;
+}
+
+#notificationBellBtn {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+#notificationBellBtn:hover {
+  transform: scale(1.1);
+}
+
+#notificationBellBtn::after {
+  display: none !important;
+}
+
+.notification-bell-wrap {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+}
+
+.notification-badge {
+  position: absolute !important;
+  top: -2px !important;
+  right: -2px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  padding: 0 5px !important;
+  font-size: 0.7rem !important;
+  line-height: 18px !important;
+  border-radius: 50% !important;
+  border: 2px solid var(--primary) !important;
+  animation: pulse-red 2s infinite !important;
+  transform: translate(50%, -50%) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.notification-dropdown {
+  min-width: 640px !important;
+  max-width: 700px !important;
+  max-height: 400px !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+}
+
+.notification-dropdown .dropdown-header {
+  background: var(--bg);
+}
+
+.notification-list {
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+.notification-list li {
+  list-style: none;
+  border-bottom: 1px solid #eee;
+}
+
+.notification-item {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid #eee;
+  transition: background 0.2s;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+}
+
+.notification-item:hover {
+  background: #f8fafc;
+  color: var(--secondary);
+}
+
+.notification-item.unread {
+  background: #eff6ff;
+}
+
+.notification-item .notif-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.notification-item .notif-message {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 2px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.notification-item .notif-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+@keyframes pulse-red {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+  }
+}
+
+/* --- GLOBAL HERO HEADER (Unified for Search, News, Loans) --- */
+.global-hero-header {
+  margin-top: -21px;
+  padding: 60px 20px 100px 20px;
+  text-align: center;
+  border-radius: 0 0 50px 50px;
+  background-color: #005aab; /* Fallback */
+  background: linear-gradient(120deg, #005aab 0%, #004e92 100%);
+  color: white;
+  box-shadow: 0 20px 40px -10px rgba(0, 90, 171, 0.4);
+  position: relative;
+  margin-bottom: 50px;
+  z-index: 10;
+}
+
+.global-hero-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: skewX(-20deg);
+  animation: shine 6s infinite;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.hero-subtitle {
+  font-weight: 500;
+  opacity: 0.9;
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  20% {
+    left: 200%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+/* --- MODAL VIVID --- */
+.modal-vivid .modal-content {
+  border: none;
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.modal-header-premium {
+  background: linear-gradient(135deg, #0b1d36 0%, #2563eb 100%);
+  padding: 2.5rem 1rem;
+  color: white;
+}
+
+.notif-card {
+  background: #ffffff;
+  border: 1px solid #f0f0f5;
+  border-radius: 18px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: 0.3s;
+}
+
+.notif-card:hover {
+  transform: translateX(10px);
+  border-color: var(--secondary);
+}
+
+.notif-icon-circle {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.btn-premium {
+  background: var(--primary);
+  color: white;
+  padding: 0.8rem;
+  border-radius: 15px;
+  border: none;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.btn-premium:hover {
+  background: var(--secondary);
+  transform: translateY(-2px);
+}

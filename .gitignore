@@ -148,12 +148,15 @@ wwwroot/uploads/
 node_modules/
 package-lock.json
 
-# Node/React env + build
+# Node/React env + build — không commit file chứa secret
 .env
 **/.env
 **/.env.*
+# Cho phép mọi .env.example (mẫu placeholder) trong repo
+!.env.example
+!**/.env.example
 frontend/dist/
-frontend/.vite/
+frontend/.next/
 backend/node_modules/
 frontend/node_modules/
 migration/node_modules/

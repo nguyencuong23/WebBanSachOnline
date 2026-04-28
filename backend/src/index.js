@@ -5,6 +5,7 @@ import helmet from "helmet";
 import { env } from "./env.js";
 import { errorHandler, notFound } from "./http/middleware.js";
 import { healthRouter } from "./routes/health.js";
+import { authRouter } from "./routes/auth.js";
 import { meRouter } from "./routes/me.js";
 import { booksRouter } from "./routes/books.js";
 import { categoriesRouter } from "./routes/categories.js";
@@ -25,6 +26,7 @@ app.use(
 app.use(express.json({ limit: "1mb" }));
 
 app.use(healthRouter);
+app.use(authRouter);
 app.use(meRouter);
 app.use(booksRouter);
 app.use(categoriesRouter);

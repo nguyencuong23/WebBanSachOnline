@@ -1,0 +1,45 @@
+/* 1. Xử lý nút Toggle (Xin chào, Tên) */
+header .dropdown-toggle::after {
+  display: none !important; /* Ẩn mũi tên mặc định của Bootstrap */
+}
+
+header .dropdown-toggle {
+  margin-left: 22px;
+}
+
+/* 2. Khung Dropdown tổng thể */
+header .dropdown-menu {
+  padding: 0.5rem 0; /* Tăng xíu khoảng trống trên/dưới cho thoáng */
+  min-width: 220px; /* Đồng bộ với minWidth: 220px ta đã set trong file TSX */
+  margin: 0;
+  border-radius: 12px; /* Bo góc mềm mại */
+  border: 1px solid #eaeaea; /* Thêm viền xám cực mỏng để tách biệt với nền */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* 3. Từng mục trong Dropdown (Thông tin cá nhân, Đăng xuất) */
+header .dropdown-item {
+  padding: 0.6rem 1.25rem; /* Rộng rãi hơn để người dùng dễ bấm (đặc biệt trên điện thoại) */
+  margin: 0;
+  border-radius: 0;
+  transition: all 0.2s ease;
+  color: #333; /* Giữ màu chữ mặc định sắc nét */
+  font-weight: 500;
+}
+
+/* 4. CHỐNG LÂY NHIỄM VẠCH VÀNG KHI HOVER */
+header .dropdown-item:hover {
+  background-color: #f8f9fa !important; /* Màu nền xám sáng, sang trọng hơn */
+  color: var(--secondary) !important; 
+
+  /* Ép tắt mọi loại gạch chân, viền hay bóng đổ bị lây từ thanh Nav ở trên */
+  text-decoration: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* Triệt tiêu vạch ảo (nếu thanh Nav của bạn dùng ::after để vẽ vạch vàng) */
+header .dropdown-item:hover::after,
+header .dropdown-item:hover::before {
+  display: none !important;
+}

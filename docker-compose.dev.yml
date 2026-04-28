@@ -11,8 +11,9 @@ services:
     environment:
       - PORT=4000
       - NODE_ENV=development
-      - WEB_ORIGINS=http://localhost:5173
-    command: sh -lc "npm install && npm run dev"
+      - WEB_ORIGINS=http://localhost:3000
+      - CHOKIDAR_USEPOLLING=true
+    command: sh -lc "npm install && npx nodemon -L src/index.js"
 
   web:
     image: node:20-alpine
@@ -20,14 +21,16 @@ services:
     volumes:
       - ./frontend:/app
     ports:
-      - "5173:5173"
+      - "3000:3000"
     env_file:
       - ./.env
     environment:
-      - VITE_API_BASE_URL=http://localhost:4000
-      - VITE_SUPABASE_URL=${SUPABASE_URL}
-      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-    command: sh -lc "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    command: sh -lc "npm install && npm run dev -- -H 0.0.0.0 -p 3000"
     depends_on:
       - api
 

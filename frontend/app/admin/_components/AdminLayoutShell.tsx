@@ -83,7 +83,7 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
             <li className="nav-item">
               <NavLinkNext href="/admin/users" className="nav-link" activeClassName="active">
                 <i className="fas fa-user-graduate" />
-                <span>Sinh viên/Độc giả</span>
+                <span>Quản lý người dùng</span>
               </NavLinkNext>
             </li>
             <li className="nav-item">

@@ -45,7 +45,7 @@ export function AdminUsersPage() {
       <div className="page-header">
         <h1>
           <i className="fas fa-user-graduate me-2" />
-          Quản lý sinh viên/độc giả
+          Quản lý người dùng
         </h1>
       </div>
       <div className="d-flex gap-2 mb-3">

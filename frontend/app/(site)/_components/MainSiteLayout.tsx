@@ -11,7 +11,7 @@ export function MainSiteLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   
   // Xóa userLabel vì chúng ta không dùng chữ "Khách" nữa
-  const { email, profile, logout } = useSessionProfile(); 
+  const { email, profile, logout, isLoading } = useSessionProfile(); 
   const isLoggedIn = !!email;
   const isAuthPage = pathname === "/auth";
 
@@ -21,19 +21,21 @@ export function MainSiteLayout({ children }: { children: ReactNode }) {
   // --- LOGIC BẢO VỆ ROUTE ---
   // Nếu chưa đăng nhập mà cố tình vào các trang này, đẩy về /auth
   useEffect(() => {
+    if (isLoading) return;
+    
     const protectedRoutes = ["/orders", "/cart", "/profile"];
     const isTryingToAccessProtected = protectedRoutes.some((route) =>
       pathname.startsWith(route)
     );
 
     if (!isLoggedIn && isTryingToAccessProtected) {
-      router.push("/auth");
+      router.push(`/auth?redirect=${encodeURIComponent(pathname)}`);
     }
-  }, [isLoggedIn, pathname, router]);
+  }, [isLoading, isLoggedIn, pathname, router]);
 
   return (
     <>
-      <header>
+      <header className="site-header">
         <div className="container-fluid px-5 py-3 d-flex justify-content-between align-items-center">
           <div className="fw-bold fs-5">Cửa hàng sách</div>
 

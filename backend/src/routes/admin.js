@@ -1,8 +1,12 @@
 import express from "express";
 import { z } from "zod";
 import { requireUser, requireAdmin } from "../auth/verify.js";
-import { createSupabaseUser } from "../supabase.js";
+import { createSupabaseUser, createSupabaseAdmin } from "../supabase.js";
 import { assert } from "../http/errors.js";
+
+const USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9._]{2,28}[a-z0-9])?$/;
+const FULL_NAME_REGEX = /^[\p{L}](?:[\p{L}\s'.-]{0,98}[\p{L}])?$/u;
+const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/;
 
 export const adminRouter = express.Router();
 
@@ -158,129 +162,145 @@ adminRouter.get("/admin/borrowing-trends", async (req, res) => {
   res.json({ orderVolume, revenue });
 });
 
-adminRouter.get("/admin/orders", async (req, res) => {
-  const sb = createSupabaseUser(req.auth.jwt);
-  const status = (req.query.status || "").toString();
-  const payment_method = (req.query.paymentMethod || "").toString();
-
-  let q = sb.from("orders").select("*").order("created_at", { ascending: false }).limit(500);
-  if (status) q = q.eq("status", status);
-  if (payment_method) q = q.eq("payment_method", payment_method);
-
-  const { data, error } = await q;
-  assert(!error, 400, "Failed to fetch orders", "orders_fetch_failed", error?.message);
-  res.json({ items: data });
-});
-
-adminRouter.get("/admin/orders/:orderId", async (req, res) => {
-  const sb = createSupabaseUser(req.auth.jwt);
-  const orderId = Number(req.params.orderId);
-  assert(Number.isFinite(orderId), 400, "Invalid order id", "invalid_request");
-
-  const { data: order, error: oErr } = await sb.from("orders").select("*").eq("order_id", orderId).maybeSingle();
-  assert(!oErr, 400, "Failed to fetch order", "order_fetch_failed", oErr?.message);
-  assert(order, 404, "Order not found", "not_found");
-
-  const { data: items, error: iErr } = await sb
-    .from("order_items")
-    .select("*, books(*)")
-    .eq("order_id", orderId);
-  assert(!iErr, 400, "Failed to fetch order items", "order_items_fetch_failed", iErr?.message);
-  res.json({ order, items });
-});
-
-adminRouter.post("/admin/orders/:orderId/confirm-bank-transfer", async (req, res) => {
-  const sb = createSupabaseUser(req.auth.jwt);
-  const orderId = Number(req.params.orderId);
-
-  const { data: order, error: oErr } = await sb.from("orders").select("*").eq("order_id", orderId).maybeSingle();
-  assert(!oErr, 400, "Failed to fetch order", "order_fetch_failed", oErr?.message);
-  assert(order, 404, "Order not found", "not_found");
-  assert(order.payment_method === "bank_transfer", 400, "Not a bank transfer order", "invalid_request");
-
-  const { data: updated, error } = await sb
-    .from("orders")
-    .update({
-      payment_status: "paid",
-      status: order.status === "pending" ? "confirmed" : order.status,
-      confirmed_at: order.confirmed_at || new Date().toISOString()
-    })
-    .eq("order_id", orderId)
-    .select("*")
-    .maybeSingle();
-  assert(!error, 400, "Failed to confirm", "order_update_failed", error?.message);
-  res.json({ order: updated });
-});
-
-adminRouter.post("/admin/orders/:orderId/status", async (req, res) => {
-  const schema = z.object({ status: z.enum(["pending", "confirmed", "processing", "shipping", "delivered", "cancelled"]) });
+// --- QUẢN LÝ ĐƠN HÀNG (THÊM MỚI TỪ ADMIN) ---
+adminRouter.post("/admin/orders", async (req, res) => {
+  const sb = createSupabaseAdmin();
+  const schema = z.object({
+    user_id: z.string().uuid("Vui lòng chọn khách hàng hợp lệ."),
+    receiver_name: z.string().trim().min(1, "Tên người nhận không được để trống."),
+    receiver_phone: z.string().trim().min(8, "Số điện thoại không hợp lệ."),
+    shipping_address: z.string().trim().min(1, "Địa chỉ giao hàng không được để trống."),
+    note: z.string().trim().optional(),
+    payment_method: z.enum(["cod", "bank_transfer"]),
+    status: z.enum(["pending", "confirmed", "processing", "shipping", "delivered", "cancelled"]).default("pending"),
+    payment_status: z.enum(["unpaid", "paid", "refunded"]).default("unpaid"),
+    lines: z.array(z.object({
+      book_id: z.string().min(1),
+      quantity: z.number().int().min(1)
+    })).min(1, "Đơn hàng phải có ít nhất 1 sản phẩm.")
+  });
+  
   const body = schema.parse(req.body ?? {});
 
-  const sb = createSupabaseUser(req.auth.jwt);
-  const orderId = Number(req.params.orderId);
-  const now = new Date().toISOString();
+  const bookIds = [...new Set(body.lines.map(x => x.book_id))];
+  const { data: books, error: bErr } = await sb.from("books").select("*").in("book_id", bookIds);
+  assert(!bErr, 400, "Lỗi kiểm tra sách", "books_fetch_failed", bErr?.message);
+  assert(books && books.length === bookIds.length, 400, "Một số sách không tồn tại.", "invalid_request");
 
-  const patch = { status: body.status };
-  if (body.status === "confirmed") patch.confirmed_at = now;
-  if (body.status === "delivered") patch.delivered_at = now;
-  if (body.status === "cancelled") patch.cancelled_at = now;
-
-  const { data, error } = await sb.from("orders").update(patch).eq("order_id", orderId).select("*").maybeSingle();
-  assert(!error, 400, "Failed to update status", "order_update_failed", error?.message);
-  res.json({ order: data });
-});
-
-adminRouter.post("/admin/orders/:orderId/cancel", async (req, res) => {
-  const sb = createSupabaseUser(req.auth.jwt);
-  const orderId = Number(req.params.orderId);
-  assert(Number.isFinite(orderId), 400, "Invalid order id", "invalid_request");
-
-  const { data: order, error: oErr } = await sb.from("orders").select("*").eq("order_id", orderId).maybeSingle();
-  assert(!oErr, 400, "Failed to fetch order", "order_fetch_failed", oErr?.message);
-  assert(order, 404, "Order not found", "not_found");
-  assert(order.status !== "delivered", 400, "Cannot cancel delivered order", "invalid_request");
-  assert(order.status !== "cancelled", 400, "Order already cancelled", "invalid_request");
-
-  const { data: items, error: iErr } = await sb.from("order_items").select("book_id,quantity").eq("order_id", orderId);
-  assert(!iErr, 400, "Failed to fetch order items", "order_items_fetch_failed", iErr?.message);
-
-  for (const it of items || []) {
-    const { data: b, error: bErr } = await sb.from("books").select("quantity").eq("book_id", it.book_id).maybeSingle();
-    assert(!bErr, 400, "Failed to fetch book", "book_fetch_failed", bErr?.message);
-    const newQty = Number(b?.quantity || 0) + Number(it.quantity || 0);
-    const { error: uErr } = await sb.from("books").update({ quantity: newQty }).eq("book_id", it.book_id);
-    assert(!uErr, 400, "Failed to restock", "stock_update_failed", uErr?.message);
+  for (const line of body.lines) {
+    const b = books.find(x => x.book_id === line.book_id);
+    assert((b?.quantity ?? 0) >= line.quantity, 400, `Sách '${b?.title}' không đủ số lượng tồn kho (còn ${b?.quantity || 0}).`, "out_of_stock");
   }
 
-  const { data: updated, error: uErr2 } = await sb
-    .from("orders")
-    .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
-    .eq("order_id", orderId)
-    .select("*")
-    .maybeSingle();
-  assert(!uErr2, 400, "Failed to cancel order", "order_update_failed", uErr2?.message);
+  const subtotal = body.lines.reduce((sum, line) => {
+    const b = books.find(x => x.book_id === line.book_id);
+    const unit = b?.is_on_sale ? b.sale_price : b?.price;
+    return sum + Number(unit || 0) * line.quantity;
+  }, 0);
 
-  res.json({ order: updated });
+  const { data: shipFeeSetting } = await sb.from("settings").select("*").eq("key", "DefaultShippingFee").maybeSingle();
+  const { data: freeSetting } = await sb.from("settings").select("*").eq("key", "FreeShippingThreshold").maybeSingle();
+  const defaultFee = Number(shipFeeSetting?.value ?? 30000);
+  const freeThreshold = Number(freeSetting?.value ?? 300000);
+  const shipping_fee = freeThreshold > 0 && subtotal >= freeThreshold ? 0 : Math.max(defaultFee, 0);
+
+  const total = subtotal + shipping_fee;
+  const now = new Date();
+  const order_code = `BP${now.toISOString().slice(0, 19).replace(/[-:T]/g, "")}${Math.floor(100 + Math.random() * 900)}`;
+
+  const { data: order, error: oErr } = await sb.from("orders").insert({
+    user_id: body.user_id,
+    order_code,
+    status: body.status,
+    payment_method: body.payment_method,
+    payment_status: body.payment_status,
+    receiver_name: body.receiver_name,
+    receiver_phone: body.receiver_phone,
+    shipping_address: body.shipping_address,
+    note: body.note || null,
+    subtotal,
+    shipping_fee,
+    discount: 0,
+    total
+  }).select("*").maybeSingle();
+  assert(!oErr && order, 400, "Lỗi tạo đơn hàng", "order_create_failed", oErr?.message);
+
+  const itemsToInsert = body.lines.map(line => {
+    const b = books.find(x => x.book_id === line.book_id);
+    const unit = b?.is_on_sale ? b.sale_price : b?.price;
+    return {
+      order_id: order.order_id,
+      book_id: line.book_id,
+      unit_price: unit,
+      quantity: line.quantity,
+      line_total: Number(unit) * line.quantity
+    };
+  });
+  
+  const { error: itErr } = await sb.from("order_items").insert(itemsToInsert);
+  assert(!itErr, 400, "Lỗi tạo chi tiết đơn hàng", "order_items_create_failed", itErr?.message);
+
+  for (const line of body.lines) {
+    const b = books.find(x => x.book_id === line.book_id);
+    const newQty = (b?.quantity ?? 0) - line.quantity;
+    await sb.from("books").update({ quantity: newQty }).eq("book_id", line.book_id);
+  }
+
+  res.status(201).json({ item: order });
 });
+
 
 adminRouter.get("/admin/users", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const role = (req.query.role || "").toString();
   const active = (req.query.active || "").toString();
+  const search = (req.query.search || "").toString().trim();
+  const searchBy = (req.query.searchBy || "all").toString();
+  const sort = (req.query.sort || "").toString();
 
-  let q = sb.from("profiles").select("*").order("created_at", { ascending: false }).limit(500);
+  let q = sb.from("profiles").select("*");
+  
   if (role) q = q.eq("role", role);
   if (active) q = q.eq("is_active", active === "true");
-  const { data, error } = await q;
+
+  if (search) {
+    if (searchBy === "all") {
+      q = q.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone_number.ilike.%${search}%,username.ilike.%${search}%`);
+    } else if (searchBy === "user_id") {
+      // Check if it's a valid UUID format before eq to avoid DB errors
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(search)) {
+        q = q.eq("user_id", search);
+      } else {
+        q = q.eq("user_id", "00000000-0000-0000-0000-000000000000"); // Return empty if invalid UUID format
+      }
+    } else {
+      q = q.ilike(searchBy, `%${search}%`);
+    }
+  }
+
+  if (sort) {
+    const [field, dir] = sort.split("-");
+    q = q.order(field, { ascending: dir === "asc" });
+  } else {
+    q = q.order("created_at", { ascending: false });
+  }
+
+  const { data, error } = await q.limit(500);
   assert(!error, 400, "Failed to fetch users", "users_fetch_failed", error?.message);
   res.json({ items: data });
 });
 
 adminRouter.patch("/admin/users/:userId", async (req, res) => {
   const schema = z.object({
-    full_name: z.string().trim().min(1).max(100).optional(),
-    email: z.string().email().max(100).optional(),
-    phone_number: z.string().trim().min(8).max(15).optional(),
+    username: z.string().trim().regex(USERNAME_REGEX, "Tên đăng nhập phải dài 4-30 ký tự, chỉ gồm chữ thường, số, dấu chấm và dấu gạch dưới.").optional().nullable().or(z.literal("")),
+    full_name: z.string().trim().regex(FULL_NAME_REGEX, "Họ tên chỉ được chứa chữ cái và các dấu cách hợp lệ, độ dài 2-100 ký tự.").optional().nullable().or(z.literal("")),
+    email: z.string().email("Email không hợp lệ.").max(100, "Email không được vượt quá 100 ký tự.").optional(),
+    phone_number: z.string().trim().regex(PHONE_REGEX, "Số điện thoại phải là số di động Việt Nam hợp lệ.").optional().nullable().or(z.literal("")),
+    avatar_url: z.string().trim().optional().nullable(),
+    default_address: z.string().trim().optional().nullable(),
+    loyalty_points: z.number({ invalid_type_error: "Điểm thưởng phải là số." }).int().min(0, "Điểm thưởng không được âm.").optional(),
+    customer_note: z.string().trim().optional().nullable(),
     is_active: z.boolean().optional(),
     role: z.enum(["admin", "user"]).optional()
   });
@@ -288,8 +308,271 @@ adminRouter.patch("/admin/users/:userId", async (req, res) => {
 
   const sb = createSupabaseUser(req.auth.jwt);
   const userId = req.params.userId;
+
+  if (body.is_active === false && userId === req.profile?.user_id) {
+    assert(false, 400, "Bạn không thể khóa tài khoản của chính mình.", "cannot_lock_self");
+  }
+
   const { data, error } = await sb.from("profiles").update(body).eq("user_id", userId).select("*").maybeSingle();
-  assert(!error, 400, "Failed to update user", "user_update_failed", error?.message);
+  assert(!error, 400, "Lỗi cập nhật người dùng", "user_update_failed", error?.message);
   res.json({ item: data });
 });
 
+adminRouter.post("/admin/users", async (req, res) => {
+  const schema = z.object({
+    email: z.string().email("Email không hợp lệ.").max(100, "Email không được vượt quá 100 ký tự."),
+    password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự."),
+    username: z.string().trim().regex(USERNAME_REGEX, "Tên đăng nhập phải dài 4-30 ký tự, chỉ gồm chữ thường, số, dấu chấm và dấu gạch dưới.").optional().nullable().or(z.literal("")),
+    full_name: z.string().trim().regex(FULL_NAME_REGEX, "Họ tên chỉ được chứa chữ cái và các dấu cách hợp lệ, độ dài 2-100 ký tự.").optional().nullable().or(z.literal("")),
+    phone_number: z.string().trim().regex(PHONE_REGEX, "Số điện thoại phải là số di động Việt Nam hợp lệ.").optional().nullable().or(z.literal("")),
+    role: z.enum(["admin", "user"]).default("user"),
+    is_active: z.boolean().default(true)
+  });
+  const body = schema.parse(req.body ?? {});
+
+  const sbAdmin = createSupabaseAdmin();
+  
+  const { data: created, error: createError } = await sbAdmin.auth.admin.createUser({
+    email: body.email,
+    password: body.password,
+    email_confirm: true,
+    user_metadata: {
+      username: body.username,
+      full_name: body.full_name,
+      phone_number: body.phone_number,
+      role: body.role
+    }
+  });
+
+  assert(!createError, 400, "Lỗi tạo tài khoản", "auth_create_failed", createError?.message);
+
+  const profilePayload = {
+    user_id: created.user.id,
+    email: body.email,
+    username: body.username || null,
+    full_name: body.full_name || null,
+    phone_number: body.phone_number || null,
+    role: body.role,
+    is_active: body.is_active
+  };
+
+  const { data: profile, error: profileError } = await sbAdmin.from("profiles").insert(profilePayload).select("*").maybeSingle();
+  if (profileError) {
+    await sbAdmin.auth.admin.deleteUser(created.user.id);
+    assert(false, 400, "Lỗi tạo hồ sơ người dùng", "profile_create_failed", profileError.message);
+  }
+
+  res.status(201).json({ item: profile });
+});
+
+adminRouter.delete("/admin/users/:userId", async (req, res) => {
+  const sbAdmin = createSupabaseAdmin();
+  const userId = req.params.userId;
+  
+  assert(userId !== req.profile?.user_id, 400, "Bạn không thể xóa tài khoản của chính mình.", "cannot_delete_self");
+  
+  // Xóa user trong auth, row trong profiles sẽ tự động cascade hoặc phải xóa thủ công tùy setup DB.
+  // Nếu Supabase setup cascade:
+  const { error } = await sbAdmin.auth.admin.deleteUser(userId);
+  assert(!error, 400, "Lỗi xóa người dùng", "user_delete_failed", error?.message);
+  
+  res.json({ ok: true });
+});
+
+adminRouter.post("/admin/users/:userId/toggle-status", async (req, res) => {
+  const sb = createSupabaseUser(req.auth.jwt);
+  const userId = req.params.userId;
+  
+  assert(userId !== req.profile?.user_id, 400, "Bạn không thể khóa/mở khóa tài khoản của chính mình.", "cannot_lock_self");
+
+  const { data: user, error: fetchErr } = await sb.from("profiles").select("is_active").eq("user_id", userId).maybeSingle();
+  assert(!fetchErr && user, 400, "Không tìm thấy người dùng", "user_not_found");
+
+  const { data, error } = await sb.from("profiles").update({ is_active: !user.is_active }).eq("user_id", userId).select("*").maybeSingle();
+  assert(!error, 400, "Lỗi cập nhật trạng thái người dùng", "user_status_update_failed", error?.message);
+  
+  res.json({ item: data });
+});
+
+// --- QUẢN LÝ ĐƠN HÀNG (ADMIN) ---
+
+adminRouter.get("/admin/orders", async (req, res) => {
+  const search = (req.query.search || "").toString().trim();
+  const searchBy = (req.query.searchBy || "all").toString();
+  const sort = (req.query.sort || "created_at-desc").toString();
+  const status = (req.query.status || "").toString();
+
+  const sb = createSupabaseAdmin();
+  let q = sb.from("orders").select("*");
+
+  if (search) {
+    if (searchBy === "order_code") {
+      q = q.ilike("order_code", `%${search}%`);
+    } else if (searchBy === "customer") {
+      q = q.or(`receiver_name.ilike.%${search}%,receiver_phone.ilike.%${search}%`);
+    } else {
+      q = q.or(`order_code.ilike.%${search}%,receiver_name.ilike.%${search}%,receiver_phone.ilike.%${search}%`);
+    }
+  }
+
+  if (status) {
+    q = q.eq("status", status);
+  }
+
+  const [field, dir] = sort.split("-");
+  q = q.order(field || "created_at", { ascending: dir === "asc" });
+
+  const { data, error } = await q.limit(500);
+  if (error) console.error("[ORDERS GET]", JSON.stringify(error));
+  assert(!error, 400, "Lỗi tải danh sách đơn hàng", "orders_fetch_failed", error?.message);
+  res.json({ items: data });
+});
+
+adminRouter.get("/admin/orders/:orderId", async (req, res) => {
+  const sb = createSupabaseAdmin();
+  const { data, error } = await sb
+    .from("orders")
+    .select("*, order_items(*, books(title, image_url, category_id))")
+    .eq("order_id", req.params.orderId)
+    .maybeSingle();
+  assert(!error && data, 400, "Không tìm thấy đơn hàng", "order_not_found", error?.message);
+  res.json({ item: data });
+});
+
+adminRouter.patch("/admin/orders/:orderId", async (req, res) => {
+  const sb = createSupabaseAdmin();
+  
+  const schema = z.object({
+    status: z.enum(["pending", "confirmed", "shipping", "delivered", "cancelled"]).optional(),
+    payment_status: z.enum(["unpaid", "paid", "refunded"]).optional(),
+    receiver_name: z.string().min(1, "Tên người nhận không được để trống.").optional(),
+    receiver_phone: z.string().regex(/^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/, "Số điện thoại không hợp lệ.").optional().or(z.literal("")),
+    shipping_address: z.string().min(1, "Địa chỉ không được để trống.").optional(),
+    note: z.string().optional().nullable()
+  });
+  const body = schema.parse(req.body ?? {});
+
+  const updateData = { ...body };
+  if (body.status === "confirmed") updateData.confirmed_at = new Date().toISOString();
+  if (body.status === "delivered") updateData.delivered_at = new Date().toISOString();
+  if (body.status === "cancelled") updateData.cancelled_at = new Date().toISOString();
+
+  const { data, error } = await sb
+    .from("orders")
+    .update(updateData)
+    .eq("order_id", req.params.orderId)
+    .select("*")
+    .maybeSingle();
+
+  assert(!error, 400, "Lỗi cập nhật đơn hàng", "order_update_failed", error?.message);
+  res.json({ item: data });
+});
+
+adminRouter.delete("/admin/orders/:orderId", async (req, res) => {
+  const sb = createSupabaseAdmin();
+  const { error } = await sb.from("orders").delete().eq("order_id", req.params.orderId);
+  assert(!error, 400, "Lỗi xóa đơn hàng", "order_delete_failed", error?.message);
+  res.json({ ok: true });
+});
+
+// --- QUẢN LÝ GIỎ HÀNG (ADMIN) ---
+
+adminRouter.get("/admin/carts", async (req, res) => {
+  const search = (req.query.search || "").toString().toLowerCase().trim();
+  const sort = (req.query.sort || "created_at-desc").toString();
+
+  const sb = createSupabaseAdmin();
+  const { data, error } = await sb
+    .from("cart_items")
+    .select("*, books(title, image_url, price, sale_price, is_on_sale, category_id)");
+    
+  assert(!error, 400, "Lỗi tải giỏ hàng", "carts_fetch_failed", error?.message);
+  
+  const userIds = [...new Set((data || []).map(i => i.user_id))];
+  let profilesMap = new Map();
+  if (userIds.length > 0) {
+    const { data: profiles } = await sb.from("profiles").select("user_id, full_name, email, avatar_url").in("user_id", userIds);
+    profilesMap = new Map((profiles || []).map(p => [p.user_id, p]));
+  }
+  
+  let items = (data || []).map(item => ({
+    ...item,
+    user: profilesMap.get(item.user_id) || { email: "Unknown", full_name: "Unknown" }
+  }));
+
+  const searchBy = (req.query.searchBy || "all").toString();
+
+  if (search) {
+    items = items.filter(item => {
+      const uName = (item.user?.full_name || "").toLowerCase();
+      const uEmail = (item.user?.email || "").toLowerCase();
+      const bTitle = (item.books?.title || "").toLowerCase();
+      
+      if (searchBy === "user_name") return uName.includes(search);
+      if (searchBy === "user_email") return uEmail.includes(search);
+      if (searchBy === "book_title") return bTitle.includes(search);
+      
+      return uName.includes(search) || uEmail.includes(search) || bTitle.includes(search);
+    });
+  }
+
+  items.sort((a, b) => {
+    const [field, dir] = sort.split("-");
+    const mult = dir === "asc" ? 1 : -1;
+    if (field === "user") {
+      return ((a.user?.full_name || "") > (b.user?.full_name || "") ? 1 : -1) * mult;
+    } else if (field === "book") {
+      return ((a.books?.title || "") > (b.books?.title || "") ? 1 : -1) * mult;
+    } else {
+      return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * mult;
+    }
+  });
+
+  res.json({ items });
+});
+
+adminRouter.post("/admin/carts", async (req, res) => {
+  const sb = createSupabaseAdmin();
+  const schema = z.object({
+    user_id: z.string().uuid("User ID không hợp lệ."),
+    book_id: z.string().min(1, "Mã sách không được để trống."),
+    quantity: z.number({ invalid_type_error: "Số lượng phải là số." }).int().min(1, "Số lượng phải lớn hơn 0.")
+  });
+  const body = schema.parse(req.body ?? {});
+  
+  const { data: book } = await sb.from("books").select("book_id").eq("book_id", body.book_id).maybeSingle();
+  assert(book, 400, "Sách không tồn tại", "book_not_found");
+
+  const { data, error } = await sb
+    .from("cart_items")
+    .insert({ user_id: body.user_id, book_id: body.book_id, quantity: body.quantity })
+    .select("*")
+    .maybeSingle();
+
+  assert(!error, 400, "Lỗi thêm giỏ hàng", "cart_add_failed", error?.message);
+  res.json({ item: data });
+});
+
+adminRouter.patch("/admin/carts/:id", async (req, res) => {
+  const sb = createSupabaseAdmin();
+  const schema = z.object({
+    quantity: z.number().int().min(1)
+  });
+  const body = schema.parse(req.body ?? {});
+
+  const { data, error } = await sb.from("cart_items")
+    .update({ quantity: body.quantity, updated_at: new Date().toISOString() })
+    .eq("id", req.params.id)
+    .select("*")
+    .maybeSingle();
+    
+  assert(!error, 400, "Lỗi cập nhật giỏ hàng", "cart_update_failed", error?.message);
+  res.json({ item: data });
+});
+
+adminRouter.delete("/admin/carts/:id", async (req, res) => {
+  const sb = createSupabaseAdmin();
+  const { error } = await sb.from("cart_items").delete().eq("id", req.params.id);
+  assert(!error, 400, "Lỗi xóa sản phẩm khỏi giỏ", "cart_delete_failed", error?.message);
+  res.json({ ok: true });
+});

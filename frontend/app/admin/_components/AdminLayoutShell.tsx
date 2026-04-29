@@ -13,6 +13,7 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [done, setDone] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
@@ -81,6 +82,12 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
               </NavLinkNext>
             </li>
             <li className="nav-item">
+              <NavLinkNext href="/admin/carts" className="nav-link" activeClassName="active">
+                <i className="fas fa-shopping-basket" />
+                <span>Quản lý giỏ hàng</span>
+              </NavLinkNext>
+            </li>
+            <li className="nav-item">
               <NavLinkNext href="/admin/users" className="nav-link" activeClassName="active">
                 <i className="fas fa-user-graduate" />
                 <span>Quản lý người dùng</span>
@@ -114,13 +121,58 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
         </nav>
       </aside>
 
-      <header className="admin-topbar">
-        <h1 className="topbar-title">Quản trị hệ thống</h1>
-        <div className="topbar-user">
-          <div className="d-flex align-items-center gap-3">
-            <span>{userLabel}</span>
-            <button onClick={logout}>Đăng xuất</button>
+      <header className="admin-topbar d-flex justify-content-between align-items-center px-4 py-3 bg-white border-bottom shadow-sm">
+        <h1 className="topbar-title h5 m-0 text-primary fw-bold">Quản trị hệ thống</h1>
+
+        <div className="topbar-user position-relative">
+          {/* Khu vực bấm để hiện Dropdown */}
+          <div
+            className="d-flex align-items-center gap-2 user-select-none"
+            onClick={() => setShowDropdown(!showDropdown)}
+            style={{ cursor: "pointer" }}
+          >
+            <div
+              className="bg-light rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold border"
+              style={{ width: "36px", height: "36px" }}
+            >
+              {/* Lấy chữ cái đầu của Username làm Avatar ảo */}
+              {profile?.username?.charAt(0).toUpperCase() || "A"}
+            </div>
+            <span className="fw-medium text-dark">
+              {profile?.username || "Admin"}
+            </span>
+            <i className={`fas fa-chevron-down text-muted transition-transform ${showDropdown ? "rotate-180" : ""}`} style={{ fontSize: "12px", transition: "transform 0.2s" }}></i>
           </div>
+
+          {/* Dropdown Menu */}
+          {showDropdown && (
+            <div
+              className="position-absolute end-0 mt-2 bg-white shadow rounded border overflow-hidden"
+              style={{ top: "100%", minWidth: "200px", zIndex: 1050 }}
+            >
+              <Link
+                href="/profile"
+                className="d-flex align-items-center gap-2 px-3 py-2 text-dark text-decoration-none admin-dropdown-item"
+                onClick={() => setShowDropdown(false)}
+              >
+                <i className="fas fa-user-circle text-muted" style={{ width: "20px", textAlign: "center" }}></i>
+                Thông tin cá nhân
+              </Link>
+
+              <div className="border-top my-1"></div>
+
+              <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  logout();
+                }}
+                className="d-flex align-items-center gap-2 w-100 text-start border-0 bg-transparent text-danger px-3 py-2 admin-dropdown-item"
+              >
+                <i className="fas fa-sign-out-alt" style={{ width: "20px", textAlign: "center" }}></i>
+                Đăng xuất
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

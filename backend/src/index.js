@@ -1,6 +1,11 @@
 import "express-async-errors";
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import helmet from "helmet";
 import { env } from "./env.js";
 import { errorHandler, notFound } from "./http/middleware.js";
@@ -11,12 +16,15 @@ import { booksRouter } from "./routes/books.js";
 import { categoriesRouter } from "./routes/categories.js";
 import { ordersRouter } from "./routes/orders.js";
 import { adminRouter } from "./routes/admin.js";
-import { notificationsRouter } from "./routes/notifications.js";
+
 import { settingsRouter } from "./routes/settings.js";
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(
   cors({
     origin: env.webOrigins.length ? env.webOrigins : true,
@@ -32,11 +40,55 @@ app.use(booksRouter);
 app.use(categoriesRouter);
 app.use(ordersRouter);
 app.use(adminRouter);
-app.use(notificationsRouter);
+
 app.use(settingsRouter);
 
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "BTL Library API" });
+});
+
+app.get("/swagger.json", (req, res) => {
+  res.sendFile(path.join(__dirname, "swagger.json"));
+});
+
+app.get("/api-docs", (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.css" />
+    <style>
+      html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+      *, *:before, *:after { box-sizing: inherit; }
+      body { margin:0; background: #fafafa; }
+    </style>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js"></script>
+    <script>
+    window.onload = function() {
+      window.ui = SwaggerUIBundle({
+        url: "/swagger.json",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "StandaloneLayout"
+      });
+    };
+    </script>
+  </body>
+</html>
+  `);
 });
 
 app.use(notFound);

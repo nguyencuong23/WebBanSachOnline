@@ -20,12 +20,12 @@ body {
   font-family: "Segoe UI", sans-serif;
 }
 
-header {
+.site-header {
   background: linear-gradient(90deg, #0b1d36, #102a4d);
   color: #fff;
 }
 
-header a {
+.site-header a {
   color: #fff;
   text-decoration: none;
   margin-left: 22px;
@@ -35,7 +35,7 @@ header a {
 }
 
 /* Hiệu ứng gạch chân cho link thường */
-header a:not(.dropdown-item)::after {
+.site-header a:not(.dropdown-item):not(.dropdown-item-hover)::after {
   content: "";
   position: absolute;
   left: 0;
@@ -46,28 +46,28 @@ header a:not(.dropdown-item)::after {
   transition: 0.3s;
 }
 
-header a:not(.dropdown-item):hover::after {
+.site-header a:not(.dropdown-item):not(.dropdown-item-hover):hover::after {
   width: 100%;
 }
 
-header a.nav-active {
+.site-header a.nav-active {
   color: var(--accent) !important;
   font-weight: 700;
 }
 
-header a.nav-active::after {
+.site-header a.nav-active::after {
   width: 100% !important;
 }
 
-header .dropdown-toggle::after {
+.site-header .dropdown-toggle::after {
   display: none !important;
 }
 
-header .dropdown-toggle {
+.site-header .dropdown-toggle {
   margin-left: 22px;
 }
 
-header .dropdown-menu {
+.site-header .dropdown-menu {
   display: block;
   min-width: 220px;
   padding: 0;
@@ -79,8 +79,8 @@ header .dropdown-menu {
   overflow: hidden;
 }
 
-header .dropdown-menu a,
-header .dropdown-menu button {
+.site-header .dropdown-menu a,
+.site-header .dropdown-menu button {
   display: flex !important;
   align-items: center;
   gap: 10px;
@@ -96,27 +96,28 @@ header .dropdown-menu button {
   transition: background 0.2s ease;
 }
 
-header .dropdown-menu a::after,
-header .dropdown-menu button::after,
-header .dropdown-menu a:hover::after,
-header .dropdown-menu button:hover::after {
+.site-header .dropdown-menu a::after,
+.site-header .dropdown-menu button::after,
+.site-header .dropdown-menu a:hover::after,
+.site-header .dropdown-menu button:hover::after {
   display: none !important;
   content: none !important;
 }
 
-header .dropdown-menu a:hover,
-header .dropdown-menu button:hover {
+.site-header .dropdown-menu a:hover,
+.site-header .dropdown-menu button:hover {
   background-color: #f5f5f5 !important;
-  color: #003d71 !important; /* Đổi về màu xanh chủ đạo */
+  color: #003d71 !important;
+  /* Đổi về màu xanh chủ đạo */
   border: none !important;
   border-bottom: none !important;
 }
 
-header .dropdown-menu .border-top {
+.site-header .dropdown-menu .border-top {
   border-top: 1px solid #eeeeee !important;
 }
 
-header .dropdown-menu button.text-danger:hover {
+.site-header .dropdown-menu button.text-danger:hover {
   background-color: #fff5f5 !important;
   color: #dc3545 !important;
 }
@@ -324,69 +325,17 @@ footer a:hover {
   0% {
     left: -100%;
   }
+
   20% {
     left: 200%;
   }
+
   100% {
     left: 200%;
   }
 }
 
-/* --- MODAL VIVID --- */
-.modal-vivid .modal-content {
-  border: none;
-  border-radius: 30px;
-  overflow: hidden;
-}
 
-.modal-header-premium {
-  background: linear-gradient(135deg, #0b1d36 0%, #2563eb 100%);
-  padding: 2.5rem 1rem;
-  color: white;
-}
-
-.notif-card {
-  background: #ffffff;
-  border: 1px solid #f0f0f5;
-  border-radius: 18px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  transition: 0.3s;
-}
-
-.notif-card:hover {
-  transform: translateX(10px);
-  border-color: var(--secondary);
-}
-
-.notif-icon-circle {
-  width: 45px;
-  height: 45px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
-}
-
-.btn-premium {
-  background: var(--primary);
-  color: white;
-  padding: 0.8rem;
-  border-radius: 15px;
-  border: none;
-  font-weight: 600;
-  transition: 0.3s;
-}
-
-.btn-premium:hover {
-  background: var(--secondary);
-  transform: translateY(-2px);
-}
 
 /* ===== Merged from site.css ===== */
 .page-transition {

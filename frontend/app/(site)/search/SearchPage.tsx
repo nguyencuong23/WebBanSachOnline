@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { addToCart } from "@/lib/cart";
+import { getBookImageUrl } from "@/lib/bookImage";
 import "./search.css";
 
 export function SearchPage() {
@@ -78,7 +79,7 @@ export function SearchPage() {
                         </span>
                       )}
                       <img
-                        src={b.image_url || "https://via.placeholder.com/300x450?text=No+Image"}
+                        src={getBookImageUrl(b.image_url, b.category_id) || "https://via.placeholder.com/300x450?text=No+Image"}
                         className="book-cover"
                         alt={b.title}
                         loading="lazy"

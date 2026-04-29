@@ -9,9 +9,14 @@ export function useSessionProfile() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    setIsLoading(true);
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
+      setIsLoading(false);
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       setEmail(session?.user?.email ?? null);
     });
@@ -19,10 +24,15 @@ export function useSessionProfile() {
   }, []);
 
   useEffect(() => {
+    if (isLoading) return;
+    if (!email) {
+      setProfile(null);
+      return;
+    }
     getProfile()
       .then(setProfile)
       .catch(() => setProfile(null));
-  }, [email]);
+  }, [email, isLoading]);
 
   async function logout() {
     await supabase.auth.signOut();
@@ -32,5 +42,5 @@ export function useSessionProfile() {
 
   const userLabel = profile?.full_name || email || "Khách";
 
-  return { email, profile, userLabel, logout };
+  return { email, profile, userLabel, logout, isLoading };
 }

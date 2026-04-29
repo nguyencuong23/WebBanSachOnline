@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { GlobalAuthLockGuard } from "./(site)/_components/GlobalAuthLockGuard";
 
 export const metadata: Metadata = {
   title: "Bookstore",
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className="app-root">{children}</body>
+      <body className="app-root">
+        <GlobalAuthLockGuard>{children}</GlobalAuthLockGuard>
+      </body>
     </html>
   );
 }

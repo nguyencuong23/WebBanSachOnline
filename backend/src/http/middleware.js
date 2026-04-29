@@ -8,6 +8,7 @@ export function errorHandler(err, req, res, next) {
   if (res.headersSent) return next(err);
 
   if (err instanceof HttpError) {
+    console.error(`[HTTP ${err.status}] ${req.method} ${req.path} →`, err.message, err.details ?? "");
     res.status(err.status).json({
       error: {
         code: err.code,

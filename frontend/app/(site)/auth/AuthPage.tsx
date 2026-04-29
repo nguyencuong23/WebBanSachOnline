@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, apiFetch } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { useSessionProfile } from "../_hooks/useSessionProfile";
 import "./auth-page.css";
 
 type AuthMode = "login" | "register" | "forgot";
@@ -61,6 +62,16 @@ export function AuthPage({ initialMode = "login" }: AuthPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  const { email, isLoading } = useSessionProfile();
+
+  useEffect(() => {
+    if (!isLoading && email) {
+      const qs = new URLSearchParams(window.location.search);
+      const redirect = qs.get("redirect") || "/";
+      router.replace(redirect);
+    }
+  }, [email, isLoading, router]);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -164,14 +175,11 @@ export function AuthPage({ initialMode = "login" }: AuthPageProps) {
     setIsSubmitting(true);
 
     try {
-      const email = loginEmail.trim().toLowerCase();
+      const identifier = loginEmail.trim().toLowerCase();
       let hasFieldError = false;
 
-      if (!email) {
-        setFieldError("login_email", "Email không được để trống.");
-        hasFieldError = true;
-      } else if (!EMAIL_REGEX.test(email)) {
-        setFieldError("login_email", "Email không đúng định dạng.");
+      if (!identifier) {
+        setFieldError("login_email", "Email hoặc Tên đăng nhập không được để trống.");
         hasFieldError = true;
       }
 
@@ -180,10 +188,29 @@ export function AuthPage({ initialMode = "login" }: AuthPageProps) {
         hasFieldError = true;
       }
 
-      if (hasFieldError) return;
+      if (hasFieldError) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      let emailForAuth = identifier;
+
+      if (!identifier.includes("@")) {
+        try {
+          const res = await apiFetch<{ email: string }>("/auth/resolve-identifier", {
+            method: "POST",
+            body: JSON.stringify({ identifier })
+          });
+          emailForAuth = res.email;
+        } catch (e: any) {
+          setError("Tài khoản không tồn tại.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailForAuth,
         password: loginPassword,
       });
 
@@ -192,7 +219,9 @@ export function AuthPage({ initialMode = "login" }: AuthPageProps) {
         return;
       }
 
-      router.push("/");
+      const qs = new URLSearchParams(window.location.search);
+      const redirect = qs.get("redirect") || "/";
+      router.push(redirect);
       router.refresh();
     } catch (submitError) {
       setError(getReadableAuthError(submitError, "Đăng nhập thất bại."));
@@ -406,16 +435,16 @@ export function AuthPage({ initialMode = "login" }: AuthPageProps) {
     return (
       <form className="auth-form" onSubmit={handleLoginSubmit}>
         <label className="auth-field">
-          <span>Email</span>
+          <span>Email hoặc Tên đăng nhập</span>
           <input
-            type="email"
+            type="text"
             value={loginEmail}
             onChange={(event) => {
               setLoginEmail(event.target.value);
               clearFieldError("login_email");
             }}
-            placeholder="ban@example.com"
-            autoComplete="email"
+            placeholder="ban@example.com hoặc username"
+            autoComplete="username"
             required
           />
           {fieldErrors.login_email && <small className="auth-field-error">{fieldErrors.login_email}</small>}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api";
 
 const PROJECT_ID = "gtjrtwtbjdcznuacgrio";
 
@@ -15,6 +16,7 @@ export function AdminBooksPage() {
   const [skuNumber, setSkuNumber] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const emptyForm = {
     book_id: "",
@@ -38,25 +40,42 @@ export function AdminBooksPage() {
   const [form, setForm] = useState<any>(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
-  // Lấy dữ liệu trực tiếp từ Supabase
+  // Tải danh sách thể loại (chỉ cần gọi 1 lần lúc đầu)
+  async function loadCategories() {
+    try {
+      const resCats = await apiFetch<{ items: any[] }>("/categories");
+      setCategories(resCats.items || []);
+    } catch (e: any) {
+      console.error(e);
+    }
+  }
+
+  // Lấy dữ liệu sách qua API Backend (hỗ trợ lọc & tìm kiếm)
   async function load() {
     try {
-      const { data: books, error: booksErr } = await supabase.from("books").select("*");
-      if (booksErr) throw booksErr;
+      const qs = new URLSearchParams();
+      if (keyword.trim()) qs.append("search", keyword.trim());
+      if (searchBy) qs.append("searchBy", searchBy);
+      if (sortBy) qs.append("sort", sortBy);
 
-      const { data: cats, error: catsErr } = await supabase.from("categories").select("*");
-      if (catsErr) throw catsErr;
-
-      setItems(books || []);
-      setCategories(cats || []);
+      const resBooks = await apiFetch<{ items: any[] }>(`/books?${qs.toString()}`);
+      setItems(resBooks.items || []);
     } catch (e: any) {
       setError(e.message || String(e));
     }
   }
 
   useEffect(() => {
-    load();
+    loadCategories();
   }, []);
+
+  // Gọi API mỗi khi thay đổi từ khóa tìm kiếm hoặc sắp xếp (có độ trễ nhẹ)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      load();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [keyword, searchBy, sortBy]);
 
   useEffect(() => {
     if (modalMode === "add" && form.category_id && skuNumber) {
@@ -93,15 +112,161 @@ export function AdminBooksPage() {
     return `${data.publicUrl}?t=${Date.now()}`;
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setLocalPreview(URL.createObjectURL(file));
-      const fileExt = file.name.split('.').pop();
-      setForm((f: any) => ({ ...f, image_url: `${f.book_id}.${fileExt}` }));
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert("Vui lòng chọn một tệp hình ảnh hợp lệ.");
+      return;
+    }
+
+    try {
+      const img = new window.Image();
+      const objectUrl = URL.createObjectURL(file);
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Vẽ ảnh lên canvas
+          ctx.drawImage(img, 0, 0);
+          
+          // Chuyển đổi sang WebP (chất lượng 85%)
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const originalName = file.name;
+              const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+              const newFileName = `${nameWithoutExt}.webp`;
+              
+              const webpFile = new File([blob], newFileName, { type: 'image/webp' });
+              
+              setSelectedFile(webpFile);
+              setLocalPreview(URL.createObjectURL(webpFile));
+              setForm((f: any) => ({ ...f, image_url: `${f.book_id || ''}.webp` }));
+            }
+          }, 'image/webp', 0.85);
+        }
+        URL.revokeObjectURL(objectUrl);
+      };
+      
+      img.onerror = () => {
+        alert("Lỗi khi tải hình ảnh. Vui lòng thử lại.");
+        URL.revokeObjectURL(objectUrl);
+      };
+      
+      img.src = objectUrl;
+    } catch (err) {
+      console.error("Lỗi chuyển đổi ảnh:", err);
+      alert("Đã xảy ra lỗi khi xử lý ảnh.");
     }
   };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (modalMode === "detail") return;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (modalMode === "detail") return;
+
+    // 1. Trường hợp kéo file từ máy tính
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const syntheticEvent = {
+        target: { files: [file] }
+      } as unknown as React.ChangeEvent<HTMLInputElement>;
+      await handleFileChange(syntheticEvent);
+      return;
+    }
+
+    // 2. Trường hợp kéo ảnh trực tiếp từ tab/web khác
+    const html = e.dataTransfer.getData("text/html");
+    const uriList = e.dataTransfer.getData("text/uri-list");
+    let imageUrl = "";
+
+    if (html) {
+      const match = html.match(/<img.*?src=["'](.*?)["']/i);
+      if (match && match[1]) {
+        imageUrl = match[1];
+      }
+    }
+    
+    if (!imageUrl && uriList) {
+      imageUrl = uriList.split('\n')[0];
+    }
+
+    if (imageUrl) {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        
+        let filename = imageUrl.split('/').pop()?.split('?')[0] || 'downloaded-image.jpg';
+        if (!filename.includes('.')) filename += '.jpg';
+        
+        const downloadedFile = new File([blob], filename, { type: blob.type });
+        const syntheticEvent = {
+          target: { files: [downloadedFile] }
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        
+        await handleFileChange(syntheticEvent);
+      } catch (err) {
+        console.error("Lỗi CORS khi lấy ảnh:", err);
+        alert("Bảo mật trình duyệt (CORS) chặn lấy ảnh tự động từ trang này. Vui lòng tải ảnh về máy tính rồi kéo vào.");
+      }
+    }
+  };
+
+  // Global Paste Listener (bắt sự kiện paste ở mọi nơi trên trang khi đang mở form Add/Edit)
+  useEffect(() => {
+    const handleGlobalPaste = async (e: ClipboardEvent) => {
+      if (modalMode === "detail" || !modalMode) return;
+      
+      // 1. Dán trực tiếp file ảnh (Copy image)
+      const file = e.clipboardData?.files?.[0];
+      if (file && file.type.startsWith("image/")) {
+        e.preventDefault();
+        const syntheticEvent = {
+          target: { files: [file] }
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        await handleFileChange(syntheticEvent);
+        return;
+      }
+
+      // 2. Dán đường link URL của ảnh (Copy image address)
+      const text = e.clipboardData?.getData("text/plain");
+      if (text && (text.startsWith("http://") || text.startsWith("https://")) && text.match(/\.(jpeg|jpg|gif|png|webp|avif)(\?.*)?$/i)) {
+        e.preventDefault();
+        try {
+          const response = await fetch(text);
+          const blob = await response.blob();
+          if (blob.type.startsWith("image/")) {
+            let filename = text.split('/').pop()?.split('?')[0] || 'pasted-image.jpg';
+            if (!filename.includes('.')) filename += '.jpg';
+            const downloadedFile = new File([blob], filename, { type: blob.type });
+            const syntheticEvent = { target: { files: [downloadedFile] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+            await handleFileChange(syntheticEvent);
+          }
+        } catch (err) {
+          console.error("Lỗi CORS khi paste URL ảnh:", err);
+          alert("Không thể tự động tải ảnh từ link này do bảo mật CORS. Vui lòng lưu về máy rồi dán vào.");
+        }
+      }
+    };
+
+    window.addEventListener("paste", handleGlobalPaste);
+    return () => window.removeEventListener("paste", handleGlobalPaste);
+  }, [modalMode]);
 
   // Thêm mới/Cập nhật dữ liệu bằng Supabase
   async function saveBook(e: React.FormEvent) {
@@ -141,22 +306,33 @@ export function AdminBooksPage() {
         }
       }
 
-      // ĐÂY LÀ NƠI ANH GIỮ LẠI BỘ LỌC DỮ LIỆU CỦA MÌNH
-      // Giữ nguyên đoạn biến saveData và lệnh insert/update phía dưới của anh...
       const saveData = {
         book_id: form.book_id,
-        // ... (giữ nguyên các trường còn lại của anh)
+        title: form.title,
+        author: form.author,
+        publisher: form.publisher,
+        isbn: form.isbn,
+        category_id: form.category_id,
+        price: Number(form.price) || 0,
+        sale_price: Number(form.sale_price) || 0,
+        is_on_sale: Boolean(form.is_on_sale),
+        description: form.description,
+        slug: form.slug || generateSlug(form.title || ""),
+        is_published: Boolean(form.is_published),
+        publish_year: Number(form.publish_year) || new Date().getFullYear(),
+        quantity: Number(form.quantity) || 0,
+        location: form.location || "",
         image_url: finalImageUrl
       };
       if (modalMode === "add") {
-        const { error } = await supabase.from("books").insert([saveData]);
-        if (error) throw error;
+        await apiFetch("/admin/books", { method: "POST", body: JSON.stringify(saveData) });
       } else if (modalMode === "edit") {
-        const { error } = await supabase.from("books").update(saveData).eq("book_id", form.book_id);
-        if (error) throw error;
+        await apiFetch(`/admin/books/${form.book_id}`, { method: "PATCH", body: JSON.stringify(saveData) });
       }
       setModalMode(null);
       setSelectedFile(null);
+      setLocalPreview(null);
+      await load();
     } catch (e: any) {
       alert(e.message || String(e));
     }
@@ -170,8 +346,7 @@ export function AdminBooksPage() {
       if (book?.image_url) {
         await supabase.storage.from(getBucketName(book.category_id)).remove([book.image_url]);
       }
-      const { error } = await supabase.from("books").delete().eq("book_id", bookId);
-      if (error) throw error;
+      await apiFetch(`/admin/books/${bookId}`, { method: "DELETE" });
       await load();
     } catch (e: any) {
       alert(e.message || String(e));
@@ -186,18 +361,28 @@ export function AdminBooksPage() {
     setModalMode("add");
   }
 
-  function openEdit(book: any) {
-    setForm({ ...emptyForm, ...book });
-    setSelectedFile(null);
-    setLocalPreview(null);
-    setModalMode("edit");
+  async function openEdit(book: any) {
+    try {
+      const res = await apiFetch<{ item: any }>(`/books/${book.book_id}`);
+      setForm({ ...emptyForm, ...res.item });
+      setSelectedFile(null);
+      setLocalPreview(null);
+      setModalMode("edit");
+    } catch (e: any) {
+      alert("Lỗi tải chi tiết: " + (e.message || String(e)));
+    }
   }
 
-  function openDetail(book: any) {
-    setForm({ ...emptyForm, ...book });
-    setSelectedFile(null);
-    setLocalPreview(null);
-    setModalMode("detail");
+  async function openDetail(book: any) {
+    try {
+      const res = await apiFetch<{ item: any }>(`/books/${book.book_id}`);
+      setForm({ ...emptyForm, ...res.item });
+      setSelectedFile(null);
+      setLocalPreview(null);
+      setModalMode("detail");
+    } catch (e: any) {
+      alert("Lỗi tải chi tiết: " + (e.message || String(e)));
+    }
   }
 
   const getCategoryName = (rawId: string) => {
@@ -207,33 +392,8 @@ export function AdminBooksPage() {
     return apiCategory ? apiCategory.name : rawId;
   };
 
-  const filteredAndSortedItems = items
-    .filter((b) => {
-      const k = keyword.trim().toLowerCase();
-      if (!k) return true;
-      const categoryName = getCategoryName(b.category_id);
-      if (searchBy === "all") {
-        return [b.book_id, b.title, b.author, categoryName, String(b.publish_year)].some((v) => String(v || "").toLowerCase().includes(k));
-      }
-      if (searchBy === "category_id") return categoryName.toLowerCase().includes(k);
-      return String(b[searchBy] || "").toLowerCase().includes(k);
-    })
-    .sort((a, b) => {
-      const [field, dir] = sortBy.split("-");
-      let valA = field === "category_id" ? getCategoryName(a.category_id) : a[field];
-      let valB = field === "category_id" ? getCategoryName(b.category_id) : b[field];
-
-      if (typeof valA === "string" || typeof valB === "string") {
-        const strA = String(valA || "").toLowerCase();
-        const strB = String(valB || "").toLowerCase();
-        if (strA < strB) return dir === "asc" ? -1 : 1;
-        if (strA > strB) return dir === "asc" ? 1 : -1;
-        return 0;
-      }
-      const numA = Number(valA) || 0;
-      const numB = Number(valB) || 0;
-      return dir === "asc" ? numA - numB : numB - numA;
-    });
+  // Không còn tự lọc ở Frontend nữa, API đã trả về list chuẩn
+  const filteredAndSortedItems = items;
 
   return (
     <div>
@@ -257,6 +417,11 @@ export function AdminBooksPage() {
           display: flex;
           align-items: center;
           justify-content: center;
+          transition: all 0.2s ease;
+        }
+        .vertical-preview-box.drag-active {
+          border-color: #0d6efd;
+          background-color: #e2eefd;
         }
         .vertical-preview-img {
           width: 100%;
@@ -278,6 +443,7 @@ export function AdminBooksPage() {
             <option value="title">Tên sách</option>
             <option value="author">Tác giả</option>
             <option value="category_id">Thể loại</option>
+            <option value="publisher">Nhà xuất bản</option> 
             <option value="publish_year">Năm XB</option>
           </select>
           <input type="text" className="form-control" placeholder="Tìm kiếm..." value={keyword} onChange={(e) => setKeyword(e.target.value)} />
@@ -297,8 +463,10 @@ export function AdminBooksPage() {
             <option value="publish_year-desc">Năm XB: Giảm dần</option>
             <option value="quantity-asc">Số lượng: Tăng dần</option>
             <option value="quantity-desc">Số lượng: Giảm dần</option>
-            <option value="price-asc">Giá: Tăng dần</option>
-            <option value="price-desc">Giá: Giảm dần</option>
+            <option value="price-asc">Giá gốc: Tăng dần</option>
+            <option value="price-desc">Giá gốc: Giảm dần</option>
+            <option value="sale_price-asc">Giá KM: Tăng dần</option>
+            <option value="sale_price-desc">Giá KM: Giảm dần</option>
           </select>
           <button className="btn btn-primary text-nowrap" onClick={openAdd}><i className="fas fa-plus me-1"></i> Thêm sách</button>
         </div>
@@ -313,6 +481,7 @@ export function AdminBooksPage() {
                 <th>Tên sách</th>
                 <th>Tác giả</th>
                 <th>Thể loại</th>
+                <th>Nhà xuất bản</th>
                 <th className="text-center">Năm XB</th>
                 <th className="text-end">Giá (VNĐ)</th>
                 <th className="text-center">Số lượng</th>
@@ -326,8 +495,18 @@ export function AdminBooksPage() {
                   <td>{b.title}</td>
                   <td>{b.author}</td>
                   <td><span className="badge bg-primary">{getCategoryName(b.category_id)}</span></td>
+                  <td>{b.publisher}</td>
                   <td className="text-center">{b.publish_year}</td>
-                  <td className="text-end">{b.price ? b.price.toLocaleString("vi-VN") : "0"}</td>
+                  <td className="text-end">
+                    {b.is_on_sale && b.sale_price > 0 ? (
+                      <>
+                        <div className="text-danger fw-bold">{b.sale_price.toLocaleString("vi-VN")}</div>
+                        <div className="text-muted text-decoration-line-through small">{b.price ? b.price.toLocaleString("vi-VN") : "0"}</div>
+                      </>
+                    ) : (
+                      <div className="fw-bold">{b.price ? b.price.toLocaleString("vi-VN") : "0"}</div>
+                    )}
+                  </td>
                   <td className="text-center">{b.quantity}</td>
                   <td className="text-end">
                     <div className="action-hover-wrapper">
@@ -349,7 +528,12 @@ export function AdminBooksPage() {
       {modalMode && (
         <>
           <div className="modal-backdrop fade show" style={{ zIndex: 1040 }} onClick={() => setModalMode(null)}></div>
-          <div className="modal fade show d-block" style={{ zIndex: 1050 }} tabIndex={-1} onClick={() => setModalMode(null)}>
+          <div 
+            className="modal fade show d-block" 
+            style={{ zIndex: 1050 }} 
+            tabIndex={-1} 
+            onClick={() => setModalMode(null)}
+          >
             <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
               <div className="modal-content border-0 shadow-lg">
                 <div className="modal-header bg-light">
@@ -364,7 +548,12 @@ export function AdminBooksPage() {
                     <div className="row">
                       <div className="col-md-4 border-end">
                         <label className="form-label fw-bold">Ảnh bìa</label>
-                        <div className="vertical-preview-box shadow-sm mb-3 position-relative">
+                        <div 
+                          className={`vertical-preview-box shadow-sm mb-3 position-relative ${isDragging ? 'drag-active' : ''}`}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                        >
                           {(localPreview || form.image_url) ? (
                             <>
                               <img 
@@ -456,7 +645,7 @@ export function AdminBooksPage() {
                             <label className="form-label fw-bold small">Năm xuất bản</label>
                             <input type="number" className="form-control" readOnly={modalMode === "detail"} value={form.publish_year || ""} onChange={(e) => setForm((f: any) => ({ ...f, publish_year: Number(e.target.value) }))} />
                           </div>
-
+                          
                           <div className="col-md-4">
                             <label className="form-label fw-bold small text-primary">Giá bán</label>
                             <div className="input-group">

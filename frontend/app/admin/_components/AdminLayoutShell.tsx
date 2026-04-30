@@ -7,6 +7,7 @@ import Link from "next/link";
 import { NavLinkNext } from "../../(site)/_components/NavLinkNext";
 import { getProfile, type Profile } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { getAvatarUrl } from "@/lib/avatar";
 
 export function AdminLayoutShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -100,9 +101,21 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
               </NavLinkNext>
             </li>
             <li className="nav-item">
+              <NavLinkNext href="/admin/vouchers" className="nav-link" activeClassName="active">
+                <i className="fas fa-ticket-alt" />
+                <span>Quản lý voucher</span>
+              </NavLinkNext>
+            </li>
+            <li className="nav-item">
               <NavLinkNext href="/admin/categories" className="nav-link" activeClassName="active">
                 <i className="fas fa-tags" />
-                <span>Thể loại sách</span>
+                <span>Quản lý thể loại sách</span>
+              </NavLinkNext>
+            </li>
+            <li className="nav-item">
+              <NavLinkNext href="/admin/notifications" className="nav-link" activeClassName="active">
+                <i className="fas fa-bullhorn" />
+                <span>Quản lý thông báo</span>
               </NavLinkNext>
             </li>
             <li className="nav-item">
@@ -131,11 +144,23 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
             onClick={() => setShowDropdown(!showDropdown)}
             style={{ cursor: "pointer" }}
           >
+            {profile?.avatar_url ? (
+              <img
+                src={getAvatarUrl(profile.avatar_url)}
+                alt="Avatar"
+                className="rounded-circle border"
+                style={{ width: "36px", height: "36px", objectFit: "cover" }}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (nextSibling) nextSibling.style.display = "flex";
+                }}
+              />
+            ) : null}
             <div
-              className="bg-light rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold border"
-              style={{ width: "36px", height: "36px" }}
+              className={`bg-light rounded-circle align-items-center justify-content-center text-primary fw-bold border`}
+              style={{ width: "36px", height: "36px", display: profile?.avatar_url ? "none" : "flex" }}
             >
-              {/* Lấy chữ cái đầu của Username làm Avatar ảo */}
               {profile?.username?.charAt(0).toUpperCase() || "A"}
             </div>
             <span className="fw-medium text-dark">

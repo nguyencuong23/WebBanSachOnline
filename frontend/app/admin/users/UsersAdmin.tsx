@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { apiFetch } from "@/lib/api";
+import { getAvatarUrl } from "@/lib/avatar";
 
 export function AdminUsersPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -19,6 +20,10 @@ export function AdminUsersPage() {
 
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
   const [form, setForm] = useState<any>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     try {
@@ -47,6 +52,7 @@ export function AdminUsersPage() {
   async function saveUser(e: React.FormEvent) {
     e.preventDefault();
     try {
+      const isActiveBool = form.is_active === true || form.is_active === "true";
       if (modalMode === "add") {
         await apiFetch(`/admin/users`, { 
           method: "POST", 
@@ -57,7 +63,7 @@ export function AdminUsersPage() {
             full_name: form.full_name,
             phone_number: form.phone_number,
             role: form.role,
-            is_active: form.is_active
+            is_active: isActiveBool
           }) 
         });
       } else if (modalMode === "edit") {
@@ -72,9 +78,16 @@ export function AdminUsersPage() {
             loyalty_points: form.loyalty_points,
             customer_note: form.customer_note,
             role: form.role,
-            is_active: form.is_active
+            is_active: isActiveBool
           }) 
         });
+
+        if (form.new_password) {
+          await apiFetch(`/admin/users/${form.user_id}/change-password`, {
+            method: "POST",
+            body: JSON.stringify({ password: form.new_password })
+          });
+        }
       }
       setModalMode(null);
       await load();
@@ -83,13 +96,61 @@ export function AdminUsersPage() {
     }
   }
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !form.user_id) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Kích thước ảnh không được vượt quá 2MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setSavingAvatar(true);
+      try {
+        const res = await apiFetch<any>(`/admin/users/${form.user_id}/avatar`, {
+          method: "POST",
+          body: JSON.stringify({ image: base64 }),
+        });
+        setForm((f: any) => ({ ...f, avatar_url: res.avatar_url }));
+        alert("Cập nhật ảnh đại diện thành công");
+      } catch (err: any) {
+        alert(err.message || String(err));
+      } finally {
+        setSavingAvatar(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!form.user_id) return;
+    if (!confirm("Bạn có chắc muốn xóa ảnh đại diện?")) return;
+    setSavingAvatar(true);
+    try {
+      await apiFetch<any>(`/admin/users/${form.user_id}/avatar`, { method: "DELETE" });
+      setForm((f: any) => ({ ...f, avatar_url: null }));
+      alert("Đã xóa ảnh đại diện");
+    } catch (err: any) {
+      alert(err.message || String(err));
+    } finally {
+      setSavingAvatar(false);
+    }
+  };
+
   function openAdd() {
     setForm({ role: "user", is_active: true });
+    setShowPassword(false);
+    setShowNewPassword(false);
     setModalMode("add");
   }
 
   function openEdit(user: any) {
     setForm({ ...user });
+    setShowPassword(false);
+    setShowNewPassword(false);
     setModalMode("edit");
   }
 
@@ -197,9 +258,9 @@ export function AdminUsersPage() {
                   <td>
                     <div className="d-flex align-items-center gap-2">
                       {u.avatar_url ? (
-                        <img src={u.avatar_url} alt="Avatar" className="user-avatar-small rounded-circle" style={{ width: '32px', height: '32px', objectFit: 'cover' }} onError={e => e.currentTarget.style.display = 'none'} />
+                        <img src={getAvatarUrl(u.avatar_url)} alt="Avatar" className="user-avatar-small rounded-circle" style={{ width: '32px', height: '32px', objectFit: 'cover' }} onError={e => e.currentTarget.style.display = 'none'} />
                       ) : (
-                        <div className="user-avatar-small bg-primary text-white">
+                        <div className="user-avatar-small bg-primary text-white d-flex align-items-center justify-content-center rounded-circle" style={{ width: '32px', height: '32px' }}>
                           {(u.full_name || u.username || "U").charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -307,6 +368,7 @@ export function AdminUsersPage() {
                           <label className="form-label fw-bold small">Họ tên (Full name)</label>
                           <input 
                             className="form-control" 
+                            required
                             value={form.full_name || ""} 
                             onChange={(e) => setForm((f: any) => ({ ...f, full_name: e.target.value }))} 
                           />
@@ -325,13 +387,43 @@ export function AdminUsersPage() {
                         {modalMode === "add" && (
                           <div className="mb-3">
                             <label className="form-label fw-bold small">Mật khẩu</label>
-                            <input 
-                              className="form-control" 
-                              required 
-                              type="password"
-                              value={form.password || ""} 
-                              onChange={(e) => setForm((f: any) => ({ ...f, password: e.target.value }))} 
-                            />
+                            <div className="input-group">
+                              <input 
+                                className="form-control" 
+                                required 
+                                type={showPassword ? "text" : "password"}
+                                value={form.password || ""} 
+                                onChange={(e) => setForm((f: any) => ({ ...f, password: e.target.value }))} 
+                              />
+                              <button 
+                                type="button" 
+                                className="btn btn-outline-secondary"
+                                onClick={() => setShowPassword(!showPassword)}
+                              >
+                                <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {modalMode === "edit" && (
+                          <div className="mb-3">
+                            <label className="form-label fw-bold small">Đổi mật khẩu mới (Bỏ trống nếu không đổi)</label>
+                            <div className="input-group">
+                              <input 
+                                className="form-control" 
+                                type={showNewPassword ? "text" : "password"}
+                                placeholder="Nhập mật khẩu mới..."
+                                value={form.new_password || ""} 
+                                onChange={(e) => setForm((f: any) => ({ ...f, new_password: e.target.value }))} 
+                              />
+                              <button 
+                                type="button" 
+                                className="btn btn-outline-secondary"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                              >
+                                <i className={`fas ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                              </button>
+                            </div>
                           </div>
                         )}
                         <div className="mb-3">
@@ -344,11 +436,48 @@ export function AdminUsersPage() {
                         </div>
                         <div className="mb-3">
                           <label className="form-label fw-bold small">Đường dẫn ảnh đại diện (Avatar URL)</label>
-                          <input 
-                            className="form-control" 
-                            value={form.avatar_url || ""} 
-                            onChange={(e) => setForm((f: any) => ({ ...f, avatar_url: e.target.value }))} 
-                          />
+                          {modalMode === "edit" ? (
+                            <div>
+                              <div className="d-flex align-items-center gap-3 mb-2">
+                                {form.avatar_url ? (
+                                  <img src={getAvatarUrl(form.avatar_url)} alt="Avatar" className="rounded-circle" style={{ width: '48px', height: '48px', objectFit: 'cover' }} />
+                                ) : (
+                                  <div className="bg-primary text-white d-flex align-items-center justify-content-center rounded-circle" style={{ width: '48px', height: '48px' }}>
+                                    {(form.full_name || form.username || "U").charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <div className="d-flex flex-column gap-1">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    hidden 
+                                    ref={fileInputRef}
+                                    onChange={handleAvatarChange} 
+                                  />
+                                  <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => fileInputRef.current?.click()} disabled={savingAvatar}>
+                                    {savingAvatar ? "Đang tải..." : "Tải ảnh lên"}
+                                  </button>
+                                  {form.avatar_url && (
+                                    <button type="button" className="btn btn-sm btn-outline-danger" onClick={handleDeleteAvatar} disabled={savingAvatar}>
+                                      Xóa ảnh
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <input 
+                                className="form-control form-control-sm text-muted" 
+                                value={form.avatar_url || ""} 
+                                placeholder="Hoặc nhập URL trực tiếp..."
+                                onChange={(e) => setForm((f: any) => ({ ...f, avatar_url: e.target.value }))} 
+                              />
+                            </div>
+                          ) : (
+                            <input 
+                              className="form-control" 
+                              value={form.avatar_url || ""} 
+                              onChange={(e) => setForm((f: any) => ({ ...f, avatar_url: e.target.value }))} 
+                            />
+                          )}
                         </div>
                       </div>
 

@@ -16,8 +16,10 @@ import { booksRouter } from "./routes/books.js";
 import { categoriesRouter } from "./routes/categories.js";
 import { ordersRouter } from "./routes/orders.js";
 import { adminRouter } from "./routes/admin.js";
-
+import { vouchersRouter } from "./routes/vouchers.js";
 import { settingsRouter } from "./routes/settings.js";
+import { notificationsRouter } from "./routes/notifications.js";
+import { cartRouter } from "./routes/cart.js";
 
 const app = express();
 
@@ -31,7 +33,7 @@ app.use(
     credentials: true
   })
 );
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 app.use(healthRouter);
 app.use(authRouter);
@@ -40,8 +42,10 @@ app.use(booksRouter);
 app.use(categoriesRouter);
 app.use(ordersRouter);
 app.use(adminRouter);
-
+app.use(vouchersRouter);
 app.use(settingsRouter);
+app.use(notificationsRouter);
+app.use(cartRouter);
 
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "BTL Library API" });

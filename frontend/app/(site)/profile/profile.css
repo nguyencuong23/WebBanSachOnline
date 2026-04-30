@@ -1,0 +1,184 @@
+:root {
+  --primary-color: #0d6efd;
+  --primary-light: #e7f1ff;
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  --text-dark: #2c3e50;
+  --card-bg: #ffffff;
+  --transition-speed: 0.3s;
+  --transition-smooth: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+body {
+  background-color: #f4f6f9;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- Entrance Animations --- */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.col-lg-4 {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.col-lg-8 {
+  animation: fadeInUp 0.8s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+/* --- Card Styling --- */
+.card {
+  border: none !important;
+  border-radius: 20px !important;
+  background: var(--card-bg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: var(--transition-smooth);
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+}
+
+/* --- Avatar Styling --- */
+.avatar-container {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ffffff, #e6e6e6);
+  box-shadow: 5px 5px 15px #d1d1d1, -5px -5px 15px #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.avatar-container:hover {
+  transform: scale(1.05) rotate(3deg);
+}
+
+.avatar-container:hover .avatar-overlay {
+  opacity: 1 !important;
+}
+
+.avatar-container i {
+  font-size: 80px !important;
+  background: -webkit-linear-gradient(#667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 6px rgba(102, 126, 234, 0.3));
+}
+
+.avatar-overlay {
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* --- Form Inputs --- */
+.form-control {
+  border-radius: 12px;
+  padding: 12px 15px;
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  background-color: #fff;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+  transform: translateY(-2px);
+}
+
+.form-control[readonly], .form-control:disabled {
+  background-color: #f1f3f5 !important;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+  color: #4a5568;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* --- Buttons --- */
+.btn-primary {
+  background: var(--primary-gradient);
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: var(--transition-smooth);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--secondary-gradient);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-light {
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+/* --- Badges --- */
+.badge {
+  padding: 0.6em 1.2em;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: 30px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Loyalty Card --- */
+.loyalty-points-card {
+  transition: var(--transition-smooth);
+}
+
+.loyalty-points-card:hover {
+  transform: scale(1.02);
+  filter: brightness(1.02);
+}
+
+/* --- Utilities --- */
+.icon-box-sm {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-side-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fbff 100%);
+}

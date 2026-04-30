@@ -28,6 +28,7 @@ export function AdminOrdersPage() {
   const [filterPayment, setFilterPayment] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState<Record<string, string>>({});
 
   // Modals
   const [modalMode, setModalMode] = useState<"detail" | "edit" | "add" | null>(null);
@@ -41,7 +42,7 @@ export function AdminOrdersPage() {
 
   // Add form state
   const [addForm, setAddForm] = useState({
-    user_id: "", receiver_name: "", receiver_phone: "", shipping_address: "", note: "", payment_method: "cod",
+    user_id: "", receiver_name: "", receiver_phone: "", shipping_address: "", note: "", payment_method: "cod", shipping_fee: 0,
     lines: [{ book_id: "", quantity: 1 }]
   });
 
@@ -63,6 +64,16 @@ export function AdminOrdersPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    apiFetch<{ items: any[] }>("/settings")
+      .then((res) => {
+        const s: Record<string, string> = {};
+        for (const i of (res.items || [])) s[i.key] = i.value;
+        setSettings(s);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(load, 300);
@@ -88,6 +99,7 @@ export function AdminOrdersPage() {
       receiver_phone: order.receiver_phone || "",
       shipping_address: order.shipping_address || "",
       note: order.note || "",
+      shipping_fee: order.shipping_fee || 0,
     });
     setSaveError(null);
     setSelectedOrder(order);
@@ -196,7 +208,7 @@ export function AdminOrdersPage() {
           <h1><i className="fas fa-shopping-cart me-2" />Quản lý đơn hàng</h1>
         </div>
         <button className="btn btn-primary" onClick={() => {
-          setAddForm({ user_id: "", receiver_name: "", receiver_phone: "", shipping_address: "", note: "", payment_method: "cod", lines: [{ book_id: "", quantity: 1 }] });
+          setAddForm({ user_id: "", receiver_name: "", receiver_phone: "", shipping_address: "", note: "", payment_method: "cod", shipping_fee: Number(settings["DefaultShippingFee"] || 30000), lines: [{ book_id: "", quantity: 1 }] });
           setSaveError(null);
           setModalMode("add");
         }}>
@@ -465,6 +477,10 @@ export function AdminOrdersPage() {
                       <label className="form-label fw-semibold">Ghi chú <span className="text-muted fw-normal">(tùy chọn)</span></label>
                       <textarea className="form-control" rows={3} value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} placeholder="Ghi chú từ khách hàng hoặc admin..." />
                     </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">Phí giao hàng (VNĐ)</label>
+                      <input type="number" className="form-control" value={editForm.shipping_fee} onChange={e => setEditForm({ ...editForm, shipping_fee: parseInt(e.target.value) || 0 })} />
+                    </div>
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -530,6 +546,10 @@ export function AdminOrdersPage() {
                             <div className="col-12">
                               <label className="form-label fw-semibold">Ghi chú</label>
                               <textarea className="form-control" rows={2} value={addForm.note} onChange={e => setAddForm({ ...addForm, note: e.target.value })} />
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label fw-semibold">Phí giao hàng (VNĐ)</label>
+                              <input type="number" className="form-control" value={addForm.shipping_fee} onChange={e => setAddForm({ ...addForm, shipping_fee: parseInt(e.target.value) || 0 })} />
                             </div>
                             <div className="col-md-6">
                               <label className="form-label fw-semibold">Phương thức thanh toán</label>

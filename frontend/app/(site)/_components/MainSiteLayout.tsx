@@ -7,6 +7,7 @@ import { NavLinkNext } from "./NavLinkNext";
 import { useSessionProfile } from "../_hooks/useSessionProfile";
 import { useSiteSettings } from "../_hooks/useSiteSettings";
 import { NotificationBell } from "./NotificationBell";
+import { ChatWidget } from "./ChatWidget";
 
 export function MainSiteLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -135,6 +136,8 @@ export function MainSiteLayout({ children }: { children: ReactNode }) {
       <main id="pageContent" className={`container-fluid px-0 ${isAuthPage ? "main-auth-page" : ""}`}>
         {children}
       </main>
+
+      <ChatWidget />
 
       <footer className={`pt-5 ${isAuthPage ? "footer-auth-page" : "mt-4"}`}>
         <div className="container">

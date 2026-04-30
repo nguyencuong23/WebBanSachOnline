@@ -1,88 +1,123 @@
 "use client";
 
-import { useEffect, useState, useRef, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState, type ReactNode, Suspense } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getProfile } from "@/lib/auth";
+import { getProfile, type Profile } from "@/lib/auth";
 import { useSiteSettings } from "../_hooks/useSiteSettings";
 
-export function GlobalAuthLockGuard({ children }: { children: ReactNode }) {
-  const [isLocked, setIsLocked] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
-  const isInitialCheck = useRef(true);
+const BYPASS_KEY = process.env.NEXT_PUBLIC_MAINTENANCE_BYPASS_KEY ?? "";
 
-  const { settings } = useSiteSettings();
+function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
+  const { settings, isLoading: isSettingsLoading } = useSiteSettings();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // Đồng bộ title tab trình duyệt — chạy lại mỗi khi đổi route
-  // vì Next.js sẽ reset document.title về giá trị mặc định khi navigate
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
+
+  // Đồng bộ title
   useEffect(() => {
-    if (settings["SiteTitle"]) {
-      document.title = settings["SiteTitle"];
-    }
+    if (settings["SiteTitle"]) document.title = settings["SiteTitle"];
   }, [settings["SiteTitle"], pathname]);
 
-  // Đồng bộ favicon — thêm pathname để re-apply mỗi khi navigate
+  // Đồng bộ favicon
   useEffect(() => {
     if (!settings["FaviconUrl"]) return;
-    // Tìm tag icon hiện có (do Next.js tạo) hoặc tạo mới nếu chưa có
     let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
     if (!link) {
       link = document.createElement("link");
       link.rel = "icon";
       document.head.appendChild(link);
     }
-    // Chỉ update href, không xóa element → tránh lỗi removeChild
     link.href = `${settings["FaviconUrl"]}?t=${Date.now()}`;
   }, [settings["FaviconUrl"], pathname]);
 
+  // Load session + profile
   useEffect(() => {
-    async function checkLockStatus() {
-      if (isInitialCheck.current) {
-        setIsChecking(true);
-      }
+    async function load() {
+      setIsSessionLoading(true);
       try {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
           const p = await getProfile();
-          if (p && p.is_active === false) {
-            setIsLocked(true);
-          } else {
-            setIsLocked(false);
-          }
+          setProfile(p);
         } else {
-          setIsLocked(false);
+          setProfile(null);
         }
-      } catch (e) {
-        console.error(e);
+      } catch {
+        setProfile(null);
       } finally {
-        if (isInitialCheck.current) {
-          setIsChecking(false);
-          isInitialCheck.current = false;
-        }
+        setIsSessionLoading(false);
       }
     }
-
-    checkLockStatus();
-
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      checkLockStatus();
-    });
-
+    load();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  if (isChecking) {
+  // ── MAINTENANCE REDIRECT (dùng useEffect, không gọi router trong render) ──
+  useEffect(() => {
+    if (isSettingsLoading || isSessionLoading) return;
+
+    const isMaintenance = settings["MaintenanceMode"] === "true";
+    const isAdmin = profile?.role === "admin";
+    const hasValidBypass = pathname === "/auth" && searchParams.get("bypass") === BYPASS_KEY;
+
+    if (isMaintenance) {
+      if (pathname.startsWith("/admin")) return;   // admin pages: ok
+      if (hasValidBypass) return;                  // bypass: ok
+      if (isAdmin) { router.replace("/admin"); return; }  // admin đã login → vào admin
+      if (pathname === "/maintenance") return;     // đang ở maintenance: ok
+      router.replace("/maintenance");              // tất cả còn lại → maintenance
+    } else {
+      // Maintenance tắt nhưng đang ở /maintenance → về trang chủ
+      if (pathname === "/maintenance") router.replace("/");
+    }
+  }, [
+    isSettingsLoading,
+    isSessionLoading,
+    settings,
+    profile,
+    pathname,
+    searchParams,
+    router,
+  ]);
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Chờ load xong
+  if (isSettingsLoading || isSessionLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100 bg-white">
         <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Đang kiểm tra...</span>
+          <span className="visually-hidden">Đang tải...</span>
         </div>
       </div>
     );
   }
 
-  if (isLocked) {
+  const isMaintenance = settings["MaintenanceMode"] === "true";
+  const isAdmin = profile?.role === "admin";
+  const hasValidBypass = pathname === "/auth" && searchParams.get("bypass") === BYPASS_KEY;
+
+  // Block render trong khi chờ redirect
+  if (isMaintenance) {
+    if (pathname.startsWith("/admin")) {
+      // ok
+    } else if (hasValidBypass) {
+      // ok
+    } else if (isAdmin) {
+      return null; // đang redirect sang /admin
+    } else if (pathname === "/maintenance") {
+      // ok
+    } else {
+      return null; // đang redirect sang /maintenance
+    }
+  }
+
+  // Tài khoản bị khóa
+  if (profile?.is_active === false) {
     return (
       <div style={{ position: "fixed", inset: 0, backgroundColor: "#ffffff", zIndex: 999999, display: "flex", justifyContent: "center", alignItems: "center" }}>
         <div style={{ textAlign: "center", padding: "2.5rem", maxWidth: "450px", backgroundColor: "#fff", border: "1px solid #dee2e6", borderRadius: "16px", boxShadow: "0 15px 35px rgba(0,0,0,0.1)" }}>
@@ -100,4 +135,20 @@ export function GlobalAuthLockGuard({ children }: { children: ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+export function GlobalAuthLockGuard({ children }: { children: ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="d-flex justify-content-center align-items-center vh-100 bg-white">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+        </div>
+      }
+    >
+      <GlobalAuthLockGuardInner>{children}</GlobalAuthLockGuardInner>
+    </Suspense>
+  );
 }

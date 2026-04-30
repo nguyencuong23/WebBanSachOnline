@@ -888,9 +888,8 @@
           }
         }
       }
-    }
-  },
-  "/me/avatar": {
+    },
+    "/me/avatar": {
     "post": {
       "summary": "Cập nhật ảnh đại diện",
       "tags": [
@@ -2542,4 +2541,5 @@
       }
     }
   }
+}
 }

@@ -16,39 +16,26 @@ adminRouter.get("/admin/dashboard/summary", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
 
   const [{ data: books }, { data: users }, { data: orders }] = await Promise.all([
-    sb.from("books").select("quantity", { count: "exact" }),
-    sb.from("profiles").select("user_id", { count: "exact" }).eq("role", "user"),
-    sb.from("orders").select("status,payment_method,payment_status,total,created_at", { count: "exact" })
+    sb.from("books").select("quantity"),
+    sb.from("profiles").select("user_id").eq("role", "user"),
+    sb.from("orders").select("status,total,created_at")
   ]);
 
-  const totalBooks = (books || []).reduce((s, b) => s + (b.quantity || 0), 0);
-  const totalTitles = books?.length || 0;
-  const totalCustomers = users?.length || 0;
-  const totalOrders = orders?.length || 0;
-
-  const pendingOrders = (orders || []).filter((o) => o.status === "pending").length;
-  const pendingBankTransfers = (orders || []).filter(
-    (o) => o.payment_method === "bank_transfer" && o.payment_status === "pending_confirmation"
-  ).length;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const ordersToday = (orders || []).filter((o) => (o.created_at || "").slice(0, 10) === today).length;
+  const total_books = (books || []).reduce((s, b) => s + (b.quantity || 0), 0);
+  const total_users = users?.length || 0;
+  const total_orders = orders?.length || 0;
 
   const now = new Date();
   const ym = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-  const revenueThisMonth = (orders || [])
+  const revenue = (orders || [])
     .filter((o) => (o.created_at || "").slice(0, 7) === ym && o.status !== "cancelled")
     .reduce((s, o) => s + Number(o.total || 0), 0);
 
   res.json({
-    totalBooks,
-    totalTitles,
-    totalCustomers,
-    totalOrders,
-    pendingOrders,
-    pendingBankTransfers,
-    ordersToday,
-    revenueThisMonth
+    total_books,
+    total_users,
+    total_orders,
+    revenue
   });
 });
 
@@ -64,13 +51,20 @@ adminRouter.get("/admin/dashboard/stats", async (req, res) => {
       sb.from("categories").select("category_id,name")
     ]);
 
-  const totalBooks = (books || []).reduce((s, b) => s + (b.quantity || 0), 0);
-  const totalCustomers = customers?.length || 0;
+  const total_books = (books || []).reduce((s, b) => s + (b.quantity || 0), 0);
+  const total_customers = customers?.length || 0;
 
-  const totalPending = (orders || []).filter((o) => o.status === "pending").length;
-  const totalShipping = (orders || []).filter((o) => o.status === "shipping").length;
-  const totalDelivered = (orders || []).filter((o) => o.status === "delivered").length;
-  const totalCancelled = (orders || []).filter((o) => o.status === "cancelled").length;
+  const total_pending = (orders || []).filter((o) => o.status === "pending").length;
+  const total_shipping = (orders || []).filter((o) => o.status === "shipping").length;
+  const total_delivered = (orders || []).filter((o) => o.status === "delivered").length;
+  const total_cancelled = (orders || []).filter((o) => o.status === "cancelled").length;
+
+  const status_distribution = [
+    { name: "Chờ xác nhận", value: total_pending, key: "pending" },
+    { name: "Đang giao", value: total_shipping, key: "shipping" },
+    { name: "Đã giao", value: total_delivered, key: "delivered" },
+    { name: "Đã hủy", value: total_cancelled, key: "cancelled" }
+  ];
 
   // Top selling books (aggregated client-side)
   const { data: topBooksRaw } = await sb
@@ -81,29 +75,30 @@ adminRouter.get("/admin/dashboard/stats", async (req, res) => {
   const agg = new Map();
   for (const it of topBooksRaw || []) {
     if (it.orders?.status === "cancelled") continue;
-    const prev = agg.get(it.book_id) || { title: it.books?.title, author: it.books?.author, soldQuantity: 0, revenue: 0 };
-    prev.soldQuantity += Number(it.quantity || 0);
+    const prev = agg.get(it.book_id) || { title: it.books?.title, author: it.books?.author, sold_quantity: 0, revenue: 0 };
+    prev.sold_quantity += Number(it.quantity || 0);
     prev.revenue += Number(it.line_total || 0);
     agg.set(it.book_id, prev);
   }
-  const topBooks = [...agg.values()].sort((a, b) => b.soldQuantity - a.soldQuantity).slice(0, 5);
+  const top_books = [...agg.values()].sort((a, b) => b.sold_quantity - a.sold_quantity).slice(0, 10);
 
   // Category stats (count books per category)
   const { data: booksForCats } = await sb.from("books").select("category_id");
   const catCount = new Map();
   for (const b of booksForCats || []) catCount.set(b.category_id, (catCount.get(b.category_id) || 0) + 1);
-  const categoryStats = (categories || []).map((c) => ({ label: c.name, count: catCount.get(c.category_id) || 0 }));
+  const category_stats = (categories || []).map((c) => ({ label: c.name, count: catCount.get(c.category_id) || 0 }));
 
   res.json({
-    totalBooks,
-    totalCustomers,
-    totalPending,
-    totalShipping,
-    totalDelivered,
-    totalCancelled,
-    recentOrders: recentOrders || [],
-    topBooks,
-    categoryStats
+    total_books,
+    total_customers,
+    total_pending,
+    total_shipping,
+    total_delivered,
+    total_cancelled,
+    status_distribution,
+    recent_orders: recentOrders || [],
+    top_books,
+    category_stats
   });
 });
 
@@ -113,18 +108,30 @@ adminRouter.get("/admin/monthly-stats", async (req, res) => {
 
   const { data: orders, error } = await sb
     .from("orders")
-    .select("created_at,status")
+    .select("created_at,status,payment_method,total")
     .gte("created_at", `${year}-01-01T00:00:00Z`)
     .lt("created_at", `${year + 1}-01-01T00:00:00Z`);
   assert(!error, 400, "Failed to fetch monthly stats", "stats_fetch_failed", error?.message);
 
-  const counts = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, count: 0 }));
+  const months = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+  const result = months.map((m, i) => ({
+    name: m,
+    cod: 0,
+    bank_transfer: 0,
+    count: 0
+  }));
+
   for (const o of orders || []) {
     if (o.status === "cancelled") continue;
-    const m = Number(String(o.created_at).slice(5, 7));
-    if (m >= 1 && m <= 12) counts[m - 1].count += 1;
+    const mIdx = Number(String(o.created_at).slice(5, 7)) - 1;
+    if (mIdx >= 0 && mIdx < 12) {
+      result[mIdx].count += 1;
+      const amount = Number(o.total || 0);
+      if (o.payment_method === "cod") result[mIdx].cod += amount;
+      else result[mIdx].bank_transfer += amount;
+    }
   }
-  res.json(counts);
+  res.json(result);
 });
 
 adminRouter.get("/admin/borrowing-trends", async (req, res) => {
@@ -156,10 +163,10 @@ adminRouter.get("/admin/borrowing-trends", async (req, res) => {
     revenueMap.set(k, (revenueMap.get(k) || 0) + Number(o.total || 0));
   }
 
-  const orderVolume = dayKeys.map((k) => ({ date: k, count: volumeMap.get(k) || 0 }));
+  const order_volume = dayKeys.map((k) => ({ date: k, count: volumeMap.get(k) || 0 }));
   const revenue = dayKeys.map((k) => ({ date: k, revenue: revenueMap.get(k) || 0 }));
 
-  res.json({ orderVolume, revenue });
+  res.json({ order_volume, revenue });
 });
 
 // --- QUẢN LÝ ĐƠN HÀNG (THÊM MỚI TỪ ADMIN) ---

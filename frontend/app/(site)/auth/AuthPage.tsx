@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, apiFetch } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { getProfile } from "@/lib/auth";
 import { useSessionProfile } from "../_hooks/useSessionProfile";
 import "./auth-page.css";
 
@@ -63,15 +64,19 @@ export function AuthPage({ initialMode = "login" }: AuthPageProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  const { email, isLoading } = useSessionProfile();
+  const { email, profile, isLoading } = useSessionProfile();
 
   useEffect(() => {
     if (!isLoading && email) {
       const qs = new URLSearchParams(window.location.search);
-      const redirect = qs.get("redirect") || "/";
-      router.replace(redirect);
+      const redirectParam = qs.get("redirect");
+      if (profile?.role === "admin") {
+        router.replace(redirectParam || "/admin");
+      } else {
+        router.replace(redirectParam || "/");
+      }
     }
-  }, [email, isLoading, router]);
+  }, [email, profile, isLoading, router]);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -219,9 +224,16 @@ export function AuthPage({ initialMode = "login" }: AuthPageProps) {
         return;
       }
 
+      // Lấy profile để biết role, rồi redirect đúng chỗ
+      const p = await getProfile();
       const qs = new URLSearchParams(window.location.search);
-      const redirect = qs.get("redirect") || "/";
-      router.push(redirect);
+      const redirectParam = qs.get("redirect");
+
+      if (p?.role === "admin") {
+        router.push(redirectParam || "/admin");
+      } else {
+        router.push(redirectParam || "/");
+      }
       router.refresh();
     } catch (submitError) {
       setError(getReadableAuthError(submitError, "Đăng nhập thất bại."));

@@ -2405,6 +2405,141 @@
           "description": "Success"
         }
       }
+    },
+    "/admin/dashboard/summary": {
+      "get": {
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "summary": "Lấy tổng quan dashboard (4 thẻ thống kê)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_books": { "type": "integer" },
+                    "total_users": { "type": "integer" },
+                    "total_orders": { "type": "integer" },
+                    "revenue": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/dashboard/stats": {
+      "get": {
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "summary": "Lấy thống kê chi tiết dashboard (Top sách, Trạng thái đơn, Thể loại)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_books": { "type": "integer" },
+                    "total_customers": { "type": "integer" },
+                    "status_distribution": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "value": { "type": "integer" },
+                          "key": { "type": "string" }
+                        }
+                      }
+                    },
+                    "top_books": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": { "type": "string" },
+                          "author": { "type": "string" },
+                          "sold_quantity": { "type": "integer" },
+                          "revenue": { "type": "number" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/monthly-stats": {
+      "get": {
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "summary": "Lấy thống kê đơn hàng và doanh thu theo tháng (phân loại COD/Bank)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string", "example": "T1" },
+                      "cod": { "type": "number" },
+                      "bank_transfer": { "type": "number" },
+                      "count": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/borrowing-trends": {
+      "get": {
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "summary": "Lấy xu hướng đơn hàng và doanh thu 30 ngày qua",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
     }
   }
 }

@@ -1,40 +1,55 @@
-import express from "express";
+import { Router } from "express";
 import { requireUser } from "../auth/verify.js";
 import { createSupabaseUser } from "../supabase.js";
-import { assert } from "../http/errors.js";
 
-export const notificationsRouter = express.Router();
+export const notificationsRouter = Router();
 
-notificationsRouter.get("/notifications", requireUser, async (req, res) => {
-  const sb = createSupabaseUser(req.auth.jwt);
-  const { data, error } = await sb
+// Lấy danh sách thông báo của user hiện tại
+notificationsRouter.get("/api/notifications", requireUser, async (req, res) => {
+  const supabase = createSupabaseUser(req.auth.jwt);
+  const { data, error } = await supabase
     .from("notifications")
     .select("*")
+    .eq("user_id", req.profile.user_id)
     .order("created_at", { ascending: false })
-    .limit(200);
-  assert(!error, 400, "Failed to fetch notifications", "notifications_fetch_failed", error?.message);
-  res.json({ items: data });
+    .limit(50);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  res.json({ items: data || [] });
 });
 
-notificationsRouter.get("/notifications/unread-count", requireUser, async (req, res) => {
-  const sb = createSupabaseUser(req.auth.jwt);
-  const { data, error } = await sb.from("notifications").select("id").eq("is_read", false);
-  assert(!error, 400, "Failed to fetch notifications", "notifications_fetch_failed", error?.message);
-  res.json({ count: data?.length || 0 });
+// Đánh dấu 1 thông báo là đã đọc
+notificationsRouter.patch("/api/notifications/:id/read", requireUser, async (req, res) => {
+  const supabase = createSupabaseUser(req.auth.jwt);
+  const { id } = req.params;
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", id)
+    .eq("user_id", req.profile.user_id)
+    .select()
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  res.json({ item: data });
 });
 
-notificationsRouter.post("/notifications/:id/read", requireUser, async (req, res) => {
-  const sb = createSupabaseUser(req.auth.jwt);
-  const id = Number(req.params.id);
-  const { error } = await sb.from("notifications").update({ is_read: true }).eq("id", id);
-  assert(!error, 400, "Failed to mark read", "notification_update_failed", error?.message);
+// Đánh dấu tất cả là đã đọc
+notificationsRouter.post("/api/notifications/read-all", requireUser, async (req, res) => {
+  const supabase = createSupabaseUser(req.auth.jwt);
+
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", req.profile.user_id)
+    .eq("is_read", false);
+
+  if (error) throw new Error(error.message);
+
   res.json({ ok: true });
 });
-
-notificationsRouter.post("/notifications/read-all", requireUser, async (req, res) => {
-  const sb = createSupabaseUser(req.auth.jwt);
-  const { error } = await sb.from("notifications").update({ is_read: true }).eq("is_read", false);
-  assert(!error, 400, "Failed to mark all read", "notification_update_failed", error?.message);
-  res.json({ ok: true });
-});
-

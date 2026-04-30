@@ -172,3 +172,23 @@ authRouter.post("/auth/register", async (req, res) => {
     }
   });
 });
+
+authRouter.post("/auth/resolve-identifier", async (req, res) => {
+  const { identifier } = req.body || {};
+  if (!identifier) {
+    throw new HttpError(400, "Vui long nhap Email hoac Ten dang nhap.");
+  }
+
+  const sbAdmin = createSupabaseAdmin();
+  const { data, error } = await sbAdmin
+    .from("profiles")
+    .select("email")
+    .or(`email.eq.${identifier},username.eq.${identifier}`)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new HttpError(404, "Tai khoan khong ton tai.");
+  }
+
+  res.json({ email: data.email });
+});

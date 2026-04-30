@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { getBookImageUrl } from "@/lib/bookImage";
 import "./home.css";
 
 type Book = {
@@ -11,6 +12,8 @@ type Book = {
   quantity: number;
   price: number;
   sale_price?: number | null;
+  image_url?: string | null;
+  category_id?: string | null;
 };
 
 export function HomePage() {
@@ -55,7 +58,7 @@ export function HomePage() {
                 <div className="book-card d-block h-100">
                   <div style={{ height: 320, overflow: "hidden", position: "relative", background: "#f8f9fa" }}>
                     <img
-                      src="https://via.placeholder.com/300x450?text=Book"
+                      src={getBookImageUrl(b.image_url, b.category_id) || "https://via.placeholder.com/300x450?text=Book"}
                       alt={b.title}
                       style={{ height: "100%", width: "100%", objectFit: "contain" }}
                     />

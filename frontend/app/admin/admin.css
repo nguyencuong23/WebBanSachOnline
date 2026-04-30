@@ -220,46 +220,7 @@ body {
   color: var(--text-secondary);
 }
 
-/* ===== CARDS ===== */
-.stat-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-  border: 1px solid var(--border-color);
-}
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.stat-card-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.stat-card-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.25rem;
-}
-
-.stat-card-label {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: 500;
-}
 
 /* ===== DASHBOARD ENHANCEMENTS ===== */
 .bg-gradient-primary {
@@ -491,3 +452,15 @@ body {
   flex-shrink: 0;
 }
 
+.admin-dropdown-item {
+  transition: background-color 0.2s ease;
+}
+
+.admin-dropdown-item:hover {
+  background-color: #f1f5f9;
+}
+
+/* Xoay mũi tên khi mở dropdown */
+.rotate-180 {
+  transform: rotate(180deg);
+}

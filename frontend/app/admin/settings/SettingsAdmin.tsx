@@ -2,66 +2,172 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+
+const EXPECTED_SETTINGS = [
+  { key: "SiteTitle", label: "Tiêu đề trang web (hiển thị trên tab trình duyệt)", type: "text", tab: "general" },
+  { key: "SiteDescription", label: "Mô tả trang web (SEO)", type: "textarea", tab: "general" },
+  { key: "LogoUrl", label: "Logo trang web", type: "image", tab: "general" },
+  { key: "FaviconUrl", label: "Favicon (icon trên tab trình duyệt)", type: "image", tab: "general" },
+
+  { key: "DefaultShippingFee", label: "Phí giao hàng mặc định (VNĐ)", type: "number", tab: "sales" },
+  { key: "FreeShippingThreshold", label: "Mua trên bao nhiêu thì Freeship (VNĐ)", type: "number", tab: "sales" },
+  { key: "BankTransferInfo", label: "Ảnh QR chuyển khoản ngân hàng", type: "image", tab: "sales" },
+
+  { key: "Hotline", label: "Số điện thoại Hotline", type: "text", tab: "contact" },
+  { key: "SupportEmail", label: "Email hỗ trợ", type: "text", tab: "contact" },
+  { key: "StoreAddress", label: "Địa chỉ cửa hàng", type: "textarea", tab: "contact" },
+  { key: "WorkingHours", label: "Thời gian làm việc", type: "text", tab: "contact" },
+  { key: "FacebookLink", label: "Link Facebook", type: "text", tab: "contact" },
+  { key: "YoutubeLink", label: "Link YouTube", type: "text", tab: "contact" },
+  { key: "TiktokLink", label: "Link TikTok", type: "text", tab: "contact" },
+
+  { key: "MaintenanceMode", label: "Bật chế độ bảo trì", type: "checkbox", tab: "system" },
+  { key: "MaintenanceMessage", label: "Lời nhắn khi bảo trì", type: "textarea", tab: "system" },
+  { key: "TopAnnouncement", label: "Thanh thông báo nổi bật (Top bar)", type: "text", tab: "system" },
+  { key: "TrackingScripts", label: "Mã Google Analytics / FB Pixel", type: "textarea", tab: "system" },
+];
 
 export function AdminSettingsPage() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("general");
 
   useEffect(() => {
     apiFetch<{ items: any[] }>("/settings")
-      .then((r) => setItems(r.items || []))
+      .then((r) => {
+        const loaded: Record<string, string> = {};
+        for (const item of (r.items || [])) {
+          loaded[item.key] = item.value;
+        }
+        setItems(loaded);
+      })
       .catch((e: any) => setError(e.message || String(e)));
   }, []);
 
   async function save() {
+    setError(null);
     setSaved(null);
-    await apiFetch<{ items: any[] }>("/admin/settings", { method: "PUT", body: JSON.stringify({ items }) });
-    setSaved("Saved");
+    const payload = Object.keys(items).map(key => ({ key, value: items[key] }));
+    try {
+      await apiFetch<{ items: any[] }>("/admin/settings", { method: "PUT", body: JSON.stringify({ items: payload }) });
+      setSaved("Lưu cài đặt thành công!");
+      setTimeout(() => setSaved(null), 3000);
+    } catch (e: any) {
+      setError(e.message || String(e));
+    }
   }
+
+  function updateValue(key: string, value: string) {
+    setItems(old => ({ ...old, [key]: value }));
+  }
+
+  async function handleFileUpload(key: string, file: File) {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${key}_${Date.now()}.${fileExt}`;
+      const { error } = await supabase.storage.from('web-images').upload(fileName, file, { upsert: true });
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage.from('web-images').getPublicUrl(fileName);
+      updateValue(key, publicUrlData.publicUrl);
+    } catch (e: any) {
+      alert("Lỗi tải ảnh: " + e.message);
+    }
+  }
+
+  const renderField = (def: any) => {
+    const val = items[def.key] ?? "";
+    if (def.type === "image") {
+      return (
+        <div className="mb-3" key={def.key}>
+          <label className="form-label fw-bold small">{def.label}</label>
+          <div className="d-flex align-items-start gap-3">
+            {val && (
+              <img src={val} alt="Preview" style={{ width: 120, height: 120, objectFit: "contain", border: "1px solid #ccc", borderRadius: 8, background: "#fff" }} />
+            )}
+            <div className="flex-grow-1">
+              <input type="file" className="form-control mb-2" accept="image/*" onChange={(e) => {
+                if (e.target.files?.[0]) handleFileUpload(def.key, e.target.files[0]);
+              }} />
+              <input type="text" className="form-control form-control-sm" value={val} onChange={e => updateValue(def.key, e.target.value)} placeholder="Hoặc dán URL ảnh trực tiếp vào đây" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (def.type === "textarea") {
+      return (
+        <div className="mb-3" key={def.key}>
+          <label className="form-label fw-bold small">{def.label}</label>
+          <textarea className="form-control" rows={3} value={val} onChange={e => updateValue(def.key, e.target.value)} />
+        </div>
+      );
+    }
+    if (def.type === "checkbox") {
+      return (
+        <div className="form-check form-switch mb-3" key={def.key}>
+          <input className="form-check-input" type="checkbox" id={def.key} checked={val === "true"} onChange={e => updateValue(def.key, e.target.checked ? "true" : "false")} />
+          <label className="form-check-label fw-bold small" htmlFor={def.key}>{def.label}</label>
+        </div>
+      );
+    }
+    return (
+      <div className="mb-3" key={def.key}>
+        <label className="form-label fw-bold small">{def.label}</label>
+        <input type={def.type} className="form-control" value={val} onChange={e => updateValue(def.key, e.target.value)} />
+      </div>
+    );
+  };
 
   return (
     <div className="row g-4">
       <div className="col-lg-8">
         <div className="card shadow-sm border-0">
-          <div className="card-header bg-white border-bottom">
-            <h5 className="mb-0 fw-bold">
-              <i className="fas fa-cog me-2 text-primary" />
-              Cài đặt chung
-            </h5>
+          <div className="card-header bg-white border-bottom p-0">
+            <ul className="nav nav-tabs nav-fill border-0" style={{ cursor: "pointer" }}>
+              <li className="nav-item">
+                <a className={`nav-link border-0 border-bottom rounded-0 fw-bold p-3 ${activeTab === 'general' ? 'active border-primary text-primary' : 'text-muted'}`} onClick={() => setActiveTab('general')}>
+                  <i className="fas fa-info-circle me-2"></i>Chung
+                </a>
+              </li>
+              <li className="nav-item">
+                <a className={`nav-link border-0 border-bottom rounded-0 fw-bold p-3 ${activeTab === 'sales' ? 'active border-primary text-primary' : 'text-muted'}`} onClick={() => setActiveTab('sales')}>
+                  <i className="fas fa-shopping-cart me-2"></i>Bán hàng
+                </a>
+              </li>
+              <li className="nav-item">
+                <a className={`nav-link border-0 border-bottom rounded-0 fw-bold p-3 ${activeTab === 'contact' ? 'active border-primary text-primary' : 'text-muted'}`} onClick={() => setActiveTab('contact')}>
+                  <i className="fas fa-address-book me-2"></i>Liên hệ
+                </a>
+              </li>
+              <li className="nav-item">
+                <a className={`nav-link border-0 border-bottom rounded-0 fw-bold p-3 ${activeTab === 'system' ? 'active border-primary text-primary' : 'text-muted'}`} onClick={() => setActiveTab('system')}>
+                  <i className="fas fa-cogs me-2"></i>Hệ thống
+                </a>
+              </li>
+            </ul>
           </div>
           <div className="card-body p-4">
-            {error && <p className="text-danger">{error}</p>}
-            {saved && <p className="text-success">{saved}</p>}
-            <table className="table" cellPadding={8}>
-              <thead>
-                <tr>
-                  <th align="left">Key</th>
-                  <th align="left">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((s, i) => (
-                  <tr key={s.key}>
-                    <td>{s.key}</td>
-                    <td>
-                      <input
-                        value={s.value ?? ""}
-                        onChange={(e) => setItems((old) => old.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button className="btn btn-primary" onClick={save}>
-              Lưu cài đặt
-            </button>
+            {error && <div className="alert alert-danger">{error}</div>}
+            {saved && <div className="alert alert-success">{saved}</div>}
+
+            <div className="settings-form">
+              {EXPECTED_SETTINGS.filter(s => s.tab === activeTab).map(renderField)}
+            </div>
+
+            <div className="mt-4 pt-3 border-top">
+              <button className="btn btn-primary px-4" onClick={save}>
+                <i className="fas fa-save me-2"></i>Lưu cài đặt
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
       <div className="col-lg-4">
-        <div className="card shadow-sm border-0">
+        <div className="card shadow-sm border-0 mb-4">
           <div className="card-header bg-white border-bottom">
             <h5 className="mb-0 fw-bold">
               <i className="fas fa-server me-2 text-info" />
@@ -70,12 +176,14 @@ export function AdminSettingsPage() {
           </div>
           <div className="card-body">
             <div className="d-flex justify-content-between mb-2">
-              <span className="text-muted">Trạng thái</span>
-              <span className="badge bg-success">Hoạt động</span>
+              <span className="text-muted">Trạng thái web</span>
+              <span className={`badge ${items["MaintenanceMode"] === "true" ? "bg-warning" : "bg-success"}`}>
+                {items["MaintenanceMode"] === "true" ? "Bảo trì" : "Hoạt động"}
+              </span>
             </div>
             <div className="d-flex justify-content-between mb-2">
               <span className="text-muted">Phiên bản</span>
-              <span className="fw-semibold">v1.0.0</span>
+              <span className="fw-semibold">v1.1.0</span>
             </div>
           </div>
         </div>

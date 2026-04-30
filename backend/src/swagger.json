@@ -1,0 +1,2410 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "WebBanSachOnline API",
+    "version": "1.0.0",
+    "description": "Tài liệu API cho dự án WebBanSachOnline"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000",
+      "description": "Local server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Đăng ký tài khoản mới",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "full_name",
+                  "phone_number",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "full_name": {
+                    "type": "string"
+                  },
+                  "phone_number": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Thành công"
+          },
+          "400": {
+            "description": "Lỗi validate"
+          },
+          "409": {
+            "description": "Trùng lặp dữ liệu"
+          }
+        }
+      }
+    },
+    "/auth/resolve-identifier": {
+      "post": {
+        "summary": "Tra cứu email dựa trên tên đăng nhập",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "identifier"
+                ],
+                "properties": {
+                  "identifier": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trả về email hợp lệ"
+          },
+          "400": {
+            "description": "Thiếu dữ liệu"
+          },
+          "404": {
+            "description": "Không tìm thấy"
+          }
+        }
+      }
+    },
+    "/books": {
+      "get": {
+        "summary": "Lấy danh sách sách",
+        "tags": [
+          "Books"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công"
+          }
+        }
+      }
+    },
+    "/books/latest": {
+      "get": {
+        "summary": "Lấy danh sách sách mới nhất",
+        "tags": [
+          "Books"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công"
+          }
+        }
+      }
+    },
+    "/books/{bookId}": {
+      "get": {
+        "summary": "Xem chi tiết một cuốn sách",
+        "tags": [
+          "Books"
+        ],
+        "parameters": [
+          {
+            "name": "bookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công"
+          },
+          "404": {
+            "description": "Không tìm thấy"
+          }
+        }
+      }
+    },
+    "/admin/books": {
+      "post": {
+        "summary": "Thêm sách mới (Admin)",
+        "tags": [
+          "Admin Books"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "book_id",
+                  "title",
+                  "author",
+                  "category_id",
+                  "price",
+                  "publish_year",
+                  "quantity"
+                ],
+                "properties": {
+                  "book_id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number"
+                  },
+                  "quantity": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã tạo"
+          },
+          "403": {
+            "description": "Không có quyền"
+          }
+        }
+      }
+    },
+    "/admin/books/{bookId}": {
+      "patch": {
+        "summary": "Cập nhật sách (Admin)",
+        "tags": [
+          "Admin Books"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Xóa sách (Admin)",
+        "tags": [
+          "Admin Books"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã xóa"
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "summary": "Lấy danh sách thể loại",
+        "tags": [
+          "Categories"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "searchBy",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "all"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công"
+          }
+        }
+      }
+    },
+    "/admin/categories": {
+      "post": {
+        "summary": "Thêm thể loại mới (Admin)",
+        "tags": [
+          "Admin Categories"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "category_id",
+                  "name"
+                ],
+                "properties": {
+                  "category_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã tạo"
+          }
+        }
+      }
+    },
+    "/admin/categories/{categoryId}": {
+      "patch": {
+        "summary": "Cập nhật thể loại (Admin)",
+        "tags": [
+          "Admin Categories"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Xóa thể loại (Admin)",
+        "tags": [
+          "Admin Categories"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã xóa"
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "post": {
+        "summary": "Tạo người dùng mới (Admin)",
+        "tags": [
+          "Admin Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "full_name": {
+                    "type": "string"
+                  },
+                  "phone_number": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "is_active": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã tạo"
+          }
+        }
+      },
+      "get": {
+        "summary": "Lấy danh sách người dùng",
+        "tags": [
+          "Admin Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "searchBy",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "all"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công"
+          }
+        }
+      }
+    },
+    "/admin/users/{userId}": {
+      "patch": {
+        "summary": "Cập nhật người dùng",
+        "tags": [
+          "Admin Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "full_name": {
+                    "type": "string"
+                  },
+                  "is_active": {
+                    "type": "boolean"
+                  },
+                  "role": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Xóa người dùng (Admin)",
+        "tags": [
+          "Admin Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã xóa"
+          }
+        }
+      }
+    },
+    "/admin/users/{userId}/toggle-status": {
+      "post": {
+        "summary": "Khóa/Mở khóa người dùng (Admin)",
+        "tags": [
+          "Admin Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công"
+          }
+        }
+      }
+    },
+    "/admin/users/{userId}/change-password": {
+      "post": {
+        "summary": "Đổi mật khẩu người dùng (Admin)",
+        "tags": [
+          "Admin Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Thành công"
+          },
+          "400": {
+            "description": "Lỗi cập nhật mật khẩu"
+          }
+        }
+      }
+    },
+    "/admin/users/{userId}/avatar": {
+      "post": {
+        "summary": "Cập nhật ảnh đại diện người dùng (Admin)",
+        "tags": [
+          "Admin Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "description": "Dữ liệu ảnh dạng Base64"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật ảnh đại diện thành công"
+          },
+          "400": {
+            "description": "Thiếu dữ liệu hoặc lỗi cập nhật"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Xóa ảnh đại diện người dùng (Admin)",
+        "tags": [
+          "Admin Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã xóa ảnh đại diện"
+          },
+          "400": {
+            "description": "Lỗi cập nhật hồ sơ"
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "summary": "Lấy thông tin tài khoản đang đăng nhập",
+        "tags": [
+          "Me"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trả về { user, profile } của người dùng hiện tại"
+          },
+          "401": {
+            "description": "Chưa đăng nhập"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Cập nhật thông tin cá nhân",
+        "tags": [
+          "Me"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "full_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Họ và tên (2-100 ký tự, Unicode)"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Địa chỉ email mới"
+                  },
+                  "phone_number": {
+                    "type": "string",
+                    "description": "Số điện thoại (định dạng VN)"
+                  },
+                  "default_address": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Địa chỉ giao hàng mặc định"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công, trả về { profile }"
+          },
+          "400": {
+            "description": "Lỗi validate dữ liệu hoặc lỗi trùng email"
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc token không hợp lệ"
+          },
+          "403": {
+            "description": "Lỗi quyền hạn (RLS)"
+          },
+          "404": {
+            "description": "Không tìm thấy hồ sơ người dùng"
+          }
+        }
+      }
+    }
+  },
+  "/me/avatar": {
+    "post": {
+      "summary": "Cập nhật ảnh đại diện",
+      "tags": [
+        "Me"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "image"
+              ],
+              "properties": {
+                "image": {
+                  "type": "string",
+                  "description": "Dữ liệu hình ảnh dạng Base64 (data:image/...;base64,...)"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        },
+        "400": {
+          "description": "Lỗi dữ liệu hoặc tải lên thất bại"
+        }
+      }
+    },
+    "delete": {
+      "summary": "Xóa ảnh đại diện",
+      "tags": [
+        "Me"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/me/change-password": {
+    "post": {
+      "summary": "Thay đổi mật khẩu",
+      "tags": [
+        "Me"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "currentPassword",
+                "newPassword"
+              ],
+              "properties": {
+                "currentPassword": {
+                  "type": "string"
+                },
+                "newPassword": {
+                  "type": "string",
+                  "minLength": 6
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        },
+        "401": {
+          "description": "Mật khẩu hiện tại sai"
+        }
+      }
+    }
+  },
+  "/orders": {
+    "get": {
+      "summary": "Lấy danh sách đơn hàng của người dùng hiện tại",
+      "tags": [
+        "Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Trả về { items } là danh sách đơn hàng thuộc user đang đăng nhập"
+        },
+        "401": {
+          "description": "Chưa đăng nhập"
+        }
+      }
+    }
+  },
+  "/orders/{orderId}": {
+    "get": {
+      "summary": "Xem chi tiết đơn hàng (của chính user)",
+      "tags": [
+        "Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "orderId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Trả về { order, items } bao gồm thông tin đơn hàng và danh sách sản phẩm"
+        },
+        "404": {
+          "description": "Không tìm thấy đơn hàng hoặc không thuộc user này"
+        }
+      }
+    }
+  },
+  "/orders/{orderId}/cancel": {
+    "patch": {
+      "summary": "Hủy đơn hàng (chỉ khi đơn hàng ở trạng thái pending)",
+      "tags": [
+        "Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "orderId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Hủy thành công"
+        },
+        "400": {
+          "description": "Đơn hàng không ở trạng thái pending"
+        },
+        "403": {
+          "description": "Không có quyền hủy đơn này"
+        },
+        "404": {
+          "description": "Không tìm thấy đơn hàng"
+        }
+      }
+    }
+  },
+  "/checkout": {
+    "post": {
+      "summary": "Đặt hàng / Thanh toán (tạo đơn hàng từ giỏ hàng)",
+      "tags": [
+        "Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "receiver_name",
+                "receiver_phone",
+                "shipping_address",
+                "payment_method",
+                "lines"
+              ],
+              "properties": {
+                "receiver_name": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "receiver_phone": {
+                  "type": "string",
+                  "maxLength": 15
+                },
+                "shipping_address": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "payment_method": {
+                  "type": "string",
+                  "enum": [
+                    "cod",
+                    "bank_transfer"
+                  ]
+                },
+                "bank_transfer_reference": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "lines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "book_id",
+                      "quantity"
+                    ],
+                    "properties": {
+                      "book_id": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 99
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Đặt hàng thành công, trả về { order_id, order_code }"
+        },
+        "400": {
+          "description": "Sách hết hàng hoặc lỗi validate"
+        },
+        "401": {
+          "description": "Chưa đăng nhập"
+        }
+      }
+    }
+  },
+  "/admin/orders": {
+    "get": {
+      "summary": "Lấy danh sách đơn hàng (Admin)",
+      "tags": [
+        "Admin Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "searchBy",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "default": "all"
+          }
+        },
+        {
+          "name": "sort",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "paymentMethod",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    },
+    "post": {
+      "summary": "Tạo đơn hàng mới thay cho khách (Admin)",
+      "tags": [
+        "Admin Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "user_id",
+                "receiver_name",
+                "receiver_phone",
+                "shipping_address",
+                "payment_method",
+                "lines"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "receiver_name": {
+                  "type": "string"
+                },
+                "receiver_phone": {
+                  "type": "string"
+                },
+                "shipping_address": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "payment_method": {
+                  "type": "string",
+                  "enum": [
+                    "cod",
+                    "bank_transfer"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "confirmed",
+                    "shipping",
+                    "delivered",
+                    "cancelled"
+                  ]
+                },
+                "payment_status": {
+                  "type": "string",
+                  "enum": [
+                    "unpaid",
+                    "paid",
+                    "refunded"
+                  ]
+                },
+                "lines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "book_id",
+                      "quantity"
+                    ],
+                    "properties": {
+                      "book_id": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Tạo thành công, trả về { item } là đơn hàng vừa tạo"
+        },
+        "400": {
+          "description": "Sách không tồn tại, hết hàng, hoặc lỗi validate"
+        }
+      }
+    }
+  },
+  "/admin/orders/{orderId}": {
+    "get": {
+      "summary": "Xem chi tiết một đơn hàng (Admin)",
+      "tags": [
+        "Admin Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "orderId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Trả về { item } chứa thông tin đơn hàng và order_items"
+        },
+        "404": {
+          "description": "Không tìm thấy đơn hàng"
+        }
+      }
+    },
+    "patch": {
+      "summary": "Chỉnh sửa đơn hàng (trạng thái, thanh toán, thông tin giao hàng)",
+      "tags": [
+        "Admin Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "orderId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "confirmed",
+                    "shipping",
+                    "delivered",
+                    "cancelled"
+                  ]
+                },
+                "payment_status": {
+                  "type": "string",
+                  "enum": [
+                    "unpaid",
+                    "paid",
+                    "refunded"
+                  ]
+                },
+                "receiver_name": {
+                  "type": "string"
+                },
+                "receiver_phone": {
+                  "type": "string"
+                },
+                "shipping_address": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Cập nhật thành công, trả về { item }"
+        },
+        "400": {
+          "description": "Lỗi validate"
+        }
+      }
+    },
+    "delete": {
+      "summary": "Xóa vĩnh viễn đơn hàng",
+      "tags": [
+        "Admin Orders"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "orderId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Xóa thành công, trả về { ok: true }"
+        }
+      }
+    }
+  },
+  "/admin/carts": {
+    "get": {
+      "summary": "Lấy danh sách người dùng có giỏ hàng (Admin)",
+      "tags": [
+        "Admin Carts"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/admin/carts/{userId}": {
+    "get": {
+      "summary": "Xem chi tiết giỏ hàng người dùng",
+      "tags": [
+        "Admin Carts"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    },
+    "post": {
+      "summary": "Thêm/Cập nhật số lượng sản phẩm trong giỏ",
+      "tags": [
+        "Admin Carts"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "book_id",
+                "quantity"
+              ],
+              "properties": {
+                "book_id": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    },
+    "delete": {
+      "summary": "Xóa toàn bộ giỏ hàng của người dùng",
+      "tags": [
+        "Admin Carts"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/admin/carts/{userId}/{bookId}": {
+    "delete": {
+      "summary": "Xóa một sản phẩm khỏi giỏ",
+      "tags": [
+        "Admin Carts"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "bookId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/admin/dashboard/summary": {
+    "get": {
+      "summary": "Lấy tổng quan thông tin Dashboard",
+      "tags": [
+        "Admin Dashboard"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/admin/dashboard/stats": {
+    "get": {
+      "summary": "Lấy thống kê dữ liệu Dashboard",
+      "tags": [
+        "Admin Dashboard"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/admin/monthly-stats": {
+    "get": {
+      "summary": "Lấy thống kê theo tháng",
+      "tags": [
+        "Admin Dashboard"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/admin/borrowing-trends": {
+    "get": {
+      "summary": "Lấy xu hướng đơn hàng",
+      "tags": [
+        "Admin Dashboard"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/vouchers": {
+    "get": {
+      "summary": "Lấy danh sách voucher (công khai)",
+      "tags": [
+        "Vouchers"
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/admin/vouchers": {
+    "get": {
+      "summary": "Lấy danh sách voucher (Admin)",
+      "tags": [
+        "Admin Vouchers"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "searchBy",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "default": "code"
+          }
+        },
+        {
+          "name": "sort",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    },
+    "post": {
+      "summary": "Tạo voucher mới",
+      "tags": [
+        "Admin Vouchers"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "code",
+                "discount_percent",
+                "max_discount_amount",
+                "valid_until"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "discount_percent": {
+                  "type": "integer"
+                },
+                "max_discount_amount": {
+                  "type": "number"
+                },
+                "valid_until": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "is_active": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Đã tạo"
+        }
+      }
+    }
+  },
+  "/admin/vouchers/{code}": {
+    "get": {
+      "summary": "Lấy chi tiết một voucher",
+      "tags": [
+        "Admin Vouchers"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "code",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    },
+    "patch": {
+      "summary": "Cập nhật voucher",
+      "tags": [
+        "Admin Vouchers"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "code",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "discount_percent": {
+                  "type": "integer"
+                },
+                "max_discount_amount": {
+                  "type": "number"
+                },
+                "valid_until": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "is_active": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Cập nhật thành công"
+        }
+      }
+    },
+    "delete": {
+      "summary": "Xóa voucher",
+      "tags": [
+        "Admin Vouchers"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "code",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Xóa thành công"
+        }
+      }
+    }
+  },
+  "/settings": {
+    "get": {
+      "summary": "Lấy danh sách các cài đặt hệ thống (công khai)",
+      "tags": [
+        "Settings"
+      ],
+      "responses": {
+        "200": {
+          "description": "Thành công"
+        }
+      }
+    }
+  },
+  "/admin/settings": {
+    "put": {
+      "summary": "Cập nhật nhiều cài đặt hệ thống (Admin)",
+      "tags": [
+        "Admin Settings"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "items"
+              ],
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "key",
+                      "value"
+                    ],
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Cập nhật thành công"
+        }
+      }
+    }
+  },
+  "/admin/notifications": {
+    "get": {
+      "tags": [
+        "Admin Notifications"
+      ],
+      "summary": "Lấy danh sách thông báo đã gửi",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success"
+        }
+      }
+    },
+    "post": {
+      "tags": [
+        "Admin Notifications"
+      ],
+      "summary": "Gửi thông báo mới",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "link": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "recipients_type": {
+                  "type": "string",
+                  "enum": [
+                    "all",
+                    "custom"
+                  ]
+                },
+                "recipient_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "image_url": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Created"
+        }
+      }
+    }
+  },
+  "/admin/notifications/{id}": {
+    "get": {
+      "tags": [
+        "Admin Notifications"
+      ],
+      "summary": "Chi tiết thông báo đã gửi",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success"
+        }
+      }
+    },
+    "patch": {
+      "tags": [
+        "Admin Notifications"
+      ],
+      "summary": "Cập nhật thông báo đã gửi",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "link": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "image_url": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Success"
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "Admin Notifications"
+      ],
+      "summary": "Xóa thông báo",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success"
+        }
+      }
+    }
+  },
+  "/api/notifications": {
+    "get": {
+      "tags": [
+        "Client Notifications"
+      ],
+      "summary": "Lấy danh sách thông báo của user",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success"
+        }
+      }
+    }
+  },
+  "/api/notifications/read-all": {
+    "post": {
+      "tags": [
+        "Client Notifications"
+      ],
+      "summary": "Đánh dấu tất cả là đã đọc",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success"
+        }
+      }
+    }
+  },
+  "/api/notifications/{id}/read": {
+    "patch": {
+      "tags": [
+        "Client Notifications"
+      ],
+      "summary": "Đánh dấu 1 thông báo là đã đọc",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success"
+        }
+      }
+    }
+  },
+  "/cart": {
+    "get": {
+      "summary": "Lấy giỏ hàng của người dùng hiện tại",
+      "tags": [
+        "Cart"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Trả về { items } là danh sách sản phẩm trong giỏ hàng kèm thông tin sách"
+        },
+        "401": {
+          "description": "Chưa đăng nhập"
+        }
+      }
+    },
+    "post": {
+      "summary": "Thêm sản phẩm vào giỏ hàng",
+      "tags": [
+        "Cart"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "book_id"
+              ],
+              "properties": {
+                "book_id": {
+                  "type": "string",
+                  "description": "ID của sách cần thêm"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 1,
+                  "description": "Số lượng cần thêm (nếu đã có trong giỏ thì sẽ cộng dồn)"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Thêm mới thành công, trả về { item }"
+        },
+        "200": {
+          "description": "Đã tồn tại, cập nhật số lượng, trả về { item }"
+        },
+        "400": {
+          "description": "Lỗi validate hoặc hết hàng"
+        },
+        "404": {
+          "description": "Sách không tồn tại"
+        }
+      }
+    },
+    "delete": {
+      "summary": "Xóa toàn bộ giỏ hàng của người dùng hiện tại",
+      "tags": [
+        "Cart"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Xóa thành công, trả về { ok: true }"
+        },
+        "401": {
+          "description": "Chưa đăng nhập"
+        }
+      }
+    }
+  },
+  "/cart/{bookId}": {
+    "patch": {
+      "summary": "Cập nhật số lượng sản phẩm trong giỏ hàng",
+      "tags": [
+        "Cart"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "bookId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "ID của sách cần cập nhật số lượng"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "quantity"
+              ],
+              "properties": {
+                "quantity": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Số lượng mới"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Cập nhật thành công, trả về { item }"
+        },
+        "400": {
+          "description": "Lỗi validate hoặc hết hàng"
+        },
+        "404": {
+          "description": "Không tìm thấy sản phẩm trong giỏ hàng"
+        }
+      }
+    },
+    "delete": {
+      "summary": "Xóa một sản phẩm khỏi giỏ hàng",
+      "tags": [
+        "Cart"
+      ],
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "bookId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "ID của sách cần xóa khỏi giỏ"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Xóa thành công, trả về { ok: true }"
+        },
+        "400": {
+          "description": "Lỗi xóa"
+        }
+      }
+    }
+  },
+  "/admin/notifications/upload-image": {
+    "post": {
+      "tags": [
+        "Admin Notifications"
+      ],
+      "summary": "Upload ảnh thông báo",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "base64": {
+                  "type": "string"
+                },
+                "contentType": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Success"
+        }
+      }
+    }
+  }
+}

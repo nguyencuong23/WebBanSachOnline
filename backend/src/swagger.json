@@ -2598,6 +2598,77 @@
         }
       }
     },
+    "/chat": {
+      "post": {
+        "summary": "Gửi tin nhắn đến trợ lý AI của cửa hàng",
+        "description": "AI sẽ tự động đọc dữ liệu thực tế từ cơ sở dữ liệu (sách, danh mục, khuyến mãi, đơn hàng của user) để đưa ra câu trả lời chính xác. Nếu gửi kèm Bearer token, AI sẽ có thêm context về đơn hàng của người dùng đó.",
+        "tags": ["Chat AI"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["messages"],
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "description": "Lịch sử hội thoại (tối đa 50 tin nhắn)",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "type": "object",
+                      "required": ["role", "content"],
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": ["user", "assistant"],
+                          "description": "Vai trò: user (khách) hoặc assistant (AI)"
+                        },
+                        "content": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000,
+                          "description": "Nội dung tin nhắn"
+                        }
+                      }
+                    },
+                    "example": [
+                      { "role": "user", "content": "Cho tôi xem sách đang giảm giá" }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trả về câu trả lời từ AI",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reply": {
+                      "type": "string",
+                      "description": "Nội dung phản hồi từ AI"
+                    }
+                  }
+                },
+                "example": {
+                  "reply": "Hiện cửa hàng đang có các sách khuyến mãi sau: ..."
+                }
+              }
+            }
+          },
+          "400": { "description": "Dữ liệu đầu vào không hợp lệ" },
+          "502": { "description": "Lỗi kết nối đến Groq AI" },
+          "503": { "description": "Tính năng chat AI chưa được cấu hình (thiếu GROQ_API_KEY)" }
+        }
+      }
+    },
     "/books/{bookId}/reviews": {
       "get": {
         "summary": "Lấy danh sách đánh giá của một cuốn sách",

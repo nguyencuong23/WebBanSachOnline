@@ -26,5 +26,6 @@ export const env = {
     .filter(Boolean),
   gmailUser: process.env.GMAIL_USER || "",
   gmailAppPassword: process.env.GMAIL_APP_PASSWORD || "",
+  groqApiKey: process.env.GROQ_API_KEY || "",
 };
 

@@ -20,6 +20,47 @@ vouchersRouter.get("/vouchers", async (req, res) => {
   res.json({ items: data });
 });
 
+// POST /vouchers/apply — kiểm tra và tính giá trị giảm của voucher
+vouchersRouter.post("/vouchers/apply", requireUser, async (req, res) => {
+  const { code, subtotal } = req.body || {};
+  assert(code && typeof code === "string", 400, "Mã voucher không được để trống.", "missing_code");
+  assert(typeof subtotal === "number" && subtotal > 0, 400, "Giá trị đơn hàng không hợp lệ.", "invalid_subtotal");
+
+  const sb = createSupabaseAnon();
+  const { data: voucher, error } = await sb
+    .from("vouchers")
+    .select("*")
+    .eq("code", code.trim().toUpperCase())
+    .maybeSingle();
+
+  assert(!error, 400, "Lỗi kiểm tra voucher.", "voucher_fetch_failed", error?.message);
+  assert(voucher, 404, "Mã voucher không tồn tại.", "voucher_not_found");
+  assert(voucher.is_active, 400, "Mã voucher đã bị vô hiệu hóa.", "voucher_inactive");
+  assert(
+    new Date(voucher.valid_until) > new Date(),
+    400,
+    "Mã voucher đã hết hạn.",
+    "voucher_expired"
+  );
+
+  // Tính số tiền giảm
+  const rawDiscount = Math.floor((subtotal * voucher.discount_percent) / 100);
+  const discount = voucher.max_discount_amount > 0
+    ? Math.min(rawDiscount, voucher.max_discount_amount)
+    : rawDiscount;
+
+  res.json({
+    ok: true,
+    voucher: {
+      code: voucher.code,
+      discount_percent: voucher.discount_percent,
+      max_discount_amount: voucher.max_discount_amount,
+    },
+    discount,
+    final_total: subtotal - discount,
+  });
+});
+
 // Admin: Lấy danh sách tất cả voucher
 vouchersRouter.get("/admin/vouchers", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");

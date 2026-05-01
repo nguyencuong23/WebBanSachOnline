@@ -151,3 +151,31 @@ with check (
   bucket_id = 'avatars'
   and (name = auth.uid()::text or name like auth.uid()::text || '.%')
 );
+
+-- 10. BẢNG REVIEWS (ĐÁNH GIÁ SÁCH)
+-- Ai cũng đọc được đánh giá
+drop policy if exists "reviews_select_all" on public.reviews;
+create policy "reviews_select_all"
+on public.reviews for select
+using ( true );
+
+-- User chỉ tạo đánh giá với user_id của chính mình
+drop policy if exists "reviews_insert_own" on public.reviews;
+create policy "reviews_insert_own"
+on public.reviews for insert
+to authenticated
+with check ( auth.uid() = user_id );
+
+-- User chỉ sửa đánh giá của chính mình
+drop policy if exists "reviews_update_own" on public.reviews;
+create policy "reviews_update_own"
+on public.reviews for update
+to authenticated
+using ( auth.uid() = user_id );
+
+-- User xóa đánh giá của mình, admin xóa bất kỳ
+drop policy if exists "reviews_delete_own_or_admin" on public.reviews;
+create policy "reviews_delete_own_or_admin"
+on public.reviews for delete
+to authenticated
+using ( auth.uid() = user_id or public.is_admin() );

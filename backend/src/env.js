@@ -1,5 +1,12 @@
 import dotenv from "dotenv";
-dotenv.config();
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Thử load .env từ thư mục backend trước, nếu không có thì load từ root project
+dotenv.config({ path: resolve(__dirname, "../../.env") });
+dotenv.config(); // fallback: load .env trong thư mục hiện tại (backend/)
 
 function required(name) {
   const v = process.env[name];
@@ -16,6 +23,8 @@ export const env = {
   webOrigins: (process.env.WEB_ORIGINS || "")
     .split(",")
     .map((s) => s.trim())
-    .filter(Boolean)
+    .filter(Boolean),
+  gmailUser: process.env.GMAIL_USER || "",
+  gmailAppPassword: process.env.GMAIL_APP_PASSWORD || "",
 };
 

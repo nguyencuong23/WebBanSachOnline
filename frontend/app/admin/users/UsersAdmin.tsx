@@ -70,6 +70,7 @@ export function AdminUsersPage() {
         await apiFetch(`/admin/users/${form.user_id}`, { 
           method: "PATCH", 
           body: JSON.stringify({
+            email: form.email,
             username: form.username,
             full_name: form.full_name,
             phone_number: form.phone_number,
@@ -376,9 +377,8 @@ export function AdminUsersPage() {
                         <div className="mb-3">
                           <label className="form-label fw-bold small">Email</label>
                           <input 
-                            className={modalMode === "add" ? "form-control" : "form-control bg-light"} 
-                            readOnly={modalMode !== "add"} 
-                            required={modalMode === "add"}
+                            className="form-control"
+                            required
                             type="email"
                             value={form.email || ""} 
                             onChange={(e) => setForm((f: any) => ({ ...f, email: e.target.value }))} 

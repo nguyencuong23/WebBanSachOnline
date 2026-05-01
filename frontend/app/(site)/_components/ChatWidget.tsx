@@ -8,8 +8,6 @@ interface Message {
   content: string;
 }
 
-const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY;
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = "llama-3.1-8b-instant";
 
 const SYSTEM_PROMPT = `Bạn là trợ lý AI của cửa hàng sách trực tuyến. Nhiệm vụ của bạn là:
@@ -60,11 +58,10 @@ export function ChatWidget() {
     setLoading(true);
 
     try {
-      const res = await fetch(GROQ_API_URL, {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${GROQ_API_KEY}`,
         },
         body: JSON.stringify({
           model: MODEL,
@@ -78,7 +75,7 @@ export function ChatWidget() {
       });
 
       if (!res.ok) {
-        throw new Error(`Groq API error: ${res.status}`);
+        throw new Error(`API error: ${res.status}`);
       }
 
       const data = await res.json();

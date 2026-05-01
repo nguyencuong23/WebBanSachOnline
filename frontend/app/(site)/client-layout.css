@@ -35,7 +35,7 @@ body {
 }
 
 /* Hiệu ứng gạch chân cho link thường */
-.site-header a:not(.dropdown-item):not(.dropdown-item-hover)::after {
+.site-header a:not(.dropdown-item):not(.dropdown-item-hover):not(.header-brand)::after {
   content: "";
   position: absolute;
   left: 0;
@@ -46,7 +46,7 @@ body {
   transition: 0.3s;
 }
 
-.site-header a:not(.dropdown-item):not(.dropdown-item-hover):hover::after {
+.site-header a:not(.dropdown-item):not(.dropdown-item-hover):not(.header-brand):hover::after {
   width: 100%;
 }
 

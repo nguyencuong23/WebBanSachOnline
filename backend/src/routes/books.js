@@ -13,21 +13,97 @@ booksRouter.get("/books/latest", async (req, res) => {
   const { data, error } = await sb
     .from("books")
     .select("*, categories(*)")
+    .eq("is_published", true)
     .order("created_at", { ascending: false })
     .limit(limit);
   assert(!error, 400, "Failed to fetch latest books", "books_fetch_failed", error?.message);
   res.json({ items: data });
 });
 
+// GET /books/featured — sách đang giảm giá (is_on_sale = true)
+booksRouter.get("/books/featured", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit || 12), 50);
+  const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
+  const sb = jwt ? createSupabaseUser(jwt) : createSupabaseAnon();
+  const { data, error } = await sb
+    .from("books")
+    .select("*, categories(*)")
+    .eq("is_published", true)
+    .eq("is_on_sale", true)
+    .not("sale_price", "is", null)
+    .gt("sale_price", 0)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  assert(!error, 400, "Failed to fetch featured books", "books_fetch_failed", error?.message);
+  res.json({ items: data || [] });
+});
+
+// GET /books/bestsellers — sách bán chạy nhất (dựa trên order_items)
+booksRouter.get("/books/bestsellers", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit || 10), 50);
+  const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
+  const sb = jwt ? createSupabaseUser(jwt) : createSupabaseAnon();
+
+  // Lấy top book_id theo tổng quantity từ order_items
+  const { data: topItems, error: topErr } = await sb
+    .from("order_items")
+    .select("book_id, quantity")
+    .limit(500);
+
+  assert(!topErr, 400, "Failed to fetch bestsellers", "bestsellers_fetch_failed", topErr?.message);
+
+  // Tổng hợp số lượng bán theo book_id
+  const countMap = {};
+  for (const row of topItems || []) {
+    countMap[row.book_id] = (countMap[row.book_id] || 0) + row.quantity;
+  }
+  const topBookIds = Object.entries(countMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id]) => id);
+
+  if (topBookIds.length === 0) {
+    // Fallback: trả về sách mới nhất nếu chưa có đơn hàng nào
+    const { data: fallback } = await sb
+      .from("books")
+      .select("*, categories(*)")
+      .eq("is_published", true)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return res.json({ items: fallback || [] });
+  }
+
+  const { data: books, error: bErr } = await sb
+    .from("books")
+    .select("*, categories(*)")
+    .in("book_id", topBookIds)
+    .eq("is_published", true);
+
+  assert(!bErr, 400, "Failed to fetch bestseller books", "books_fetch_failed", bErr?.message);
+
+  // Sắp xếp lại theo thứ tự bán chạy
+  const sorted = topBookIds
+    .map(id => (books || []).find(b => b.book_id === id))
+    .filter(Boolean);
+
+  res.json({ items: sorted });
+});
+
 booksRouter.get("/books", async (req, res) => {
   const search = (req.query.search || "").toString().trim();
   const searchBy = (req.query.searchBy || "all").toString();
   const sort = (req.query.sort || "").toString();
+  const categoryId = (req.query.category_id || "").toString().trim();
 
   const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
   const sb = jwt ? createSupabaseUser(jwt) : createSupabaseAnon();
 
   let q = sb.from("books").select("*, categories!inner(*)");
+
+  // Filter chính xác theo category_id nếu có
+  if (categoryId) {
+    q = q.eq("category_id", categoryId);
+  }
 
   if (search) {
     if (searchBy === "all") {

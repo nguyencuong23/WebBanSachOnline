@@ -319,14 +319,34 @@ adminRouter.patch("/admin/users/:userId", async (req, res) => {
   });
   const body = schema.parse(req.body ?? {});
 
-  const sb = createSupabaseUser(req.auth.jwt);
+  const sbAdmin = createSupabaseAdmin();
   const userId = req.params.userId;
 
   if (body.is_active === false && userId === req.profile?.user_id) {
     assert(false, 400, "Bạn không thể khóa tài khoản của chính mình.", "cannot_lock_self");
   }
 
-  const { data, error } = await sb.from("profiles").update(body).eq("user_id", userId).select("*").maybeSingle();
+  // Nếu có thay đổi email → cập nhật cả auth.users (Supabase Auth) lẫn profiles
+  if (body.email) {
+    // Kiểm tra email mới chưa được dùng bởi user khác
+    const { data: existing } = await sbAdmin
+      .from("profiles")
+      .select("user_id")
+      .eq("email", body.email)
+      .neq("user_id", userId)
+      .maybeSingle();
+    assert(!existing, 409, "Email này đã được sử dụng bởi tài khoản khác.", "duplicate_email");
+
+    // Cập nhật email trong Supabase Auth
+    const { error: authErr } = await sbAdmin.auth.admin.updateUserById(userId, {
+      email: body.email,
+      email_confirm: true, // Xác nhận email ngay, không cần verify
+    });
+    assert(!authErr, 400, "Lỗi cập nhật email trong hệ thống xác thực.", "auth_email_update_failed", authErr?.message);
+  }
+
+  // Cập nhật profiles
+  const { data, error } = await sbAdmin.from("profiles").update(body).eq("user_id", userId).select("*").maybeSingle();
   assert(!error, 400, "Lỗi cập nhật người dùng", "user_update_failed", error?.message);
   res.json({ item: data });
 });

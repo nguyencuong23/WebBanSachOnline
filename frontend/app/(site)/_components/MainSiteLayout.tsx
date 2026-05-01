@@ -43,14 +43,27 @@ export function MainSiteLayout({ children }: { children: ReactNode }) {
     <>
       <header className="site-header">
         <div className="container-fluid px-5 py-3 d-flex justify-content-between align-items-center">
-          <div className="fw-bold fs-5">Cửa hàng sách</div>
+          <Link href="/" className="text-decoration-none d-flex align-items-center gap-2 header-brand">
+            {settings["LogoUrl"] ? (
+              <img
+                src={settings["LogoUrl"]}
+                alt={settings["SiteTitle"] || "Logo"}
+                style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 8 }}
+              />
+            ) : (
+              <i className="fas fa-book-open" style={{ color: "#f59e0b", fontSize: 22 }} />
+            )}
+            <span className="fw-bold fs-5 text-white">
+              {settings["SiteTitle"] || "Cửa hàng sách"}
+            </span>
+          </Link>
 
           <nav className="d-flex align-items-center gap-3">
             <NavLinkNext href="/" end className="" activeClassName="nav-active">
               Trang chủ
             </NavLinkNext>
             <NavLinkNext href="/search" className="" activeClassName="nav-active">
-              Tra cứu
+              Tìm kiếm
             </NavLinkNext>
 
             {/* CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP */}

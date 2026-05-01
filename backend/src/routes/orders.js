@@ -92,6 +92,7 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
     note: z.string().trim().max(500).optional(),
     payment_method: z.enum(["cod", "bank_transfer"]),
     bank_transfer_reference: z.string().trim().max(100).optional(),
+    voucher_code: z.string().trim().toUpperCase().optional().nullable(),
     lines: z
       .array(
         z.object({
@@ -133,7 +134,28 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
   const freeThreshold = Number(freeSetting?.value ?? 300000);
   const shipping_fee = freeThreshold > 0 && subtotal >= freeThreshold ? 0 : Math.max(defaultFee, 0);
 
-  const discount = 0;
+  // Voucher discount
+  let discount = 0;
+  let appliedVoucherCode = null;
+  if (body.voucher_code) {
+    const { createSupabaseAnon } = await import("../supabase.js");
+    const sbAnon = createSupabaseAnon();
+    const { data: voucher } = await sbAnon
+      .from("vouchers")
+      .select("*")
+      .eq("code", body.voucher_code)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (voucher && new Date(voucher.valid_until) > new Date()) {
+      const rawDiscount = Math.floor((subtotal * voucher.discount_percent) / 100);
+      discount = voucher.max_discount_amount > 0
+        ? Math.min(rawDiscount, voucher.max_discount_amount)
+        : rawDiscount;
+      appliedVoucherCode = voucher.code;
+    }
+  }
+
   const total = subtotal + shipping_fee - discount;
   const now = new Date();
   const order_code = `BP${now.toISOString().slice(0, 19).replace(/[-:T]/g, "")}${Math.floor(
@@ -159,6 +181,7 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
       shipping_fee,
       discount,
       total,
+      voucher_code: appliedVoucherCode,
       bank_transfer_reference: body.payment_method === "bank_transfer" ? body.bank_transfer_reference ?? null : null
     })
     .select("*")

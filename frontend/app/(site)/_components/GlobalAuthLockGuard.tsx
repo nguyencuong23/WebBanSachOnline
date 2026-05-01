@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode, Suspense } from "react";
+import { useEffect, useRef, useState, type ReactNode, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getProfile, type Profile } from "@/lib/auth";
@@ -16,6 +16,9 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
+
+  // Dùng ref để tránh set spinner khi auth change sau lần đầu
+  const initialLoadDone = useRef(false);
 
   // Đồng bộ title
   useEffect(() => {
@@ -36,8 +39,9 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
 
   // Load session + profile
   useEffect(() => {
-    async function load() {
-      setIsSessionLoading(true);
+    async function load(isFromAuthChange = false) {
+      // Chỉ show spinner lần đầu, không show lại khi auth event fire
+      if (!isFromAuthChange) setIsSessionLoading(true);
       try {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
@@ -49,15 +53,34 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
       } catch {
         setProfile(null);
       } finally {
-        setIsSessionLoading(false);
+        if (!isFromAuthChange) {
+          setIsSessionLoading(false);
+          initialLoadDone.current = true;
+        } else if (!initialLoadDone.current) {
+          // Auth change xảy ra trước initial load xong (hiếm) → vẫn tắt spinner
+          setIsSessionLoading(false);
+          initialLoadDone.current = true;
+        }
       }
     }
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
+
+    // Lần đầu load
+    load(false);
+
+    // Lắng nghe auth change — chỉ update profile, không show spinner
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!initialLoadDone.current) return; // bỏ qua nếu initial load chưa xong
+      if (session) {
+        getProfile().then(setProfile).catch(() => setProfile(null));
+      } else {
+        setProfile(null);
+      }
+    });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // ── MAINTENANCE REDIRECT (dùng useEffect, không gọi router trong render) ──
+  // ── MAINTENANCE REDIRECT ──────────────────────────────────────────────────
   useEffect(() => {
     if (isSettingsLoading || isSessionLoading) return;
 
@@ -66,13 +89,12 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
     const hasValidBypass = pathname === "/auth" && searchParams.get("bypass") === BYPASS_KEY;
 
     if (isMaintenance) {
-      if (pathname.startsWith("/admin")) return;   // admin pages: ok
-      if (hasValidBypass) return;                  // bypass: ok
-      if (isAdmin) { router.replace("/admin"); return; }  // admin đã login → vào admin
-      if (pathname === "/maintenance") return;     // đang ở maintenance: ok
-      router.replace("/maintenance");              // tất cả còn lại → maintenance
+      if (pathname.startsWith("/admin")) return;
+      if (hasValidBypass) return;
+      if (isAdmin) { router.replace("/admin"); return; }
+      if (pathname === "/maintenance") return;
+      router.replace("/maintenance");
     } else {
-      // Maintenance tắt nhưng đang ở /maintenance → về trang chủ
       if (pathname === "/maintenance") router.replace("/");
     }
   }, [
@@ -84,9 +106,9 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
     searchParams,
     router,
   ]);
-  // ──────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
 
-  // Chờ load xong
+  // Chờ load xong mới render
   if (isSettingsLoading || isSessionLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100 bg-white">
@@ -108,11 +130,11 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
     } else if (hasValidBypass) {
       // ok
     } else if (isAdmin) {
-      return null; // đang redirect sang /admin
+      return null;
     } else if (pathname === "/maintenance") {
       // ok
     } else {
-      return null; // đang redirect sang /maintenance
+      return null;
     }
   }
 

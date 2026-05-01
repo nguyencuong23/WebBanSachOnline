@@ -124,19 +124,48 @@ export function AdminDashboardPage() {
                   <div style={{ width: "100%", height: 300 }}>
                     {trends?.revenue ? (
                       <ResponsiveContainer>
-                        <LineChart data={trends.revenue.map((r: any, i: number) => ({
-                          date: r.date?.split("-").slice(1).reverse().join("/") || "",
-                          revenue: r.revenue || 0,
-                          orders: trends.order_volume?.[i]?.count || 0
-                        }))}>
+                        <LineChart
+                          data={trends.revenue.map((r: any, i: number) => ({
+                            date: r.date?.split("-").slice(1).reverse().join("/") || "",
+                            revenue: r.revenue || 0,
+                            orders: trends.order_volume?.[i]?.count || 0
+                          }))}
+                          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                        >
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="date" />
-                          <YAxis yAxisId="left" />
-                          <YAxis yAxisId="right" orientation="right" />
-                          <Tooltip formatter={(value: any) => Number(value).toLocaleString()} />
-                          <Legend />
-                          <Line yAxisId="left" type="monotone" dataKey="revenue" name="Doanh thu (đ)" stroke="#4e73df" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
-                          <Line yAxisId="right" type="monotone" dataKey="orders" name="Số đơn hàng" stroke="#1cc88a" strokeWidth={2} />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fontSize: 11 }}
+                            interval={2}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            yAxisId="left"
+                            tick={{ fontSize: 11 }}
+                            tickFormatter={(v) =>
+                              v >= 1000000
+                                ? `${(v / 1000000).toFixed(1)}M`
+                                : v >= 1000
+                                ? `${(v / 1000).toFixed(0)}K`
+                                : v
+                            }
+                            width={55}
+                          />
+                          <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            tick={{ fontSize: 11 }}
+                            width={30}
+                            allowDecimals={false}
+                          />
+                          <Tooltip formatter={(value: any, name: string) =>
+                            name === "Doanh thu (đ)"
+                              ? Number(value).toLocaleString("vi-VN") + "đ"
+                              : value
+                          } wrapperStyle={{ zIndex: 9999 }} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          <Line yAxisId="left" type="monotone" dataKey="revenue" name="Doanh thu (đ)" stroke="#4e73df" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
+                          <Line yAxisId="right" type="monotone" dataKey="orders" name="Số đơn hàng" stroke="#1cc88a" strokeWidth={2} dot={{ r: 3 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     ) : (
@@ -202,11 +231,27 @@ export function AdminDashboardPage() {
                 <div className="card-body">
                   <div style={{ width: "100%", height: 350 }}>
                     <ResponsiveContainer>
-                      <BarChart layout="vertical" data={stats?.top_books || []} margin={{ left: 40 }}>
+                      <BarChart
+                        layout="vertical"
+                        data={stats?.top_books || []}
+                        margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" />
-                        <YAxis dataKey="title" type="category" width={100} tick={{ fontSize: 12 }} />
-                        <Tooltip />
+                        <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                        <YAxis
+                          dataKey="title"
+                          type="category"
+                          width={160}
+                          tick={{ fontSize: 11 }}
+                          tickFormatter={(v: string) =>
+                            v.length > 22 ? v.slice(0, 22) + "…" : v
+                          }
+                        />
+                        <Tooltip
+                          wrapperStyle={{ zIndex: 9999, overflow: "visible" }}
+                          formatter={(value: any) => [value, "Đã bán"]}
+                          labelFormatter={(label: string) => label}
+                        />
                         <Bar dataKey="sold_quantity" name="Đã bán" fill="#1cc88a" radius={[0, 4, 4, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -225,14 +270,27 @@ export function AdminDashboardPage() {
                 <div className="card-body">
                   <div style={{ width: "100%", height: 350 }}>
                     <ResponsiveContainer>
-                      <BarChart data={monthlyStats}>
+                      <BarChart
+                        data={monthlyStats}
+                        margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip formatter={(value: any) => Number(value).toLocaleString()} />
-                        <Legend />
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis
+                          tick={{ fontSize: 11 }}
+                          tickFormatter={(v) =>
+                            v >= 1000000
+                              ? `${(v / 1000000).toFixed(1)}M`
+                              : v >= 1000
+                              ? `${(v / 1000).toFixed(0)}K`
+                              : v
+                          }
+                          width={52}
+                        />
+                        <Tooltip formatter={(value: any) => Number(value).toLocaleString("vi-VN") + "đ"} wrapperStyle={{ zIndex: 9999 }} />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
                         <Bar dataKey="cod" name="Tiền mặt (COD)" stackId="a" fill="#4e73df" />
-                        <Bar dataKey="bank_transfer" name="Chuyển khoản" stackId="a" fill="#36b9cc" />
+                        <Bar dataKey="bank_transfer" name="Chuyển khoản" stackId="a" fill="#36b9cc" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

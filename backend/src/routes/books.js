@@ -20,7 +20,6 @@ booksRouter.get("/books/latest", async (req, res) => {
   res.json({ items: data });
 });
 
-// GET /books/featured — sách đang giảm giá (is_on_sale = true)
 booksRouter.get("/books/featured", async (req, res) => {
   const limit = Math.min(Number(req.query.limit || 12), 50);
   const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -38,13 +37,11 @@ booksRouter.get("/books/featured", async (req, res) => {
   res.json({ items: data || [] });
 });
 
-// GET /books/bestsellers — sách bán chạy nhất (dựa trên order_items)
 booksRouter.get("/books/bestsellers", async (req, res) => {
   const limit = Math.min(Number(req.query.limit || 10), 50);
   const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
   const sb = jwt ? createSupabaseUser(jwt) : createSupabaseAnon();
 
-  // Lấy top book_id theo tổng quantity từ order_items
   const { data: topItems, error: topErr } = await sb
     .from("order_items")
     .select("book_id, quantity")
@@ -52,7 +49,6 @@ booksRouter.get("/books/bestsellers", async (req, res) => {
 
   assert(!topErr, 400, "Failed to fetch bestsellers", "bestsellers_fetch_failed", topErr?.message);
 
-  // Tổng hợp số lượng bán theo book_id
   const countMap = {};
   for (const row of topItems || []) {
     countMap[row.book_id] = (countMap[row.book_id] || 0) + row.quantity;
@@ -63,7 +59,6 @@ booksRouter.get("/books/bestsellers", async (req, res) => {
     .map(([id]) => id);
 
   if (topBookIds.length === 0) {
-    // Fallback: trả về sách mới nhất nếu chưa có đơn hàng nào
     const { data: fallback } = await sb
       .from("books")
       .select("*, categories(*)")
@@ -81,7 +76,6 @@ booksRouter.get("/books/bestsellers", async (req, res) => {
 
   assert(!bErr, 400, "Failed to fetch bestseller books", "books_fetch_failed", bErr?.message);
 
-  // Sắp xếp lại theo thứ tự bán chạy
   const sorted = topBookIds
     .map(id => (books || []).find(b => b.book_id === id))
     .filter(Boolean);
@@ -121,7 +115,7 @@ booksRouter.get("/books", async (req, res) => {
   if (sort) {
     const [field, dir] = sort.split("-");
     if (field === "category_id") {
-      q = q.order("categories(name)", { ascending: dir === "asc" }); // Note: Supabase ordering on joined tables might not work like this perfectly, but we try, else we fallback
+      q = q.order("categories(name)", { ascending: dir === "asc" });
     } else {
       q = q.order(field, { ascending: dir === "asc" });
     }

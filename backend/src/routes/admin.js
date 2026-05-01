@@ -410,8 +410,6 @@ adminRouter.delete("/admin/users/:userId", async (req, res) => {
 
   assert(userId !== req.profile?.user_id, 400, "Bạn không thể xóa tài khoản của chính mình.", "cannot_delete_self");
 
-  // Xóa user trong auth, row trong profiles sẽ tự động cascade hoặc phải xóa thủ công tùy setup DB.
-  // Nếu Supabase setup cascade:
   const { error } = await sbAdmin.auth.admin.deleteUser(userId);
   assert(!error, 400, "Lỗi xóa người dùng", "user_delete_failed", error?.message);
 
@@ -539,8 +537,7 @@ adminRouter.get("/admin/orders", async (req, res) => {
 
   const { data, error } = await q.limit(500);
   if (error) console.error("[ORDERS GET]", JSON.stringify(error));
-  assert(!error, 400, "Lỗi tải danh sách đơn hàng", "orders_fetch_failed", error?.message);
-  res.json({ items: data });
+  assert(!error, 400, "Lỗi tải danh sách đơn hàng", "orders_fetch_failed", error?.message);  res.json({ items: data });
 });
 
 adminRouter.get("/admin/orders/:orderId", async (req, res) => {

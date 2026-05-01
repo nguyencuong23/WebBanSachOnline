@@ -170,3 +170,6 @@ appsettings.json
 # Data Protection Keys
 **/DataProtection-Keys/
 key-*.xml
+
+# VS Code
+.vscode/

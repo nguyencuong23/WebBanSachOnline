@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSessionProfile } from "../_hooks/useSessionProfile";
 import { apiFetch } from "@/lib/api";
-import Link from "next/link";
 
 interface Notification {
   id: number;
@@ -43,7 +42,7 @@ export function NotificationBell() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const data = await apiFetch<{ items: Notification[] }>("/api/notifications");
+      const data = await apiFetch<{ items: Notification[] }>("/notifications");
       setNotifications(data.items || []);
     } catch (error) {
       console.error(error);
@@ -54,7 +53,7 @@ export function NotificationBell() {
 
   const markAsRead = async (id: number) => {
     try {
-      await apiFetch(`/api/notifications/${id}/read`, { method: "PATCH" });
+      await apiFetch(`/notifications/${id}/read`, { method: "PATCH" });
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );
@@ -65,7 +64,7 @@ export function NotificationBell() {
 
   const markAllAsRead = async () => {
     try {
-      await apiFetch("/api/notifications/read-all", { method: "POST" });
+      await apiFetch("/notifications/read-all", { method: "POST" });
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     } catch (error) {
       console.error(error);
@@ -242,14 +241,29 @@ export function NotificationBell() {
                   {/* Link chuyển hướng (Nếu không phải ảnh) */}
                   {activeNotif.link && !(activeNotif.link.match(/\.(jpeg|jpg|gif|png|webp)$/i) || activeNotif.link.includes("supabase.co/storage")) && (
                     <div className="mb-3">
-                      <Link 
-                        href={activeNotif.link} 
-                        className="btn btn-sm btn-outline-primary rounded-pill px-3"
+                      <a
+                        href={activeNotif.link}
+                        className="notif-action-link"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          background: "#2563eb",
+                          color: "#fff",
+                          borderRadius: 50,
+                          padding: "6px 16px",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          textDecoration: "none",
+                          border: "none",
+                          outline: "none",
+                          position: "static",
+                        }}
                         onClick={closeModal}
                       >
-                        <i className="fas fa-external-link-alt me-2" />
+                        <i className="fas fa-external-link-alt" />
                         Xem chi tiết liên quan
-                      </Link>
+                      </a>
                     </div>
                   )}
 

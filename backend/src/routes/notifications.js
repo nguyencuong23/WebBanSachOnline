@@ -4,8 +4,7 @@ import { createSupabaseUser } from "../supabase.js";
 
 export const notificationsRouter = Router();
 
-// Lấy danh sách thông báo của user hiện tại
-notificationsRouter.get("/api/notifications", requireUser, async (req, res) => {
+notificationsRouter.get("/notifications", requireUser, async (req, res) => {
   const supabase = createSupabaseUser(req.auth.jwt);
   const { data, error } = await supabase
     .from("notifications")
@@ -21,8 +20,7 @@ notificationsRouter.get("/api/notifications", requireUser, async (req, res) => {
   res.json({ items: data || [] });
 });
 
-// Đánh dấu 1 thông báo là đã đọc
-notificationsRouter.patch("/api/notifications/:id/read", requireUser, async (req, res) => {
+notificationsRouter.patch("/notifications/:id/read", requireUser, async (req, res) => {
   const supabase = createSupabaseUser(req.auth.jwt);
   const { id } = req.params;
 
@@ -39,8 +37,7 @@ notificationsRouter.patch("/api/notifications/:id/read", requireUser, async (req
   res.json({ item: data });
 });
 
-// Đánh dấu tất cả là đã đọc
-notificationsRouter.post("/api/notifications/read-all", requireUser, async (req, res) => {
+notificationsRouter.post("/notifications/read-all", requireUser, async (req, res) => {
   const supabase = createSupabaseUser(req.auth.jwt);
 
   const { error } = await supabase

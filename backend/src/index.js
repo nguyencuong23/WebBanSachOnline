@@ -22,6 +22,7 @@ import { notificationsRouter } from "./routes/notifications.js";
 import { cartRouter } from "./routes/cart.js";
 import { reviewsRouter } from "./routes/reviews.js";
 import { forgotPasswordRouter } from "./routes/forgot-password.js";
+import { chatRouter } from "./routes/chat.js";
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use(notificationsRouter);
 app.use(cartRouter);
 app.use(reviewsRouter);
 app.use(forgotPasswordRouter);
+app.use(chatRouter);
 
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "BTL Library API" });

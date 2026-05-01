@@ -163,7 +163,7 @@ export function AdminOrdersPage() {
         body: JSON.stringify(payload)
       });
       setModalMode(null);
-      setAddForm({ user_id: "", receiver_name: "", receiver_phone: "", shipping_address: "", note: "", payment_method: "cod", lines: [{ book_id: "", quantity: 1 }] });
+      setAddForm({ user_id: "", receiver_name: "", receiver_phone: "", shipping_address: "", note: "", payment_method: "cod", shipping_fee: 0, lines: [{ book_id: "", quantity: 1 }] });
       load();
     } catch (e: any) {
       setSaveError(e.message || String(e));

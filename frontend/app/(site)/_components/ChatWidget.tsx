@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import "./chat-widget.css";
 
 interface Message {
@@ -8,18 +9,7 @@ interface Message {
   content: string;
 }
 
-const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY;
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.1-8b-instant";
-
-const SYSTEM_PROMPT = `Bạn là trợ lý AI của cửa hàng sách trực tuyến. Nhiệm vụ của bạn là:
-- Giúp khách hàng tìm kiếm sách theo thể loại, tác giả, chủ đề
-- Tư vấn sách phù hợp với sở thích của khách
-- Giải đáp thắc mắc về đơn hàng, vận chuyển, thanh toán
-- Giới thiệu các sách nổi bật, bestseller
-- Hỗ trợ khách hàng một cách thân thiện và nhiệt tình
-
-Hãy trả lời ngắn gọn, rõ ràng bằng tiếng Việt. Nếu không biết thông tin cụ thể, hãy hướng dẫn khách liên hệ nhân viên hỗ trợ.`;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -34,7 +24,8 @@ export function ChatWidget() {
       setMessages([
         {
           role: "assistant",
-          content: "Xin chào! 👋 Tôi là trợ lý AI của cửa hàng sách. Tôi có thể giúp bạn tìm sách, tư vấn thể loại, hoặc giải đáp thắc mắc. Bạn cần hỗ trợ gì?",
+          content:
+            "Xin chào! 👋 Tôi là trợ lý AI của cửa hàng sách. Tôi có thể giúp bạn tìm sách, tư vấn thể loại, hoặc giải đáp thắc mắc. Bạn cần hỗ trợ gì?",
         },
       ]);
     }
@@ -60,38 +51,43 @@ export function ChatWidget() {
     setLoading(true);
 
     try {
-      const res = await fetch(GROQ_API_URL, {
+      // Lấy JWT nếu user đã đăng nhập (để AI biết đơn hàng của user)
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token ?? null;
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-        },
+        headers,
         body: JSON.stringify({
-          model: MODEL,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...newMessages.map((m) => ({ role: m.role, content: m.content })),
-          ],
-          max_tokens: 512,
-          temperature: 0.7,
+          // Bỏ tin nhắn chào đầu tiên của assistant ra khỏi history gửi lên
+          messages: newMessages.filter((m) => !(m.role === "assistant")),
         }),
       });
 
       if (!res.ok) {
-        throw new Error(`Groq API error: ${res.status}`);
+        const err = await res.json().catch(() => ({}));
+        const msg = err?.error?.message || `Lỗi ${res.status}`;
+        throw new Error(msg);
       }
 
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content ?? "Xin lỗi, tôi không thể trả lời lúc này.";
+      const reply = data.reply ?? "Xin lỗi, tôi không thể trả lời lúc này.";
 
       setMessages([...newMessages, { role: "assistant", content: reply }]);
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
       setMessages([
         ...newMessages,
         {
           role: "assistant",
-          content: "⚠️ Có lỗi xảy ra khi kết nối AI. Vui lòng thử lại sau.",
+          content: `⚠️ ${message}`,
         },
       ]);
     } finally {
@@ -182,7 +178,9 @@ export function ChatWidget() {
                   <i className="fas fa-robot" />
                 </div>
                 <div className="chat-msg-bubble chat-typing">
-                  <span /><span /><span />
+                  <span />
+                  <span />
+                  <span />
                 </div>
               </div>
             )}

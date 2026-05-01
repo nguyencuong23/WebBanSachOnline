@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
 
 const EXPECTED_SETTINGS = [
   { key: "SiteTitle", label: "Tiêu đề trang web (hiển thị trên tab trình duyệt)", type: "text", tab: "general" },
@@ -65,15 +64,22 @@ export function AdminSettingsPage() {
 
   async function handleFileUpload(key: string, file: File) {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${key}_${Date.now()}.${fileExt}`;
-      const { error } = await supabase.storage.from('web-images').upload(fileName, file, { upsert: true });
-      if (error) throw error;
-
-      const { data: publicUrlData } = supabase.storage.from('web-images').getPublicUrl(fileName);
-      updateValue(key, publicUrlData.publicUrl);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        try {
+          const res = await apiFetch<{ url: string }>("/admin/settings/upload-image", {
+            method: "POST",
+            body: JSON.stringify({ base64, contentType: file.type, key }),
+          });
+          updateValue(key, res.url);
+        } catch (e: any) {
+          alert("Lỗi tải ảnh: " + e.message);
+        }
+      };
     } catch (e: any) {
-      alert("Lỗi tải ảnh: " + e.message);
+      alert("Lỗi đọc file: " + e.message);
     }
   }
 

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { getAvatarUrl } from "@/lib/avatar";
-import { supabase } from "@/lib/supabase";
 import "./profile.css";
 
 const FULL_NAME_REGEX = /^[\p{L}](?:[\p{L}\s'.-]{0,98}[\p{L}])?$/u;
@@ -152,21 +151,13 @@ export function ProfilePage() {
 
     setChangingPassword(true);
     try {
-      // 1. Verify current password
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: profile.email,
-        password: passwordData.currentPassword,
+      await apiFetch("/me/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
       });
-
-      if (signInError) throw new Error("Mật khẩu hiện tại không chính xác");
-
-      // 2. Update to new password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: passwordData.newPassword
-      });
-
-      if (updateError) throw new Error(updateError.message);
-
       showToast("Đổi mật khẩu thành công", "success");
       closePasswordModal();
     } catch (e: any) {

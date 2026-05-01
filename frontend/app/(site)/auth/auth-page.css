@@ -1,4 +1,3 @@
-/* ===== AUTH PAGE ===== */
 .auth-shell {
   min-height: calc(100vh - 64px);
   display: flex;
@@ -22,7 +21,7 @@
   pointer-events: none;
 }
 
-/* Card */
+
 .auth-card {
   position: relative;
   z-index: 1;
@@ -35,7 +34,7 @@
   box-shadow: 0 32px 80px rgba(0,0,0,0.35);
 }
 
-/* Left panel */
+
 .auth-panel {
   display: flex;
   flex-direction: column;
@@ -89,7 +88,7 @@
   margin: 0 0 32px;
 }
 
-/* Tab pills */
+
 .auth-tabs {
   display: flex;
   flex-direction: column;
@@ -142,7 +141,7 @@
   line-height: 1.6;
 }
 
-/* Right content */
+
 .auth-content {
   display: flex;
   flex-direction: column;
@@ -172,7 +171,7 @@
   line-height: 1.6;
 }
 
-/* Form */
+
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -239,7 +238,7 @@
   box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
 }
 
-/* Password toggle */
+
 .auth-pw-toggle {
   position: absolute;
   right: 12px;
@@ -267,7 +266,7 @@
   gap: 4px;
 }
 
-/* Password strength */
+
 .auth-pw-strength {
   display: flex;
   gap: 4px;
@@ -286,7 +285,7 @@
 .auth-pw-bar.medium { background: #f59e0b; }
 .auth-pw-bar.strong { background: #22c55e; }
 
-/* Alert */
+
 .auth-alert {
   padding: 12px 16px;
   border-radius: 12px;
@@ -302,7 +301,7 @@
 .auth-alert.is-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .auth-alert.is-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
 
-/* Buttons */
+
 .auth-submit-btn {
   width: 100%;
   padding: 13px;
@@ -334,7 +333,7 @@
   transform: none;
 }
 
-/* Footer links */
+
 .auth-footer {
   display: flex;
   align-items: center;
@@ -370,7 +369,7 @@
 
 .auth-home-link:hover { color: #475569; }
 
-/* Forgot password steps */
+
 .auth-step-indicator {
   display: flex;
   align-items: center;
@@ -423,7 +422,7 @@
 
 .auth-step-line.done { background: #22c55e; }
 
-/* OTP input */
+
 .auth-otp-wrap {
   display: flex;
   gap: 10px;
@@ -471,7 +470,7 @@
 
 .auth-otp-timer span { color: #2563eb; font-weight: 700; }
 
-/* Responsive */
+
 @media (max-width: 860px) {
   .auth-card { grid-template-columns: 1fr; }
   .auth-panel { padding: 28px 24px; }

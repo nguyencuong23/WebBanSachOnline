@@ -372,7 +372,6 @@ export function HomePage() {
 
   return (
     <>
-      {/* ── Hero ── */}
       <section className="home-hero">
         <div className="hero-inner">
           <div className="hero-text">
@@ -416,7 +415,6 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* Logo visual */}
           <div className="hero-visual">
             <div className="hero-logo-wrap">
               {logoUrl ? (
@@ -440,7 +438,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Features strip ── */}
       <div className="container" style={{ padding: "32px 24px 0" }}>
         <div className="features-strip">
           <div className="feature-item">
@@ -482,7 +479,6 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* ── Categories ── */}
       <section className="home-section">
         <div className="container">
           <div className="home-section-header">
@@ -531,7 +527,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Sách mới nhất ── */}
       <section className="home-section home-section-alt">
         <div className="container">
           <div className="home-section-header">
@@ -557,7 +552,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Sale banner ── */}
       <section className="home-section">
         <div className="container">
           <div className="sale-banner">
@@ -574,7 +568,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Sách đang giảm giá ── */}
       {(loading || featuredBooks.length > 0) && (
         <section className="home-section home-section-alt">
           <div className="container">
@@ -600,7 +593,6 @@ export function HomePage() {
         </section>
       )}
 
-      {/* ── Bán chạy nhất ── */}
       <section className="home-section">
         <div className="container">
           <div className="home-section-header">
@@ -639,7 +631,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA cuối trang ── */}
       <section className="home-section home-section-alt">
         <div className="container" style={{ textAlign: "center", maxWidth: 600, margin: "0 auto" }}>
           <div style={{ fontSize: "3rem", marginBottom: 16 }}>📖</div>
@@ -655,7 +646,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Toast ── */}
       {toast && (
         <div className="home-toast">
           <i className="fas fa-check-circle" style={{ color: "#34d399" }} />

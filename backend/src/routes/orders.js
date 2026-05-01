@@ -69,7 +69,6 @@ ordersRouter.patch("/orders/:orderId/cancel", requireUser, async (req, res) => {
   
   assert(!uErr, 400, "Failed to cancel order", "cancel_failed", uErr?.message);
 
-  // Return items to stock
   const { data: items } = await sb.from("order_items").select("book_id, quantity").eq("order_id", orderId);
   if (items) {
     for (const item of items) {
@@ -204,7 +203,6 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
   const { error: itErr } = await sb.from("order_items").insert(itemsToInsert);
   assert(!itErr, 400, "Failed to create order items", "order_items_create_failed", itErr?.message);
 
-  // Decrement stock (best-effort; for strict atomicity, replace with SQL RPC)
   for (const line of body.lines) {
     const b = books.find((x) => x.book_id === line.book_id);
     const newQty = (b.quantity ?? 0) - line.quantity;
@@ -212,9 +210,7 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
     assert(!uErr, 400, "Failed to update stock", "stock_update_failed", uErr?.message);
   }
 
-  // Clear user cart after successful checkout
   const { error: cErr } = await sb.from("cart_items").delete().eq("user_id", req.auth.user.id);
-  // We don't fail the order if clearing cart fails, it's non-critical, but good to log
   if (cErr) console.error("Failed to clear cart:", cErr);
 
   res.status(201).json({ order_id: order.order_id, order_code: order.order_code });

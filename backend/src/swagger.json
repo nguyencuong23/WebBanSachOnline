@@ -1796,18 +1796,12 @@
     },
     "/admin/dashboard/stats": {
       "get": {
-        "summary": "Lấy thống kê dữ liệu Dashboard",
-        "tags": [
-          "Admin Dashboard"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "tags": ["Admin Dashboard"],
+        "summary": "Lấy thống kê chi tiết dashboard (Top sách, Trạng thái đơn, Thể loại)",
+        "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "Thành công"
+            "description": "Trả về { status_distribution, top_books, category_stats, recent_orders }"
           }
         }
       }
@@ -2107,8 +2101,7 @@
       }
     },
     "/admin/settings": {
-      "put": {
-        "summary": "Cập nhật nhiều cài đặt hệ thống (Admin)",
+      "put": {        "summary": "Cập nhật nhiều cài đặt hệ thống (Admin)",
         "tags": [
           "Admin Settings"
         ],
@@ -2155,6 +2148,40 @@
             "description": "Cập nhật thành công"
           }
         }
+      }
+    },
+    "/admin/settings/upload-image": {
+      "post": {
+        "summary": "Upload ảnh cho cài đặt (logo, QR, favicon...)",
+        "tags": ["Admin Settings"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["base64", "contentType", "key"],
+                "properties": {
+                  "base64": { "type": "string", "description": "Dữ liệu ảnh dạng Base64 (data:image/...;base64,...)" },
+                  "contentType": { "type": "string", "example": "image/png" },
+                  "key": { "type": "string", "description": "Key cài đặt tương ứng (VD: LogoUrl, BankTransferInfo)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Trả về { url } là public URL của ảnh đã upload" },
+          "400": { "description": "Lỗi upload hoặc dữ liệu không hợp lệ" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Kiểm tra trạng thái API",
+        "tags": ["Health"],
+        "responses": { "200": { "description": "Trả về { ok: true, service }" } }
       }
     },
     "/admin/notifications": {
@@ -2336,68 +2363,29 @@
         }
       }
     },
-    "/api/notifications": {
+    "/notifications": {
       "get": {
-        "tags": [
-          "Client Notifications"
-        ],
+        "tags": ["Client Notifications"],
         "summary": "Lấy danh sách thông báo của user",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Success" } }
       }
     },
-    "/api/notifications/read-all": {
+    "/notifications/read-all": {
       "post": {
-        "tags": [
-          "Client Notifications"
-        ],
+        "tags": ["Client Notifications"],
         "summary": "Đánh dấu tất cả là đã đọc",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Success" } }
       }
     },
-    "/api/notifications/{id}/read": {
+    "/notifications/{id}/read": {
       "patch": {
-        "tags": [
-          "Client Notifications"
-        ],
+        "tags": ["Client Notifications"],
         "summary": "Đánh dấu 1 thông báo là đã đọc",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Success" } }
       }
     },
     "/cart": {
@@ -2606,176 +2594,6 @@
         "responses": {
           "200": {
             "description": "Success"
-          }
-        }
-      },
-      "/admin/dashboard/summary": {
-        "get": {
-          "tags": [
-            "Admin Dashboard"
-          ],
-          "summary": "Lấy tổng quan dashboard (4 thẻ thống kê)",
-          "security": [
-            {
-              "bearerAuth": []
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Success",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "total_books": {
-                        "type": "integer"
-                      },
-                      "total_users": {
-                        "type": "integer"
-                      },
-                      "total_orders": {
-                        "type": "integer"
-                      },
-                      "revenue": {
-                        "type": "number"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/admin/dashboard/stats": {
-        "get": {
-          "tags": [
-            "Admin Dashboard"
-          ],
-          "summary": "Lấy thống kê chi tiết dashboard (Top sách, Trạng thái đơn, Thể loại)",
-          "security": [
-            {
-              "bearerAuth": []
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Success",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "total_books": {
-                        "type": "integer"
-                      },
-                      "total_customers": {
-                        "type": "integer"
-                      },
-                      "status_distribution": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "name": {
-                              "type": "string"
-                            },
-                            "value": {
-                              "type": "integer"
-                            },
-                            "key": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      },
-                      "top_books": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "title": {
-                              "type": "string"
-                            },
-                            "author": {
-                              "type": "string"
-                            },
-                            "sold_quantity": {
-                              "type": "integer"
-                            },
-                            "revenue": {
-                              "type": "number"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/admin/monthly-stats": {
-        "get": {
-          "tags": [
-            "Admin Dashboard"
-          ],
-          "summary": "Lấy thống kê đơn hàng và doanh thu theo tháng (phân loại COD/Bank)",
-          "security": [
-            {
-              "bearerAuth": []
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Success",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "example": "T1"
-                        },
-                        "cod": {
-                          "type": "number"
-                        },
-                        "bank_transfer": {
-                          "type": "number"
-                        },
-                        "count": {
-                          "type": "integer"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/admin/borrowing-trends": {
-        "get": {
-          "tags": [
-            "Admin Dashboard"
-          ],
-          "summary": "Lấy xu hướng đơn hàng và doanh thu 30 ngày qua",
-          "security": [
-            {
-              "bearerAuth": []
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Success"
-            }
           }
         }
       }

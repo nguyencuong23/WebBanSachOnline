@@ -146,7 +146,6 @@ __pycache__/
 wwwroot/lib/
 wwwroot/uploads/
 node_modules/
-package-lock.json
 
 # Node/React env + build — không commit file chứa secret
 .env

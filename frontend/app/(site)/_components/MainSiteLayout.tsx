@@ -6,7 +6,7 @@
  * Mục đích của file: Component Layout chính cung cấp Header (Navbar) và Footer cho người dùng.
  * Các chức năng chính: Hiển thị logo, menu điều hướng, thanh đăng nhập/đăng xuất, xử lý chuyển hướng bảo mật.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

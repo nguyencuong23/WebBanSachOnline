@@ -6,7 +6,7 @@
  * Mục đích của file: Hiển thị bảng điều khiển tổng quan cho Admin.
  * Các chức năng chính: Lấy dữ liệu thống kê, vẽ biểu đồ doanh thu, đơn hàng, sách bán chạy, trạng thái đơn.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -172,8 +172,8 @@ export function AdminDashboardPage() {
                               v >= 1000000
                                 ? `${(v / 1000000).toFixed(1)}M`
                                 : v >= 1000
-                                ? `${(v / 1000).toFixed(0)}K`
-                                : v
+                                  ? `${(v / 1000).toFixed(0)}K`
+                                  : v
                             }
                             width={55}
                           />
@@ -308,8 +308,8 @@ export function AdminDashboardPage() {
                             v >= 1000000
                               ? `${(v / 1000000).toFixed(1)}M`
                               : v >= 1000
-                              ? `${(v / 1000).toFixed(0)}K`
-                              : v
+                                ? `${(v / 1000).toFixed(0)}K`
+                                : v
                           }
                           width={52}
                         />

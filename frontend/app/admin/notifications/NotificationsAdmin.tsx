@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý hệ thống thông báo gửi đến người dùng.
  * Các chức năng chính: Tạo thông báo mới (hàng loạt hoặc chọn lọc), xem chi tiết, chỉnh sửa và thu hồi thông báo. Upload ảnh đính kèm.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -315,9 +315,9 @@ export function NotificationsAdmin() {
                   <td>
                     <span className="badge bg-secondary">
                       {n.type === "system" ? "Hệ thống" :
-                       n.type === "promotion" ? "Khuyến mãi" :
-                       n.type === "order" ? "Đơn hàng" :
-                       n.type === "other" ? "Khác" : n.type}
+                        n.type === "promotion" ? "Khuyến mãi" :
+                          n.type === "order" ? "Đơn hàng" :
+                            n.type === "other" ? "Khác" : n.type}
                     </span>
                   </td>
                   <td>
@@ -360,13 +360,13 @@ export function NotificationsAdmin() {
                         <option value="all">Tất cả người dùng</option>
                         <option value="custom">Chọn người dùng cụ thể</option>
                       </select>
-                      
+
                       {form.recipients_type === "custom" && (
                         <div className="p-3 bg-white border rounded">
                           <EntityPicker
                             entityType="users"
                             value={""}
-                            onChange={() => {}}
+                            onChange={() => { }}
                             onSelect={handleUserSelect}
                             placeholder="Nhập tên, email hoặc số điện thoại..."
                           />
@@ -521,12 +521,12 @@ export function NotificationsAdmin() {
                     <dd className="col-sm-8">
                       <span className="badge bg-secondary">
                         {selectedNotif.type === "system" ? "Hệ thống" :
-                         selectedNotif.type === "promotion" ? "Khuyến mãi" :
-                         selectedNotif.type === "order" ? "Đơn hàng" :
-                         selectedNotif.type === "other" ? "Khác" : selectedNotif.type}
+                          selectedNotif.type === "promotion" ? "Khuyến mãi" :
+                            selectedNotif.type === "order" ? "Đơn hàng" :
+                              selectedNotif.type === "other" ? "Khác" : selectedNotif.type}
                       </span>
                     </dd>
-                    
+
                     <dt className="col-sm-4 text-muted">Người nhận</dt>
                     <dd className="col-sm-8">
                       {selectedNotif.recipients_type === "all" ? (

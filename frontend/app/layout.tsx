@@ -6,7 +6,7 @@
  * Mục đích của file: Root Layout, định nghĩa cấu trúc HTML cơ bản và Metadata chung cho toàn bộ ứng dụng.
  * Các chức năng chính: Fetch cài đặt từ API để tạo SEO Metadata, nạp CSS globals, font chữ, bảo vệ route bằng GlobalAuthLockGuard.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

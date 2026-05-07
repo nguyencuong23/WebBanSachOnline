@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý thông tin hồ sơ (profile) của người dùng đang đăng nhập.
  * Các chức năng chính: Lấy thông tin, cập nhật thông tin cá nhân, tải lên/xóa ảnh đại diện, đổi mật khẩu.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

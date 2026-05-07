@@ -6,7 +6,7 @@
  * Mục đích của file: Component Chuông thông báo trên Header.
  * Các chức năng chính: Hiển thị số lượng thông báo chưa đọc, danh sách thông báo dạng Dropdown, Popup xem chi tiết.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

@@ -6,7 +6,7 @@
  * Mục đích của file: Điểm bắt đầu (entry point) của Express Backend Server.
  * Các chức năng chính: Khởi tạo app Express, nạp middleware (cors, helmet), mount router và xử lý lỗi global.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

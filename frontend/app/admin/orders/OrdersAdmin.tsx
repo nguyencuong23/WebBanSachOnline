@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý toàn bộ đơn hàng của khách từ phía Admin.
  * Các chức năng chính: Xem danh sách, cập nhật trạng thái đơn hàng và trạng thái thanh toán, tạo đơn hàng mới, xem chi tiết và xóa đơn.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -101,7 +101,7 @@ export function AdminOrdersPage() {
         for (const i of (res.items || [])) s[i.key] = i.value;
         setSettings(s);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -205,7 +205,7 @@ export function AdminOrdersPage() {
       // Validate lines
       const validLines = addForm.lines.filter(l => l.book_id.trim());
       if (validLines.length === 0) throw new Error("Vui lòng nhập ít nhất 1 sản phẩm.");
-      
+
       const payload = { ...addForm, lines: validLines };
       await apiFetch("/admin/orders", {
         method: "POST",
@@ -565,7 +565,7 @@ export function AdminOrdersPage() {
                           <div className="row g-3">
                             <div className="col-12">
                               <label className="form-label fw-semibold">Khách hàng (User ID) <span className="text-danger">*</span></label>
-                              <EntityPicker 
+                              <EntityPicker
                                 entityType="users"
                                 value={addForm.user_id}
                                 onChange={val => setAddForm({ ...addForm, user_id: val })}

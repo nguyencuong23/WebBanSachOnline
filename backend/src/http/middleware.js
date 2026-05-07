@@ -6,7 +6,7 @@
  * Mục đích của file: Xử lý middleware bắt lỗi (error handler) và các trường hợp route không tồn tại (not found).
  * Các chức năng chính: Xử lý HttpError, ZodError và lỗi hệ thống (500).
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

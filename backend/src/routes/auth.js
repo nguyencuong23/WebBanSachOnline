@@ -6,7 +6,7 @@
  * Mục đích của file: Định nghĩa API phục vụ xác thực người dùng.
  * Các chức năng chính: Đăng ký tài khoản (register) và tìm kiếm identifier (resolve-identifier).
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

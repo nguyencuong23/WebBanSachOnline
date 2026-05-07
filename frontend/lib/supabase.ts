@@ -6,7 +6,7 @@
  * Mục đích của file: Khởi tạo Supabase client sử dụng thư viện `@supabase/supabase-js`.
  * Các chức năng chính: Xuất (export) đối tượng client Supabase kết nối tới database với cấu hình Auth phù hợp.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

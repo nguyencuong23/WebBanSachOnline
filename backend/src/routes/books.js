@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý các endpoint liên quan đến dữ liệu Sách (Books).
  * Các chức năng chính: Lấy danh sách sách (mới nhất, nổi bật, bán chạy, tất cả), lấy chi tiết sách, và các thao tác CRUD dành cho Admin.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

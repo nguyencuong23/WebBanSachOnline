@@ -6,7 +6,7 @@
  * Mục đích của file: Entry point cho trang chủ (route `/`).
  * Các chức năng chính: Gọi và render component HomePage.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

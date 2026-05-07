@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý các cấu hình (settings) của hệ thống/cửa hàng.
  * Các chức năng chính: Lấy danh sách cấu hình (Public), cập nhật cấu hình, upload ảnh logo/banner (Admin).
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

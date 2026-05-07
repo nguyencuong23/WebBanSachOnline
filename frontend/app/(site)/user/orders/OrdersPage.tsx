@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý và hiển thị danh sách đơn hàng của người dùng.
  * Các chức năng chính: Lấy danh sách đơn hàng, hiển thị trạng thái thanh toán và vận chuyển, hủy đơn hàng.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -209,7 +209,7 @@ export function OrdersPage() {
                     Xem chi tiết
                   </Link>
                   {o.status === "pending" && (
-                    <button 
+                    <button
                       className="btn btn-link text-muted text-decoration-none btn-sm"
                       onClick={() => handleCancel(o.order_id)}
                     >

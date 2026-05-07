@@ -6,7 +6,7 @@
  * Mục đích của file: Entry point cho trang Quản lý Thể loại sách.
  * Các chức năng chính: Render component AdminCategoriesPage.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

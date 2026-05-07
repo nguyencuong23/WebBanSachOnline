@@ -6,7 +6,7 @@
  * Mục đích của file: Cung cấp hàm fetch chung (wrapper) để gọi API backend.
  * Các chức năng chính: Gọi HTTP request, tự động đính kèm Supabase Access Token, xử lý lỗi API.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

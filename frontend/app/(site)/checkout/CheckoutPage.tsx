@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý quy trình thanh toán đơn hàng.
  * Các chức năng chính: Hiển thị giỏ hàng / mua ngay, tính tiền, áp dụng voucher, chọn phương thức thanh toán, xác nhận đơn.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Lã Anh Tuấn
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

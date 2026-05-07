@@ -6,7 +6,7 @@
  * Mục đích của file: Xử lý lỗi tuỳ chỉnh và helper hàm assert.
  * Các chức năng chính: Định nghĩa HttpError, hàm assert văng lỗi nhanh gọn.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

@@ -6,7 +6,7 @@
  * Mục đích của file: Middleware xác thực và phân quyền.
  * Các chức năng chính: Kiểm tra JWT, lấy profile user, kiểm tra quyền Admin.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

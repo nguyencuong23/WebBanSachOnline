@@ -6,7 +6,7 @@
  * Mục đích của file: Cung cấp custom hook để quản lý trạng thái xác thực và lấy thông tin user profile.
  * Các chức năng chính: Lấy email từ Supabase auth, gọi hàm lấy profile từ DB, xử lý logout.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

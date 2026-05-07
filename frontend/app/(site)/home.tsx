@@ -6,7 +6,7 @@
  * Mục đích của file: Cung cấp giao diện trang chủ của cửa hàng sách.
  * Các chức năng chính: Hiển thị banner, danh sách thể loại, sách mới nhất, sách giảm giá, sách bán chạy.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

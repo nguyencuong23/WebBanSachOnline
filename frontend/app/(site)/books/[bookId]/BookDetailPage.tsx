@@ -6,7 +6,7 @@
  * Mục đích của file: Hiển thị giao diện chi tiết của một cuốn sách.
  * Các chức năng chính: Hiển thị thông tin sách, chọn số lượng, thêm vào giỏ, hiển thị đánh giá và sách cùng thể loại.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -120,15 +120,15 @@ function Skeleton() {
 export function BookDetailPage({ bookId }: { bookId: string }) {
   const router = useRouter();
 
-  const [book, setBook]           = useState<Book | null>(null);
-  const [related, setRelated]     = useState<Book[]>([]);
+  const [book, setBook] = useState<Book | null>(null);
+  const [related, setRelated] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [notFound, setNotFound]   = useState(false);
-  const [qty, setQty]             = useState(1);
+  const [notFound, setNotFound] = useState(false);
+  const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<"desc" | "specs" | "reviews">("desc");
-  const [toast, setToast]         = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [addingCart, setAddingCart] = useState(false);
-  const [settings, setSettings]   = useState<Record<string, string>>({});
+  const [settings, setSettings] = useState<Record<string, string>>({});
   const sliderRef = useRef<HTMLDivElement>(null);
   const isScrolling = useRef(false);
 

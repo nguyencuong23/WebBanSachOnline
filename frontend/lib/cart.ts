@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý thao tác giỏ hàng phía Client.
  * Các chức năng chính: Thêm sách vào giỏ (gọi API hoặc lưu LocalStorage), lấy/lưu giỏ hàng LocalStorage (fallback).
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

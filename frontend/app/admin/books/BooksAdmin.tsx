@@ -6,7 +6,7 @@
  * Mục đích của file: Cung cấp giao diện quản lý sách cho Admin (CRUD).
  * Các chức năng chính: Hiển thị danh sách, thêm, sửa, xóa, tìm kiếm, phân trang và tải ảnh bìa lên Supabase Storage.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -156,7 +156,7 @@ export function AdminBooksPage() {
     try {
       const img = new window.Image();
       const objectUrl = URL.createObjectURL(file);
-      
+
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
@@ -165,16 +165,16 @@ export function AdminBooksPage() {
         if (ctx) {
           // Vẽ ảnh lên canvas
           ctx.drawImage(img, 0, 0);
-          
+
           // Chuyển đổi sang WebP (chất lượng 85%)
           canvas.toBlob((blob) => {
             if (blob) {
               const originalName = file.name;
               const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
               const newFileName = `${nameWithoutExt}.webp`;
-              
+
               const webpFile = new File([blob], newFileName, { type: 'image/webp' });
-              
+
               setSelectedFile(webpFile);
               setLocalPreview(URL.createObjectURL(webpFile));
               setForm((f: any) => ({ ...f, image_url: `${f.book_id || ''}.webp` }));
@@ -183,12 +183,12 @@ export function AdminBooksPage() {
         }
         URL.revokeObjectURL(objectUrl);
       };
-      
+
       img.onerror = () => {
         alert("Lỗi khi tải hình ảnh. Vui lòng thử lại.");
         URL.revokeObjectURL(objectUrl);
       };
-      
+
       img.src = objectUrl;
     } catch (err) {
       console.error("Lỗi chuyển đổi ảnh:", err);
@@ -233,7 +233,7 @@ export function AdminBooksPage() {
         imageUrl = match[1];
       }
     }
-    
+
     if (!imageUrl && uriList) {
       imageUrl = uriList.split('\n')[0];
     }
@@ -242,15 +242,15 @@ export function AdminBooksPage() {
       try {
         const response = await fetch(imageUrl);
         const blob = await response.blob();
-        
+
         let filename = imageUrl.split('/').pop()?.split('?')[0] || 'downloaded-image.jpg';
         if (!filename.includes('.')) filename += '.jpg';
-        
+
         const downloadedFile = new File([blob], filename, { type: blob.type });
         const syntheticEvent = {
           target: { files: [downloadedFile] }
         } as unknown as React.ChangeEvent<HTMLInputElement>;
-        
+
         await handleFileChange(syntheticEvent);
       } catch (err) {
         console.error("Lỗi CORS khi lấy ảnh:", err);
@@ -263,7 +263,7 @@ export function AdminBooksPage() {
   useEffect(() => {
     const handleGlobalPaste = async (e: ClipboardEvent) => {
       if (modalMode === "detail" || !modalMode) return;
-      
+
       // 1. Dán trực tiếp file ảnh (Copy image)
       const file = e.clipboardData?.files?.[0];
       if (file && file.type.startsWith("image/")) {
@@ -331,9 +331,9 @@ export function AdminBooksPage() {
             cacheControl: '0',
             upsert: true
           });
-          if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
         finalImageUrl = fileName;
-      } 
+      }
       // TRƯỜNG HỢP 2: KHÔNG CÓ ẢNH MỚI NHƯNG XÓA TÊN FILE TRONG Ô TEXT
       else if (!finalImageUrl && modalMode === "edit") {
         if (oldBook?.image_url) {
@@ -481,7 +481,7 @@ export function AdminBooksPage() {
             <option value="title">Tên sách</option>
             <option value="author">Tác giả</option>
             <option value="category_id">Thể loại</option>
-            <option value="publisher">Nhà xuất bản</option> 
+            <option value="publisher">Nhà xuất bản</option>
             <option value="publish_year">Năm XB</option>
           </select>
           <input type="text" className="form-control" placeholder="Tìm kiếm..." value={keyword} onChange={(e) => setKeyword(e.target.value)} />
@@ -566,10 +566,10 @@ export function AdminBooksPage() {
       {modalMode && (
         <>
           <div className="modal-backdrop fade show" style={{ zIndex: 1040 }} onClick={() => setModalMode(null)}></div>
-          <div 
-            className="modal fade show d-block" 
-            style={{ zIndex: 1050 }} 
-            tabIndex={-1} 
+          <div
+            className="modal fade show d-block"
+            style={{ zIndex: 1050 }}
+            tabIndex={-1}
             onClick={() => setModalMode(null)}
           >
             <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
@@ -586,7 +586,7 @@ export function AdminBooksPage() {
                     <div className="row">
                       <div className="col-md-4 border-end">
                         <label className="form-label fw-bold">Ảnh bìa</label>
-                        <div 
+                        <div
                           className={`vertical-preview-box shadow-sm mb-3 position-relative ${isDragging ? 'drag-active' : ''}`}
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}
@@ -594,17 +594,17 @@ export function AdminBooksPage() {
                         >
                           {(localPreview || form.image_url) ? (
                             <>
-                              <img 
-                                src={localPreview || getStorageUrl(form.category_id, form.image_url)} 
-                                alt="Preview" 
-                                className="vertical-preview-img" 
-                                onError={e => e.currentTarget.src = "https://placehold.co/400x600?text=Chưa+có+ảnh"} 
+                              <img
+                                src={localPreview || getStorageUrl(form.category_id, form.image_url)}
+                                alt="Preview"
+                                className="vertical-preview-img"
+                                onError={e => e.currentTarget.src = "https://placehold.co/400x600?text=Chưa+có+ảnh"}
                               />
                               {/* Nút Xóa ảnh hiển thị đè lên góc phải trên cùng */}
                               {modalMode !== "detail" && (
-                                <button 
-                                  type="button" 
-                                  className="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 rounded-circle shadow" 
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 rounded-circle shadow"
                                   style={{ width: "32px", height: "32px", padding: 0 }}
                                   onClick={() => {
                                     setSelectedFile(null);
@@ -620,26 +620,26 @@ export function AdminBooksPage() {
                                 </button>
                               )}
                             </>
-                          ) : ( 
-                            <div className="text-muted"><i className="fas fa-image fa-3x opacity-25"></i></div> 
+                          ) : (
+                            <div className="text-muted"><i className="fas fa-image fa-3x opacity-25"></i></div>
                           )}
                         </div>
-                        
+
                         {modalMode !== "detail" && (
-                          <input 
+                          <input
                             id="coverImageInput"
-                            type="file" 
-                            className="form-control mb-2" 
-                            accept="image/*" 
-                            onChange={handleFileChange} 
+                            type="file"
+                            className="form-control mb-2"
+                            accept="image/*"
+                            onChange={handleFileChange}
                           />
                         )}
-                        <input 
-                          className="form-control form-control-sm bg-light" 
-                          placeholder="Đường dẫn ảnh" 
-                          readOnly 
-                          value={form.image_url || ""} 
-                          onChange={e => setForm((f:any) => ({ ...f, image_url: e.target.value }))} 
+                        <input
+                          className="form-control form-control-sm bg-light"
+                          placeholder="Đường dẫn ảnh"
+                          readOnly
+                          value={form.image_url || ""}
+                          onChange={e => setForm((f: any) => ({ ...f, image_url: e.target.value }))}
                         />
                       </div>
 
@@ -683,7 +683,7 @@ export function AdminBooksPage() {
                             <label className="form-label fw-bold small">Năm xuất bản</label>
                             <input type="number" className="form-control" readOnly={modalMode === "detail"} value={form.publish_year || ""} onChange={(e) => setForm((f: any) => ({ ...f, publish_year: Number(e.target.value) }))} />
                           </div>
-                          
+
                           <div className="col-md-4">
                             <label className="form-label fw-bold small text-primary">Giá bán</label>
                             <div className="input-group">

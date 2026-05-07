@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý và cung cấp các biến môi trường cho toàn bộ ứng dụng.
  * Các chức năng chính: Load file .env, parse biến môi trường và cung cấp object config an toàn.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

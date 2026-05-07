@@ -6,7 +6,7 @@
  * Mục đích của file: Component Link tùy chỉnh hỗ trợ nhận diện trạng thái active (đang chọn).
  * Các chức năng chính: So sánh đường dẫn hiện tại để thêm class active.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

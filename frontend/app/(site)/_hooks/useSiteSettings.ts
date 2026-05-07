@@ -6,7 +6,7 @@
  * Mục đích của file: Cung cấp custom hook lấy cấu hình của cửa hàng (settings) từ Server.
  * Các chức năng chính: Gọi API `/settings`, chuyển đổi thành object dạng key-value.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

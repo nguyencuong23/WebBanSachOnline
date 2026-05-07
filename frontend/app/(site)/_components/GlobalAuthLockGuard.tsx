@@ -6,7 +6,7 @@
  * Mục đích của file: Chặn người dùng nếu họ bị khóa tài khoản hoặc đang trong chế độ bảo trì. Đồng bộ title và favicon từ cài đặt.
  * Các chức năng chính: Fetch profile user, kiểm tra MaintenanceMode, khóa truy cập bằng UI tràn màn hình.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

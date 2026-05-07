@@ -6,7 +6,7 @@
  * Mục đích của file: Entry point cho trang chi tiết sách, nhận route dynamic `[bookId]`.
  * Các chức năng chính: Truyền `bookId` xuống component `BookDetailPage` để fetch dữ liệu.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

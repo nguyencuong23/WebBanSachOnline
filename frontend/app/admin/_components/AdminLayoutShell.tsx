@@ -6,7 +6,7 @@
  * Mục đích của file: Thành phần giao diện (Shell) bao bọc toàn bộ trang quản trị Admin.
  * Các chức năng chính: Sidebar menu, Topbar (Avatar/Đăng xuất), bảo vệ route (chỉ cho phép admin).
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

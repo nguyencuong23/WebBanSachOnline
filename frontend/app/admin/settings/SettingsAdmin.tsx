@@ -6,7 +6,7 @@
  * Mục đích của file: Cung cấp giao diện thiết lập các thông số cấu hình chung cho hệ thống.
  * Các chức năng chính: Đọc, lưu trữ các tùy chọn hệ thống (SEO, phí ship, liên hệ, bảo trì, upload ảnh logo).
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

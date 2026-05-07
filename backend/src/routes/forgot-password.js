@@ -6,7 +6,7 @@
  * Mục đích của file: Xử lý quy trình quên và đặt lại mật khẩu cho người dùng qua email (OTP).
  * Các chức năng chính: Kiểm tra email, gửi OTP, xác minh OTP, đặt lại mật khẩu mới.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

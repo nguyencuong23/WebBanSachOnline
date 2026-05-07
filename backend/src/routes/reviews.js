@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý API đánh giá (review) sách của người dùng.
  * Các chức năng chính: Lấy danh sách đánh giá của 1 sách, lấy đánh giá của user hiện tại, viết/sửa đánh giá, xóa đánh giá.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

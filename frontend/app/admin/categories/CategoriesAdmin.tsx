@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý danh mục thể loại sách từ phía Admin.
  * Các chức năng chính: Hiển thị danh sách, thêm, sửa, xóa thể loại sách.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -195,10 +195,10 @@ export function AdminCategoriesPage() {
       {modalMode && (
         <>
           <div className="modal-backdrop fade show" style={{ zIndex: 1040 }} onClick={() => setModalMode(null)}></div>
-          <div 
-            className="modal fade show d-block" 
-            style={{ zIndex: 1050 }} 
-            tabIndex={-1} 
+          <div
+            className="modal fade show d-block"
+            style={{ zIndex: 1050 }}
+            tabIndex={-1}
             onClick={() => setModalMode(null)}
           >
             <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
@@ -214,37 +214,37 @@ export function AdminCategoriesPage() {
                   <form onSubmit={saveCategory}>
                     <div className="mb-3">
                       <label className="form-label fw-bold small">Mã thể loại <span className="text-danger">*</span></label>
-                      <input 
+                      <input
                         autoFocus
                         className={`form-control ${modalMode === "edit" ? "bg-light" : ""}`}
-                        required 
+                        required
                         readOnly={modalMode === "edit"}
                         placeholder="Ví dụ: VH, KT, TT..."
-                        value={form.category_id} 
-                        onChange={(e) => setForm((f: any) => ({ ...f, category_id: e.target.value.toUpperCase() }))} 
+                        value={form.category_id}
+                        onChange={(e) => setForm((f: any) => ({ ...f, category_id: e.target.value.toUpperCase() }))}
                       />
                       {modalMode === "add" && <div className="form-text">Mã thể loại dùng để định danh, viết liền không dấu, sẽ không thể sửa sau khi tạo.</div>}
                     </div>
-                    
+
                     <div className="mb-3">
                       <label className="form-label fw-bold small">Tên thể loại <span className="text-danger">*</span></label>
-                      <input 
-                        className="form-control" 
-                        required 
+                      <input
+                        className="form-control"
+                        required
                         placeholder="Ví dụ: Văn Học, Kinh Tế..."
-                        value={form.name} 
-                        onChange={(e) => setForm((f: any) => ({ ...f, name: e.target.value }))} 
+                        value={form.name}
+                        onChange={(e) => setForm((f: any) => ({ ...f, name: e.target.value }))}
                       />
                     </div>
 
                     <div className="mb-4">
                       <label className="form-label fw-bold small">Mô tả thêm</label>
-                      <textarea 
-                        className="form-control" 
+                      <textarea
+                        className="form-control"
                         rows={3}
                         placeholder="Mô tả chi tiết về thể loại này (không bắt buộc)..."
-                        value={form.description || ""} 
-                        onChange={(e) => setForm((f: any) => ({ ...f, description: e.target.value }))} 
+                        value={form.description || ""}
+                        onChange={(e) => setForm((f: any) => ({ ...f, description: e.target.value }))}
                       ></textarea>
                     </div>
 

@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý đường dẫn ảnh đại diện của user.
  * Các chức năng chính: Xử lý và format URL hiển thị avatar từ Supabase Storage.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -39,7 +39,7 @@ export function getAvatarUrl(avatarUrl: string | null | undefined): string {
 
   // Lấy URL gốc của Supabase từ biến môi trường
   let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  
+
   if (!supabaseUrl) {
     console.error("Missing NEXT_PUBLIC_SUPABASE_URL");
     return fileName;

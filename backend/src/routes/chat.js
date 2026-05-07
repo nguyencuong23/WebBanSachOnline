@@ -6,7 +6,7 @@
  * Mục đích của file: Cung cấp API tích hợp AI Chatbot hỗ trợ khách hàng.
  * Các chức năng chính: Gọi Groq API, tìm kiếm thông tin cửa hàng, lấy thông tin sách, đơn hàng và tìm trên Wikipedia (khi cần).
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

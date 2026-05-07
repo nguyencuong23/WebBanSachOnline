@@ -6,7 +6,7 @@
  * Mục đích của file: Hiển thị giao diện trang Giỏ hàng và xử lý các thao tác với giỏ hàng.
  * Các chức năng chính: Hiển thị danh sách sản phẩm trong giỏ, thay đổi số lượng, xóa sản phẩm, xóa toàn bộ giỏ hàng, chuyển hướng đến thanh toán.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Phạm Thị Hồng Chúc
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

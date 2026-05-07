@@ -6,7 +6,7 @@
  * Mục đích của file: Component dùng chung để chọn một đối tượng (Người dùng hoặc Sách) thông qua tìm kiếm.
  * Các chức năng chính: Hiển thị thanh tìm kiếm với Dropdown kết quả (debounce). Chọn và trả về ID.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

@@ -6,7 +6,7 @@
  * Mục đích của file: Component Widget Chat AI hiển thị góc phải dưới màn hình.
  * Các chức năng chính: Bật/tắt cửa sổ chat, hiển thị tin nhắn, gửi tin nhắn tới API `/chat`.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

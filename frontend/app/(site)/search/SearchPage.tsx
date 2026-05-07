@@ -6,7 +6,7 @@
  * Mục đích của file: Trang tìm kiếm, lọc và phân trang hiển thị sách.
  * Các chức năng chính: Tìm kiếm theo từ khóa, lọc theo thể loại, giá, trạng thái; thay đổi dạng xem (grid/list).
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -61,18 +61,18 @@ const PAGE_SIZE = 20;
 
 const SORT_OPTIONS = [
   { value: "created_at-desc", label: "Mới nhất" },
-  { value: "price-asc",       label: "Giá tăng dần" },
-  { value: "price-desc",      label: "Giá giảm dần" },
-  { value: "title-asc",       label: "Tên A → Z" },
-  { value: "title-desc",      label: "Tên Z → A" },
+  { value: "price-asc", label: "Giá tăng dần" },
+  { value: "price-desc", label: "Giá giảm dần" },
+  { value: "title-asc", label: "Tên A → Z" },
+  { value: "title-desc", label: "Tên Z → A" },
   { value: "publish_year-desc", label: "Năm mới nhất" },
 ];
 
 const SEARCH_BY_OPTIONS = [
-  { value: "all",        label: "Tất cả" },
-  { value: "title",      label: "Tên sách" },
-  { value: "author",     label: "Tác giả" },
-  { value: "publisher",  label: "NXB" },
+  { value: "all", label: "Tất cả" },
+  { value: "title", label: "Tên sách" },
+  { value: "author", label: "Tác giả" },
+  { value: "publisher", label: "NXB" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -349,32 +349,32 @@ export function SearchPage() {
   const searchParams = useSearchParams();
 
   // Search state (from URL)
-  const [q, setQ]               = useState(searchParams.get("q") || "");
+  const [q, setQ] = useState(searchParams.get("q") || "");
   const [searchBy, setSearchBy] = useState(searchParams.get("by") || "all");
-  const [sort, setSort]         = useState(searchParams.get("sort") || "created_at-desc");
+  const [sort, setSort] = useState(searchParams.get("sort") || "created_at-desc");
   const [categoryId, setCategoryId] = useState(searchParams.get("cat") || "");
   const [onlyInStock, setOnlyInStock] = useState(searchParams.get("stock") === "1");
-  const [onlyOnSale, setOnlyOnSale]   = useState(searchParams.get("sale") === "1");
+  const [onlyOnSale, setOnlyOnSale] = useState(searchParams.get("sale") === "1");
   const [minPrice, setMinPrice] = useState(searchParams.get("minP") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxP") || "");
-  const [view, setView]         = useState<"grid" | "list">("grid");
-  const [page, setPage]         = useState(1);
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState(1);
 
   // Data state
-  const [allBooks, setAllBooks]       = useState<Book[]>([]);
-  const [categories, setCategories]   = useState<Category[]>([]);
-  const [isLoading, setIsLoading]     = useState(true);
-  const [toast, setToast]             = useState<string | null>(null);
+  const [allBooks, setAllBooks] = useState<Book[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [toast, setToast] = useState<string | null>(null);
 
   // Input state (before submit)
-  const [inputQ, setInputQ]           = useState(q);
+  const [inputQ, setInputQ] = useState(q);
   const [inputSearchBy, setInputSearchBy] = useState(searchBy);
 
   // Sync khi URL params thay đổi (navigate từ trang khác, ví dụ /search?cat=VH)
   useEffect(() => {
-    const newQ   = searchParams.get("q") || "";
+    const newQ = searchParams.get("q") || "";
     const newCat = searchParams.get("cat") || "";
-    const newBy  = searchParams.get("by") || "all";
+    const newBy = searchParams.get("by") || "all";
     setQ(newQ);
     setInputQ(newQ);
     setSearchBy(newBy);
@@ -387,7 +387,7 @@ export function SearchPage() {
   useEffect(() => {
     apiFetch<{ items: Category[] }>("/categories")
       .then(r => setCategories(r.items || []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Load books when filters change
@@ -419,12 +419,12 @@ export function SearchPage() {
   const filtered = useMemo(() => {
     let list = allBooks;
     if (onlyInStock) list = list.filter(b => b.quantity > 0);
-    if (onlyOnSale)  list = list.filter(b => b.is_on_sale && b.sale_price != null);
-    if (minPrice)    list = list.filter(b => {
+    if (onlyOnSale) list = list.filter(b => b.is_on_sale && b.sale_price != null);
+    if (minPrice) list = list.filter(b => {
       const p = b.is_on_sale && b.sale_price ? b.sale_price : b.price;
       return p >= Number(minPrice);
     });
-    if (maxPrice)    list = list.filter(b => {
+    if (maxPrice) list = list.filter(b => {
       const p = b.is_on_sale && b.sale_price ? b.sale_price : b.price;
       return p <= Number(maxPrice);
     });
@@ -433,7 +433,7 @@ export function SearchPage() {
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Category counts
   const catCounts = useMemo(() => {
@@ -451,9 +451,9 @@ export function SearchPage() {
       tags.push({ label: cat?.name || categoryId, clear: () => setCategoryId("") });
     }
     if (onlyInStock) tags.push({ label: "Còn hàng", clear: () => setOnlyInStock(false) });
-    if (onlyOnSale)  tags.push({ label: "Đang giảm giá", clear: () => setOnlyOnSale(false) });
-    if (minPrice)    tags.push({ label: `Từ ${Number(minPrice).toLocaleString()}đ`, clear: () => setMinPrice("") });
-    if (maxPrice)    tags.push({ label: `Đến ${Number(maxPrice).toLocaleString()}đ`, clear: () => setMaxPrice("") });
+    if (onlyOnSale) tags.push({ label: "Đang giảm giá", clear: () => setOnlyOnSale(false) });
+    if (minPrice) tags.push({ label: `Từ ${Number(minPrice).toLocaleString()}đ`, clear: () => setMinPrice("") });
+    if (maxPrice) tags.push({ label: `Đến ${Number(maxPrice).toLocaleString()}đ`, clear: () => setMaxPrice("") });
     return tags;
   }, [q, categoryId, onlyInStock, onlyOnSale, minPrice, maxPrice, categories]);
 

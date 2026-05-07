@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý đường dẫn ảnh bìa sách.
  * Các chức năng chính: Ánh xạ category_id thành bucket name, tạo URL public từ file name.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 

@@ -6,7 +6,7 @@
  * Mục đích của file: Hiển thị chi tiết một đơn hàng cụ thể.
  * Các chức năng chính: Xem thông tin giao hàng, danh sách sản phẩm, thanh toán, hủy đơn.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -101,7 +101,7 @@ export function OrderDetailsPage() {
   }
 
   const { order, items } = data;
-  
+
   const steps = [
     { key: "pending", label: "Chờ xác nhận", icon: "fa-clock" },
     { key: "confirmed", label: "Đã xác nhận", icon: "fa-check" },
@@ -127,7 +127,7 @@ export function OrderDetailsPage() {
             let statusClass = "";
             if (index < currentStepIndex) statusClass = "completed";
             else if (index === currentStepIndex) statusClass = "active";
-            
+
             return (
               <div key={step.key} className={`timeline-step ${statusClass}`}>
                 <div className="step-icon">
@@ -163,12 +163,12 @@ export function OrderDetailsPage() {
             Phương thức: <strong>{order.payment_method === "cod" ? "Thanh toán khi nhận hàng (COD)" : "Chuyển khoản ngân hàng"}</strong>
           </div>
           <div className="d-flex align-items-center gap-2">
-            Trạng thái: 
+            Trạng thái:
             <span className={`payment-badge payment-${order.payment_status}`}>
-              {order.payment_status === "unpaid" ? "Chưa thanh toán" : 
-               order.payment_status === "paid" ? "Đã thanh toán" :
-               order.payment_status === "refunded" ? "Đã hoàn tiền" : 
-               order.payment_status === "pending_confirmation" ? "Chờ xác nhận" : order.payment_status}
+              {order.payment_status === "unpaid" ? "Chưa thanh toán" :
+                order.payment_status === "paid" ? "Đã thanh toán" :
+                  order.payment_status === "refunded" ? "Đã hoàn tiền" :
+                    order.payment_status === "pending_confirmation" ? "Chờ xác nhận" : order.payment_status}
             </span>
           </div>
         </div>
@@ -198,8 +198,8 @@ export function OrderDetailsPage() {
                 <tr key={it.order_item_id}>
                   <td className="px-4">
                     <div className="d-flex align-items-center gap-3">
-                      <img 
-                        src={getBookImageUrl(it.books?.image_url, it.books?.category_id) || "https://placehold.co/100x150?text=No+Image"} 
+                      <img
+                        src={getBookImageUrl(it.books?.image_url, it.books?.category_id) || "https://placehold.co/100x150?text=No+Image"}
                         alt={it.books?.title}
                         className="rounded"
                         style={{ width: "40px", height: "60px", objectFit: "cover" }}
@@ -250,8 +250,8 @@ export function OrderDetailsPage() {
           Quay lại danh sách
         </Link>
         {order.status === "pending" && (
-          <button 
-            className="btn btn-danger px-4 rounded-pill" 
+          <button
+            className="btn btn-danger px-4 rounded-pill"
             onClick={handleCancel}
             disabled={cancelling}
           >

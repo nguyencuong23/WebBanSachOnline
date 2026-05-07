@@ -6,7 +6,7 @@
  * Mục đích của file: Quản lý toàn bộ giỏ hàng của khách hàng từ phía Admin.
  * Các chức năng chính: Hiển thị danh sách giỏ hàng, cập nhật số lượng, thêm sản phẩm vào giỏ hàng user, xóa sản phẩm.
  * Phiên bản: 1.0.0
- * Tác giả: Antigravity
+ * Tác giả: Nguyễn Mạnh Cường
  * Ngày tạo: 2026-05-07
  * Ngày cập nhật: 2026-05-07
  * 
@@ -111,15 +111,15 @@ export function CartsAdmin() {
     if (!addForm.user_id.trim()) { setAddError("Vui lòng nhập User ID."); return; }
     if (!addForm.book_id.trim()) { setAddError("Vui lòng nhập mã sách."); return; }
     if (addForm.quantity < 1) { setAddError("Số lượng phải lớn hơn 0."); return; }
-    
+
     setAddSaving(true);
     try {
       await apiFetch(`/admin/carts`, {
         method: "POST",
-        body: JSON.stringify({ 
-          user_id: addForm.user_id.trim(), 
-          book_id: addForm.book_id.trim(), 
-          quantity: Number(addForm.quantity) 
+        body: JSON.stringify({
+          user_id: addForm.user_id.trim(),
+          book_id: addForm.book_id.trim(),
+          quantity: Number(addForm.quantity)
         }),
       });
       setAddForm({ user_id: "", book_id: "", quantity: 1 });
@@ -211,7 +211,7 @@ export function CartsAdmin() {
                 const price = item.books?.is_on_sale ? item.books.sale_price : item.books?.price;
                 const lineTotal = (price || 0) * item.quantity;
                 const stockWarn = item.books?.quantity != null && item.books.quantity < item.quantity;
-                
+
                 return (
                   <tr key={item.id}>
                     <td>

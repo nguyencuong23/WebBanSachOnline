@@ -1,9 +1,33 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: NotificationBell.tsx
+ * Mục đích của file: Component Chuông thông báo trên Header.
+ * Các chức năng chính: Hiển thị số lượng thông báo chưa đọc, danh sách thông báo dạng Dropdown, Popup xem chi tiết.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Notification UI
+ * Mục đích của module: Thông báo các sự kiện (đơn hàng, khuyến mãi) cho người dùng.
+ * Phạm vi xử lý: Client Component, gọi API `/notifications`.
+ * Các thành phần chính trong module: NotificationBell.
+ * Module liên quan: useSessionProfile.ts, api.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useSessionProfile } from "../_hooks/useSessionProfile";
 import { apiFetch } from "@/lib/api";
 
+/**
+ * Tên class/interface: Notification
+ * Mục đích của class/interface: Cấu trúc dữ liệu của một thông báo.
+ * Vai trò trong hệ thống: Interface Type.
+ */
 interface Notification {
   id: number;
   title: string;
@@ -14,6 +38,12 @@ interface Notification {
   created_at: string;
 }
 
+/**
+ * Tên function: NotificationBell
+ * Mục đích của function: Render chuông thông báo và logic dropdown.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element hoặc null (nếu chưa đăng nhập).
+ */
 export function NotificationBell() {
   const { profile } = useSessionProfile();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -39,6 +69,10 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * Tên function: fetchNotifications
+   * Mục đích của function: Gọi API lấy danh sách thông báo của User.
+   */
   const fetchNotifications = async () => {
     try {
       setLoading(true);
@@ -51,6 +85,11 @@ export function NotificationBell() {
     }
   };
 
+  /**
+   * Tên function: markAsRead
+   * Mục đích của function: Đánh dấu một thông báo cụ thể là đã đọc.
+   * Tham số đầu vào: id (Mã thông báo)
+   */
   const markAsRead = async (id: number) => {
     try {
       await apiFetch(`/notifications/${id}/read`, { method: "PATCH" });
@@ -62,6 +101,10 @@ export function NotificationBell() {
     }
   };
 
+  /**
+   * Tên function: markAllAsRead
+   * Mục đích của function: Đánh dấu tất cả thông báo là đã đọc.
+   */
   const markAllAsRead = async () => {
     try {
       await apiFetch("/notifications/read-all", { method: "POST" });
@@ -71,12 +114,21 @@ export function NotificationBell() {
     }
   };
 
+  /**
+   * Tên function: handleItemClick
+   * Mục đích của function: Xử lý khi user click vào một dòng thông báo. Mở popup chi tiết và đánh dấu đã đọc.
+   * Tham số đầu vào: n (Notification)
+   */
   const handleItemClick = (n: Notification) => {
     setActiveNotif(n);
     setShowDropdown(false);
     if (!n.is_read) markAsRead(n.id);
   };
 
+  /**
+   * Tên function: closeModal
+   * Mục đích của function: Đóng popup thông báo chi tiết.
+   */
   const closeModal = () => setActiveNotif(null);
 
   if (!profile) return null;

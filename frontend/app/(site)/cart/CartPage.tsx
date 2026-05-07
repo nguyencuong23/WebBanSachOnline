@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: CartPage.tsx
+ * Mục đích của file: Hiển thị giao diện trang Giỏ hàng và xử lý các thao tác với giỏ hàng.
+ * Các chức năng chính: Hiển thị danh sách sản phẩm trong giỏ, thay đổi số lượng, xóa sản phẩm, xóa toàn bộ giỏ hàng, chuyển hướng đến thanh toán.
+ * Phiên bản: 1.0.0
+ * Tác giả: Phạm Thị Hồng Chúc
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Cart (Giỏ hàng)
+ * Mục đích của module: Quản lý giỏ hàng của người dùng trên giao diện.
+ * Phạm vi xử lý: Client-side rendering, giao tiếp với API backend "/cart".
+ * Các thành phần chính trong module: CartPage component, danh sách CartItem, tổng kết đơn hàng (Summary).
+ * Module liên quan: Checkout (Thanh toán), Search (Tìm kiếm sản phẩm), Book Detail (Chi tiết sách).
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -7,6 +26,11 @@ import { getBookImageUrl } from "@/lib/bookImage";
 import Link from "next/link";
 import "./cart.css";
 
+/**
+ * Tên class/interface: BookInfo
+ * Mục đích của class/interface: Kiểu dữ liệu mô tả thông tin chi tiết của sách trong giỏ hàng.
+ * Vai trò trong hệ thống: Interface Type.
+ */
 interface BookInfo {
   book_id: string;
   title: string;
@@ -19,6 +43,11 @@ interface BookInfo {
   quantity: number; // tồn kho
 }
 
+/**
+ * Tên class/interface: CartItem
+ * Mục đích của class/interface: Kiểu dữ liệu mô tả một mục sản phẩm trong giỏ hàng.
+ * Vai trò trong hệ thống: Interface Type.
+ */
 interface CartItem {
   id: string;
   user_id: string;
@@ -29,14 +58,30 @@ interface CartItem {
   books: BookInfo;
 }
 
+/**
+ * Tên function: CartPage
+ * Mục đích của function: React component chính để hiển thị trang giỏ hàng.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element (Giao diện trang giỏ hàng).
+ * Điều kiện xử lý: Component chỉ chạy trên client-side (use client).
+ * Lỗi có thể phát sinh: Lỗi gọi API lấy giỏ hàng, lỗi cập nhật/xóa sản phẩm (được xử lý và hiển thị thông báo).
+ */
 export function CartPage() {
-  const router = useRouter();
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [clearingAll, setClearingAll] = useState(false);
+  const router = useRouter(); // Ý nghĩa: Hook điều hướng của Next.js; Giá trị: router object; Lý do: Cần để chuyển trang sang checkout
+  const [items, setItems] = useState<CartItem[]>([]); // Ý nghĩa: Danh sách sản phẩm trong giỏ; Giá trị: mảng các CartItem; Lý do: Lưu trữ trạng thái giỏ hàng hiện tại
+  const [loading, setLoading] = useState(true); // Ý nghĩa: Trạng thái đang tải dữ liệu; Giá trị: boolean; Lý do: Hiển thị loading spinner khi fetch data
+  const [error, setError] = useState<string | null>(null); // Ý nghĩa: Thông báo lỗi nếu có; Giá trị: chuỗi lỗi hoặc null; Lý do: Hiển thị lỗi cho người dùng
+  const [updatingId, setUpdatingId] = useState<string | null>(null); // Ý nghĩa: ID của sản phẩm đang được cập nhật/xóa; Giá trị: chuỗi ID hoặc null; Lý do: Disable các nút hành động khi đang gọi API
+  const [clearingAll, setClearingAll] = useState(false); // Ý nghĩa: Trạng thái đang xóa toàn bộ giỏ; Giá trị: boolean; Lý do: Disable nút "Xóa tất cả" khi đang thực thi
 
+  /**
+   * Tên function: fetchCart
+   * Mục đích của function: Gọi API để lấy danh sách sản phẩm trong giỏ hàng hiện tại của người dùng.
+   * Tham số đầu vào: Không có.
+   * Giá trị trả về: Promise<void> (cập nhật state `items`, `loading`, `error`).
+   * Điều kiện xử lý: Được gọi khi component mount hoặc cần tải lại giỏ hàng.
+   * Lỗi có thể phát sinh: Lỗi mạng, lỗi backend trả về (cập nhật vào state `error`).
+   */
   const fetchCart = useCallback(async () => {
     try {
       setLoading(true);
@@ -52,16 +97,34 @@ export function CartPage() {
 
   useEffect(() => { fetchCart(); }, [fetchCart]);
 
+  /**
+   * Tên function: unitPrice
+   * Mục đích của function: Tính toán đơn giá thực tế của một sản phẩm trong giỏ (ưu tiên giá khuyến mãi nếu có).
+   * Tham số đầu vào: item (CartItem) - Thông tin sản phẩm trong giỏ hàng.
+   * Giá trị trả về: number - Đơn giá áp dụng.
+   * Điều kiện xử lý: Kiểm tra cờ `is_on_sale` và `sale_price` hợp lệ.
+   * Lỗi có thể phát sinh: Không có.
+   */
   const unitPrice = (item: CartItem) =>
     item.books?.is_on_sale && item.books?.sale_price
       ? Number(item.books.sale_price)
       : Number(item.books?.price || 0);
 
-  const subtotal = items.reduce((s, x) => s + unitPrice(x) * x.quantity, 0);
+  const subtotal = items.reduce((s, x) => s + unitPrice(x) * x.quantity, 0); // Ý nghĩa: Tổng tiền tạm tính của giỏ hàng; Giá trị: tổng số tiền các sản phẩm; Đơn vị: VNĐ; Lý do: Hiển thị phần tóm tắt đơn hàng
 
+  /**
+   * Tên function: updateQty
+   * Mục đích của function: Gửi request cập nhật số lượng của một sản phẩm trong giỏ hàng.
+   * Tham số đầu vào: 
+   *  - item (CartItem): Sản phẩm cần cập nhật.
+   *  - newQty (number): Số lượng mới cần đặt.
+   * Giá trị trả về: Promise<void>.
+   * Điều kiện xử lý: newQty phải >= 1 và <= số lượng tồn kho (stock).
+   * Lỗi có thể phát sinh: Lỗi gọi API PATCH, hiện alert thông báo.
+   */
   async function updateQty(item: CartItem, newQty: number) {
     if (newQty < 1) return;
-    const stock = item.books?.quantity ?? 0;
+    const stock = item.books?.quantity ?? 0; // Ý nghĩa: Số lượng tồn kho của sản phẩm; Giá trị: số nguyên >= 0; Đơn vị: quyển; Lý do: Kiểm tra để không cho phép mua quá số lượng có sẵn
     if (newQty > stock) return;
     setUpdatingId(item.book_id);
     try {
@@ -79,6 +142,14 @@ export function CartPage() {
     }
   }
 
+  /**
+   * Tên function: removeItem
+   * Mục đích của function: Xóa một sản phẩm khỏi giỏ hàng.
+   * Tham số đầu vào: bookId (string) - ID của sách cần xóa.
+   * Giá trị trả về: Promise<void>.
+   * Điều kiện xử lý: Gửi request DELETE tới API.
+   * Lỗi có thể phát sinh: Lỗi gọi API DELETE, hiện alert thông báo.
+   */
   async function removeItem(bookId: string) {
     setUpdatingId(bookId);
     try {
@@ -91,6 +162,14 @@ export function CartPage() {
     }
   }
 
+  /**
+   * Tên function: clearCart
+   * Mục đích của function: Xóa toàn bộ sản phẩm trong giỏ hàng sau khi xác nhận.
+   * Tham số đầu vào: Không có.
+   * Giá trị trả về: Promise<void>.
+   * Điều kiện xử lý: Người dùng phải confirm trước khi xóa.
+   * Lỗi có thể phát sinh: Lỗi gọi API DELETE toàn bộ, hiện alert thông báo.
+   */
   async function clearCart() {
     if (!confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) return;
     setClearingAll(true);
@@ -167,12 +246,12 @@ export function CartPage() {
 
               <div className="cart-items-list">
                 {items.map((item) => {
-                  const price = unitPrice(item);
-                  const originalPrice = Number(item.books?.price || 0);
-                  const isOnSale = item.books?.is_on_sale && item.books?.sale_price;
-                  const imageUrl = getBookImageUrl(item.books?.image_url, item.books?.category_id);
-                  const isUpdating = updatingId === item.book_id;
-                  const stock = item.books?.quantity ?? 0;
+                  const price = unitPrice(item); // Ý nghĩa: Giá bán áp dụng; Giá trị: số tiền; Đơn vị: VNĐ
+                  const originalPrice = Number(item.books?.price || 0); // Ý nghĩa: Giá gốc chưa giảm; Giá trị: số tiền; Đơn vị: VNĐ
+                  const isOnSale = item.books?.is_on_sale && item.books?.sale_price; // Ý nghĩa: Cờ báo sản phẩm đang giảm giá; Giá trị: boolean hoặc giá trị truthy
+                  const imageUrl = getBookImageUrl(item.books?.image_url, item.books?.category_id); // Ý nghĩa: URL ảnh hợp lệ của sản phẩm; Giá trị: chuỗi URL; Lý do: Hiển thị ảnh bìa sách
+                  const isUpdating = updatingId === item.book_id; // Ý nghĩa: Cờ báo sản phẩm này đang bị thao tác API; Giá trị: boolean; Lý do: Khóa (disable) UI của sản phẩm đang cập nhật
+                  const stock = item.books?.quantity ?? 0; // Ý nghĩa: Tồn kho hiện tại; Giá trị: số lượng sách; Đơn vị: quyển
 
                   return (
                     <div key={item.book_id} className={`cart-item ${isUpdating ? "cart-item--updating" : ""}`}>

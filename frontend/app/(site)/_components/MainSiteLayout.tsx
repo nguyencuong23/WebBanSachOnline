@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: MainSiteLayout.tsx
+ * Mục đích của file: Component Layout chính cung cấp Header (Navbar) và Footer cho người dùng.
+ * Các chức năng chính: Hiển thị logo, menu điều hướng, thanh đăng nhập/đăng xuất, xử lý chuyển hướng bảo mật.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Client Layout Components
+ * Mục đích của module: Quản lý giao diện và trạng thái người dùng (Client-side).
+ * Phạm vi xử lý: Header, Footer, Menu Dropdown, Redirect logic.
+ * Các thành phần chính trong module: MainSiteLayout.
+ * Module liên quan: useSessionProfile, useSiteSettings, NotificationBell, ChatWidget.
+ * ============================================================================
+ */
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
@@ -9,6 +28,14 @@ import { useSiteSettings } from "../_hooks/useSiteSettings";
 import { NotificationBell } from "./NotificationBell";
 import { ChatWidget } from "./ChatWidget";
 
+/**
+ * Tên function: MainSiteLayout
+ * Mục đích của function: Giao diện chính của website bao gồm thanh menu trên cùng và footer dưới cùng.
+ * Tham số đầu vào: children (ReactNode)
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Kiểm tra quyền truy cập (nếu chưa đăng nhập mà vào route bảo vệ thì đẩy về `/auth`).
+ * Lỗi có thể phát sinh: Không có.
+ */
 export function MainSiteLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();

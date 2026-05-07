@@ -1,11 +1,38 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: books.js
+ * Mục đích của file: Quản lý các endpoint liên quan đến dữ liệu Sách (Books).
+ * Các chức năng chính: Lấy danh sách sách (mới nhất, nổi bật, bán chạy, tất cả), lấy chi tiết sách, và các thao tác CRUD dành cho Admin.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Books API Route
+ * Mục đích của module: Định tuyến và xử lý logic truy xuất dữ liệu sách.
+ * Phạm vi xử lý: Public API cho người dùng (có hoặc không có JWT) và Admin API (bắt buộc role admin).
+ * Các thành phần chính trong module: Express Router, Supabase query builder.
+ * Module liên quan: verify.js (Xác thực quyền admin), categories.js (Thể loại).
+ * ============================================================================
+ */
 import express from "express";
 import { createSupabaseAnon, createSupabaseUser } from "../supabase.js";
 import { requireUser } from "../auth/verify.js";
 import { assert } from "../http/errors.js";
 import { z } from "zod";
 
-export const booksRouter = express.Router();
+export const booksRouter = express.Router(); // Ý nghĩa: Router chứa các endpoint quản lý sách; Giá trị: Express Router instance
 
+/**
+ * Tên function: GET /books/latest
+ * Mục đích của function: Lấy danh sách sách mới xuất bản (sắp xếp theo ngày tạo mới nhất).
+ * Tham số đầu vào: req (query: `limit`), res
+ * Giá trị trả về: JSON `{ items: Array }`
+ * Điều kiện xử lý: Sách phải có trạng thái `is_published = true`.
+ * Lỗi có thể phát sinh: 400 nếu lỗi truy vấn DB.
+ */
 booksRouter.get("/books/latest", async (req, res) => {
   const limit = Math.min(Number(req.query.limit || 10), 50);
   const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -20,6 +47,14 @@ booksRouter.get("/books/latest", async (req, res) => {
   res.json({ items: data });
 });
 
+/**
+ * Tên function: GET /books/featured
+ * Mục đích của function: Lấy danh sách sách nổi bật (sách đang giảm giá).
+ * Tham số đầu vào: req (query: `limit`), res
+ * Giá trị trả về: JSON `{ items: Array }`
+ * Điều kiện xử lý: Sách phải `is_published = true`, `is_on_sale = true` và có `sale_price > 0`.
+ * Lỗi có thể phát sinh: 400 nếu lỗi truy vấn DB.
+ */
 booksRouter.get("/books/featured", async (req, res) => {
   const limit = Math.min(Number(req.query.limit || 12), 50);
   const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -37,6 +72,14 @@ booksRouter.get("/books/featured", async (req, res) => {
   res.json({ items: data || [] });
 });
 
+/**
+ * Tên function: GET /books/bestsellers
+ * Mục đích của function: Lấy danh sách sách bán chạy nhất dựa trên số lượng đã bán.
+ * Tham số đầu vào: req (query: `limit`), res
+ * Giá trị trả về: JSON `{ items: Array }`
+ * Điều kiện xử lý: Tính tổng số lượng từ `order_items`. Nếu chưa có đơn hàng nào, fallback về sách mới nhất.
+ * Lỗi có thể phát sinh: 400 nếu lỗi truy vấn DB.
+ */
 booksRouter.get("/books/bestsellers", async (req, res) => {
   const limit = Math.min(Number(req.query.limit || 10), 50);
   const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -83,6 +126,14 @@ booksRouter.get("/books/bestsellers", async (req, res) => {
   res.json({ items: sorted });
 });
 
+/**
+ * Tên function: GET /books
+ * Mục đích của function: Lấy danh sách sách kèm theo tính năng tìm kiếm, lọc theo thể loại và sắp xếp.
+ * Tham số đầu vào: req (query: `search`, `searchBy`, `sort`, `category_id`), res
+ * Giá trị trả về: JSON `{ items: Array }`
+ * Điều kiện xử lý: Hỗ trợ tìm kiếm theo nhiều tiêu chí (tất cả, ID thể loại, năm XB).
+ * Lỗi có thể phát sinh: 400 nếu lỗi truy vấn DB.
+ */
 booksRouter.get("/books", async (req, res) => {
   const search = (req.query.search || "").toString().trim();
   const searchBy = (req.query.searchBy || "all").toString();
@@ -128,6 +179,14 @@ booksRouter.get("/books", async (req, res) => {
   res.json({ items: data });
 });
 
+/**
+ * Tên function: GET /books/:bookId
+ * Mục đích của function: Lấy thông tin chi tiết của một cuốn sách.
+ * Tham số đầu vào: req (params: `bookId`), res
+ * Giá trị trả về: JSON `{ item: Object }`
+ * Điều kiện xử lý: Left join với bảng categories.
+ * Lỗi có thể phát sinh: 400 (Lỗi DB), 404 (Không tìm thấy sách).
+ */
 booksRouter.get("/books/:bookId", async (req, res) => {
   const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
   const sb = jwt ? createSupabaseUser(jwt) : createSupabaseAnon();
@@ -141,7 +200,18 @@ booksRouter.get("/books/:bookId", async (req, res) => {
   res.json({ item: data });
 });
 
-// Admin CRUD (basic)
+// ============================================================================
+// ADMIN CRUD (BASIC)
+// ============================================================================
+
+/**
+ * Tên function: POST /admin/books
+ * Mục đích của function: Tạo mới một cuốn sách (Dành cho Admin).
+ * Tham số đầu vào: req (body chứa thông tin sách), res
+ * Giá trị trả về: JSON báo thành công.
+ * Điều kiện xử lý: Validate Zod, người dùng phải có quyền admin.
+ * Lỗi có thể phát sinh: 403 (Không phải admin), 400 (Lỗi validate, lỗi tạo mới).
+ */
 booksRouter.post("/admin/books", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseUser(req.auth.jwt);
@@ -170,6 +240,14 @@ booksRouter.post("/admin/books", requireUser, async (req, res) => {
   res.status(201).json({ item: data });
 });
 
+/**
+ * Tên function: PATCH /admin/books/:bookId
+ * Mục đích của function: Cập nhật thông tin của một cuốn sách (Dành cho Admin).
+ * Tham số đầu vào: req (params: `bookId`, body), res
+ * Giá trị trả về: JSON báo thành công.
+ * Điều kiện xử lý: Validate Zod các trường truyền lên, quyền admin.
+ * Lỗi có thể phát sinh: 403 (Không phải admin), 400 (Lỗi validate, lỗi update).
+ */
 booksRouter.patch("/admin/books/:bookId", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseUser(req.auth.jwt);
@@ -203,6 +281,14 @@ booksRouter.patch("/admin/books/:bookId", requireUser, async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: DELETE /admin/books/:bookId
+ * Mục đích của function: Xóa một cuốn sách khỏi cơ sở dữ liệu (Dành cho Admin).
+ * Tham số đầu vào: req (params: `bookId`), res
+ * Giá trị trả về: JSON `{ ok: true }`
+ * Điều kiện xử lý: Quyền admin.
+ * Lỗi có thể phát sinh: 403 (Không có quyền), 400 (Lỗi xóa, ví dụ đang có đơn hàng liên kết).
+ */
 booksRouter.delete("/admin/books/:bookId", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseUser(req.auth.jwt);

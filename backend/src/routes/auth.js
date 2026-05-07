@@ -1,28 +1,71 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: auth.js
+ * Mục đích của file: Định nghĩa API phục vụ xác thực người dùng.
+ * Các chức năng chính: Đăng ký tài khoản (register) và tìm kiếm identifier (resolve-identifier).
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Auth API Route
+ * Mục đích của module: Quản lý các route liên quan đến xác thực chưa yêu cầu đăng nhập.
+ * Phạm vi xử lý: Nhận request, tạo user trên Supabase Auth và lưu thông tin profile.
+ * Các thành phần chính trong module: Express Router, Zod validation, Supabase Admin client.
+ * Module liên quan: verify.js (Middleware), supabase.js (DB client).
+ * ============================================================================
+ */
 import express from "express";
 import { z } from "zod";
 import { HttpError } from "../http/errors.js";
 import { createSupabaseAdmin } from "../supabase.js";
 
-export const authRouter = express.Router();
+export const authRouter = express.Router(); // Ý nghĩa: Đối tượng quản lý các route API xác thực; Giá trị: Express Router instance
 
-const USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9._]{2,28}[a-z0-9])?$/;
-const FULL_NAME_REGEX = /^[\p{L}](?:[\p{L}\s'.-]{0,98}[\p{L}])?$/u;
-const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/;
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,64}$/;
+const USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9._]{2,28}[a-z0-9])?$/; // Ý nghĩa: Regex kiểm tra tên đăng nhập; Giá trị: chuỗi regex
+const FULL_NAME_REGEX = /^[\p{L}](?:[\p{L}\s'.-]{0,98}[\p{L}])?$/u; // Ý nghĩa: Regex kiểm tra họ tên; Giá trị: chuỗi regex unicode
+const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/; // Ý nghĩa: Regex kiểm tra số điện thoại VN; Giá trị: chuỗi regex
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,64}$/; // Ý nghĩa: Regex kiểm tra mật khẩu mạnh; Giá trị: chuỗi regex
 
+/**
+ * Tên function: collapseWhitespace
+ * Mục đích của function: Xóa khoảng trắng thừa ở đầu/cuối và rút gọn nhiều khoảng trắng liên tiếp thành một.
+ * Tham số đầu vào: value (string).
+ * Giá trị trả về: Chuỗi đã được chuẩn hóa.
+ * Điều kiện xử lý: Input phải là chuỗi hợp lệ.
+ * Lỗi có thể phát sinh: Không có (với chuỗi hợp lệ).
+ */
 function collapseWhitespace(value) {
   return value.trim().replace(/\s+/g, " ");
 }
 
+/**
+ * Tên function: normalizePhoneNumber
+ * Mục đích của function: Chuẩn hóa số điện thoại về định dạng bắt đầu bằng số 0 (bỏ mã quốc gia +84 hoặc 84).
+ * Tham số đầu vào: value (string).
+ * Giá trị trả về: Chuỗi số điện thoại chuẩn.
+ * Điều kiện xử lý: Chỉ giữ lại các chữ số và dấu +.
+ * Lỗi có thể phát sinh: Không có.
+ */
 function normalizePhoneNumber(value) {
-  const digits = value.replace(/[^\d+]/g, "");
+  const digits = value.replace(/[^\d+]/g, ""); // Ý nghĩa: Loại bỏ ký tự không phải số hoặc dấu +; Giá trị: chuỗi số
   if (digits.startsWith("+84")) return `0${digits.slice(3)}`;
   if (digits.startsWith("84")) return `0${digits.slice(2)}`;
   return digits;
 }
 
+/**
+ * Tên function: mapRegisterError
+ * Mục đích của function: Chuyển đổi lỗi từ Supabase Auth thành HttpError với thông báo thân thiện cho frontend.
+ * Tham số đầu vào: error (Object - lỗi trả về từ Supabase).
+ * Giá trị trả về: HttpError instance.
+ * Điều kiện xử lý: Dựa trên message của lỗi để phân loại.
+ * Lỗi có thể phát sinh: Luôn trả về HttpError.
+ */
 function mapRegisterError(error) {
-  const message = String(error?.message || "");
+  const message = String(error?.message || ""); // Ý nghĩa: Chuỗi thông báo lỗi gốc; Giá trị: string
 
   if (/already been registered|already exists|duplicate/i.test(message)) {
     return new HttpError(409, "Email da ton tai.", "duplicate_email", { field: "email" });
@@ -40,6 +83,17 @@ function mapRegisterError(error) {
   return new HttpError(400, "Khong the tao tai khoan luc nay.", "register_failed", message);
 }
 
+/**
+ * Tên function: POST /auth/register
+ * Mục đích của function: Xử lý đăng ký tài khoản mới cho người dùng.
+ * Tham số đầu vào: req (body chứa username, full_name, phone_number, email, password), res.
+ * Giá trị trả về: JSON object báo thành công và thông tin user.
+ * Điều kiện xử lý: Validate dữ liệu đầu vào. Kiểm tra trùng lặp email/username/phone.
+ * Lỗi có thể phát sinh:
+ *  - 400: Dữ liệu không hợp lệ hoặc lỗi từ Supabase Auth.
+ *  - 409: Trùng thông tin (email/phone/username).
+ *  - 500: Lỗi hệ thống khi tương tác với DB.
+ */
 authRouter.post("/auth/register", async (req, res) => {
   const schema = z.object({
     username: z
@@ -69,9 +123,9 @@ authRouter.post("/auth/register", async (req, res) => {
     password: z.string().refine((value) => PASSWORD_REGEX.test(value), {
       message: "Mat khau phai co it nhat 8 ky tu, gom chu hoa, chu thuong, so va ky tu dac biet."
     })
-  });
+  }); // Ý nghĩa: Schema kiểm tra dữ liệu đăng ký; Giá trị: Zod object
 
-  const parsed = schema.safeParse(req.body ?? {});
+  const parsed = schema.safeParse(req.body ?? {}); // Ý nghĩa: Kết quả phân tích body request; Giá trị: object parse result
 
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
@@ -173,13 +227,23 @@ authRouter.post("/auth/register", async (req, res) => {
   });
 });
 
+/**
+ * Tên function: POST /auth/resolve-identifier
+ * Mục đích của function: Tìm kiếm email của tài khoản dựa trên identifier (có thể là email hoặc username).
+ * Tham số đầu vào: req (body chứa `identifier`), res.
+ * Giá trị trả về: JSON `{ email: "..." }`.
+ * Điều kiện xử lý: Tìm trong bảng profiles.
+ * Lỗi có thể phát sinh: 
+ *  - 400: Thiếu tham số.
+ *  - 404: Không tìm thấy tài khoản.
+ */
 authRouter.post("/auth/resolve-identifier", async (req, res) => {
-  const { identifier } = req.body || {};
+  const { identifier } = req.body || {}; // Ý nghĩa: Thông tin định danh nhập vào; Giá trị: chuỗi email hoặc username
   if (!identifier) {
     throw new HttpError(400, "Vui long nhap Email hoac Ten dang nhap.");
   }
 
-  const sbAdmin = createSupabaseAdmin();
+  const sbAdmin = createSupabaseAdmin(); // Ý nghĩa: Khởi tạo admin client; Lý do: Bypass RLS để tra cứu email
   const { data, error } = await sbAdmin
     .from("profiles")
     .select("email")

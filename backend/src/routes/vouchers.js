@@ -1,12 +1,38 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: vouchers.js
+ * Mục đích của file: Quản lý mã giảm giá (voucher).
+ * Các chức năng chính: Lấy danh sách voucher công khai, áp dụng mã giảm giá, và các thao tác CRUD từ Admin.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Vouchers API Route
+ * Mục đích của module: Xử lý logic truy xuất và tính toán giảm giá cho đơn hàng.
+ * Phạm vi xử lý: API public (lấy voucher hiện có), API tính giảm giá (cần đăng nhập), CRUD admin.
+ * Các thành phần chính trong module: Express Router, Zod validation.
+ * Module liên quan: auth/verify.js, supabase.js.
+ * ============================================================================
+ */
 import express from "express";
 import { createSupabaseAnon, createSupabaseUser } from "../supabase.js";
 import { requireUser } from "../auth/verify.js";
 import { assert } from "../http/errors.js";
 import { z } from "zod";
 
-export const vouchersRouter = express.Router();
+export const vouchersRouter = express.Router(); // Ý nghĩa: Router chứa các endpoint quản lý voucher; Giá trị: Express Router instance
 
-// Lấy danh sách voucher công khai (ví dụ cho người dùng xem)
+/**
+ * Tên function: GET /vouchers
+ * Mục đích của function: Lấy danh sách voucher công khai đang còn hạn và đang kích hoạt.
+ * Tham số đầu vào: req, res
+ * Giá trị trả về: JSON `{ items: Array }`
+ * Điều kiện xử lý: is_active = true, valid_until >= hiện tại.
+ * Lỗi có thể phát sinh: 400 nếu có lỗi từ DB.
+ */
 vouchersRouter.get("/vouchers", async (req, res) => {
   const sb = createSupabaseAnon();
   const { data, error } = await sb
@@ -20,7 +46,14 @@ vouchersRouter.get("/vouchers", async (req, res) => {
   res.json({ items: data });
 });
 
-// POST /vouchers/apply — kiểm tra và tính giá trị giảm của voucher
+/**
+ * Tên function: POST /vouchers/apply
+ * Mục đích của function: Kiểm tra mã voucher và tính toán số tiền được giảm dựa trên tổng đơn.
+ * Tham số đầu vào: req (body: `code`, `subtotal`), res
+ * Giá trị trả về: JSON `{ ok, voucher, discount, final_total }`
+ * Điều kiện xử lý: Yêu cầu đăng nhập. Kiểm tra tồn tại, trạng thái active, hết hạn. Tính giảm giá theo max_discount_amount.
+ * Lỗi có thể phát sinh: 404 (Không tồn tại), 400 (Hết hạn, bị vô hiệu hóa, lỗi DB).
+ */
 vouchersRouter.post("/vouchers/apply", requireUser, async (req, res) => {
   const { code, subtotal } = req.body || {};
   assert(code && typeof code === "string", 400, "Mã voucher không được để trống.", "missing_code");
@@ -61,7 +94,13 @@ vouchersRouter.post("/vouchers/apply", requireUser, async (req, res) => {
   });
 });
 
-// Admin: Lấy danh sách tất cả voucher
+/**
+ * Tên function: GET /admin/vouchers
+ * Mục đích của function: Lấy danh sách tất cả voucher (Admin).
+ * Tham số đầu vào: req (query: search, sort), res
+ * Giá trị trả về: JSON `{ items: Array }`
+ * Điều kiện xử lý: Yêu cầu quyền admin.
+ */
 vouchersRouter.get("/admin/vouchers", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseUser(req.auth.jwt);
@@ -92,7 +131,12 @@ vouchersRouter.get("/admin/vouchers", requireUser, async (req, res) => {
   res.json({ items: data });
 });
 
-// Admin: Lấy chi tiết 1 voucher
+/**
+ * Tên function: GET /admin/vouchers/:code
+ * Mục đích của function: Lấy chi tiết 1 voucher bằng mã (Admin).
+ * Tham số đầu vào: req (params: code), res
+ * Giá trị trả về: JSON `{ item: Object }`
+ */
 vouchersRouter.get("/admin/vouchers/:code", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseUser(req.auth.jwt);
@@ -102,7 +146,13 @@ vouchersRouter.get("/admin/vouchers/:code", requireUser, async (req, res) => {
   res.json({ item: data });
 });
 
-// Admin: Thêm voucher
+/**
+ * Tên function: POST /admin/vouchers
+ * Mục đích của function: Tạo mới một mã giảm giá (Admin).
+ * Tham số đầu vào: req (body), res
+ * Giá trị trả về: JSON `{ item: Object }`
+ * Điều kiện xử lý: Validate các trường bắt buộc, yêu cầu quyền admin.
+ */
 vouchersRouter.post("/admin/vouchers", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseUser(req.auth.jwt);
@@ -122,7 +172,13 @@ vouchersRouter.post("/admin/vouchers", requireUser, async (req, res) => {
   res.status(201).json({ item: data });
 });
 
-// Admin: Cập nhật voucher
+/**
+ * Tên function: PATCH /admin/vouchers/:code
+ * Mục đích của function: Cập nhật thông tin voucher (Admin).
+ * Tham số đầu vào: req (params: code, body), res
+ * Giá trị trả về: JSON `{ item: Object }`
+ * Điều kiện xử lý: Validate, cập nhật DB.
+ */
 vouchersRouter.patch("/admin/vouchers/:code", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseUser(req.auth.jwt);
@@ -147,7 +203,12 @@ vouchersRouter.patch("/admin/vouchers/:code", requireUser, async (req, res) => {
   res.json({ item: data });
 });
 
-// Admin: Xóa voucher
+/**
+ * Tên function: DELETE /admin/vouchers/:code
+ * Mục đích của function: Xóa mã voucher (Admin).
+ * Tham số đầu vào: req (params: code), res
+ * Giá trị trả về: JSON `{ ok: true }`
+ */
 vouchersRouter.delete("/admin/vouchers/:code", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseUser(req.auth.jwt);

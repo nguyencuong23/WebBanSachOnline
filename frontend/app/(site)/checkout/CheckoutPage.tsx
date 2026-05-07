@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: CheckoutPage.tsx
+ * Mục đích của file: Quản lý quy trình thanh toán đơn hàng.
+ * Các chức năng chính: Hiển thị giỏ hàng / mua ngay, tính tiền, áp dụng voucher, chọn phương thức thanh toán, xác nhận đơn.
+ * Phiên bản: 1.0.0
+ * Tác giả: Lã Anh Tuấn
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Checkout Component
+ * Mục đích của module: Xử lý nghiệp vụ thanh toán phía Client.
+ * Phạm vi xử lý: Client Component, API `/checkout`, `/cart`, `/vouchers/apply`.
+ * Các thành phần chính trong module: CheckoutPage.
+ * Module liên quan: page.tsx, Giỏ hàng, Sách chi tiết (mua ngay).
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +25,10 @@ import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 import "./checkout.css";
 
+/**
+ * Tên class/interface: CartItem
+ * Mục đích của class/interface: Kiểu dữ liệu mô tả sản phẩm đang thanh toán.
+ */
 interface CartItem {
   book_id: string;
   quantity: number;
@@ -17,6 +40,10 @@ interface CartItem {
   };
 }
 
+/**
+ * Tên class/interface: VoucherResult
+ * Mục đích của class/interface: Kiểu dữ liệu mô tả mã giảm giá đang áp dụng.
+ */
 interface VoucherResult {
   code: string;
   discount_percent: number;
@@ -24,10 +51,21 @@ interface VoucherResult {
   discount: number;
 }
 
+/**
+ * Tên function: fmt
+ * Mục đích của function: Format giá tiền VNĐ.
+ */
 function fmt(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
 }
 
+/**
+ * Tên function: CheckoutPage
+ * Mục đích của function: Component render toàn bộ giao diện và logic đặt hàng.
+ * Tham số đầu vào: Không có (sử dụng url params).
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Tính đúng giá trị giảm giá theo subtotal.
+ */
 export function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -128,6 +166,10 @@ export function CheckoutPage() {
   const total    = subtotal + shippingFee - discount;
 
   // ── Áp dụng voucher ────────────────────────────────────────────────────────
+  /**
+   * Tên function: handleApplyVoucher
+   * Mục đích của function: Gọi API kiểm tra và áp dụng mã voucher.
+   */
   async function handleApplyVoucher() {
     const code = voucherInput.trim().toUpperCase();
     if (!code) { setVoucherError("Vui lòng nhập mã voucher."); return; }
@@ -153,6 +195,10 @@ export function CheckoutPage() {
     }
   }
 
+  /**
+   * Tên function: handleRemoveVoucher
+   * Mục đích của function: Xóa trạng thái voucher hiện tại khỏi đơn hàng.
+   */
   function handleRemoveVoucher() {
     setVoucherResult(null);
     setVoucherInput("");
@@ -172,6 +218,10 @@ export function CheckoutPage() {
   }, [subtotal]);
 
   // ── Submit ─────────────────────────────────────────────────────────────────
+  /**
+   * Tên function: handleSubmit
+   * Mục đích của function: Gửi dữ liệu đặt hàng lên server (tạo đơn hàng).
+   */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);

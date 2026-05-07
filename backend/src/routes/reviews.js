@@ -1,12 +1,38 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: reviews.js
+ * Mục đích của file: Quản lý API đánh giá (review) sách của người dùng.
+ * Các chức năng chính: Lấy danh sách đánh giá của 1 sách, lấy đánh giá của user hiện tại, viết/sửa đánh giá, xóa đánh giá.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Reviews API Route
+ * Mục đích của module: Xử lý tương tác đánh giá (rating/comment) sản phẩm.
+ * Phạm vi xử lý: Public (lấy danh sách) và Private (viết đánh giá, xóa).
+ * Các thành phần chính trong module: Express Router, Supabase Admin client, logic tính điểm trung bình.
+ * Module liên quan: verify.js (Xác thực user), supabase.js.
+ * ============================================================================
+ */
 import express from "express";
 import { z } from "zod";
 import { requireUser } from "../auth/verify.js";
 import { createSupabaseAdmin } from "../supabase.js";
 import { assert } from "../http/errors.js";
 
-export const reviewsRouter = express.Router();
+export const reviewsRouter = express.Router(); // Ý nghĩa: Router chứa các endpoint quản lý đánh giá sách; Giá trị: Express Router instance
 
-// Helper: gắn thông tin profile vào danh sách reviews
+/**
+ * Tên function: attachProfiles
+ * Mục đích của function: Map dữ liệu người dùng (từ bảng profiles) vào từng review dựa trên user_id.
+ * Tham số đầu vào: sb (Supabase Client), reviews (Mảng các đánh giá).
+ * Giá trị trả về: Mảng các đánh giá đã được nhúng thêm thuộc tính `profiles`.
+ * Điều kiện xử lý: Truy vấn in() một lần lấy tất cả profile, map lại.
+ * Lỗi có thể phát sinh: Trả về review với profile=null nếu lỗi.
+ */
 async function attachProfiles(sb, reviews) {
   if (!reviews || reviews.length === 0) return reviews;
   const userIds = [...new Set(reviews.map(r => r.user_id))];
@@ -18,7 +44,14 @@ async function attachProfiles(sb, reviews) {
   return reviews.map(r => ({ ...r, profiles: profileMap[r.user_id] || null }));
 }
 
-// ── GET /books/:bookId/reviews ─────────────────────────────────────────────
+/**
+ * Tên function: GET /books/:bookId/reviews
+ * Mục đích của function: Lấy danh sách đánh giá, kèm phân trang và thống kê điểm số của sách.
+ * Tham số đầu vào: req (params: `bookId`, query: `page`, `limit`), res
+ * Giá trị trả về: JSON `{ items, total, page, limit, avgRating, totalRatings, distribution }`
+ * Điều kiện xử lý: Tính trung bình cộng và đếm phân phối 1-5 sao.
+ * Lỗi có thể phát sinh: 400 nếu lỗi truy vấn DB.
+ */
 reviewsRouter.get("/books/:bookId/reviews", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { bookId } = req.params;
@@ -63,7 +96,14 @@ reviewsRouter.get("/books/:bookId/reviews", async (req, res) => {
   });
 });
 
-// ── GET /books/:bookId/reviews/me ──────────────────────────────────────────
+/**
+ * Tên function: GET /books/:bookId/reviews/me
+ * Mục đích của function: Lấy review của user hiện tại về một cuốn sách cụ thể.
+ * Tham số đầu vào: req (params: `bookId`), res
+ * Giá trị trả về: JSON `{ item: Object | null }`
+ * Điều kiện xử lý: RequireUser, filter theo user_id.
+ * Lỗi có thể phát sinh: 400 nếu lỗi truy vấn.
+ */
 reviewsRouter.get("/books/:bookId/reviews/me", requireUser, async (req, res) => {
   const sb = createSupabaseAdmin();
   const { bookId } = req.params;
@@ -82,7 +122,14 @@ reviewsRouter.get("/books/:bookId/reviews/me", requireUser, async (req, res) => 
   res.json({ item });
 });
 
-// ── POST /books/:bookId/reviews ────────────────────────────────────────────
+/**
+ * Tên function: POST /books/:bookId/reviews
+ * Mục đích của function: Viết mới hoặc cập nhật đánh giá sách của user hiện tại.
+ * Tham số đầu vào: req (params: `bookId`, body: `rating`, `comment`), res
+ * Giá trị trả về: JSON `{ item: Object }`
+ * Điều kiện xử lý: Sử dụng upsert (onConflict: book_id, user_id).
+ * Lỗi có thể phát sinh: 404 (Sách không tồn tại), 400 (Lỗi validate, lỗi DB).
+ */
 reviewsRouter.post("/books/:bookId/reviews", requireUser, async (req, res) => {
   const sb = createSupabaseAdmin();
   const { bookId } = req.params;
@@ -121,7 +168,14 @@ reviewsRouter.post("/books/:bookId/reviews", requireUser, async (req, res) => {
   res.status(201).json({ item });
 });
 
-// ── DELETE /books/:bookId/reviews/me ──────────────────────────────────────
+/**
+ * Tên function: DELETE /books/:bookId/reviews/me
+ * Mục đích của function: Người dùng tự xóa đánh giá của mình về sách.
+ * Tham số đầu vào: req (params: `bookId`), res
+ * Giá trị trả về: JSON `{ ok: true }`
+ * Điều kiện xử lý: Xóa dựa trên book_id và user_id của chính người gửi.
+ * Lỗi có thể phát sinh: 400 (Lỗi thao tác DB).
+ */
 reviewsRouter.delete("/books/:bookId/reviews/me", requireUser, async (req, res) => {
   const sb = createSupabaseAdmin();
   const { bookId } = req.params;
@@ -137,7 +191,14 @@ reviewsRouter.delete("/books/:bookId/reviews/me", requireUser, async (req, res) 
   res.json({ ok: true });
 });
 
-// ── DELETE /admin/reviews/:reviewId ───────────────────────────────────────
+/**
+ * Tên function: DELETE /admin/reviews/:reviewId
+ * Mục đích của function: Admin xóa một đánh giá bất kỳ.
+ * Tham số đầu vào: req (params: `reviewId`), res
+ * Giá trị trả về: JSON `{ ok: true }`
+ * Điều kiện xử lý: Bắt buộc quyền admin.
+ * Lỗi có thể phát sinh: 403 (Không phải admin), 400 (Lỗi thao tác DB).
+ */
 reviewsRouter.delete("/admin/reviews/:reviewId", requireUser, async (req, res) => {
   assert(req.profile?.role === "admin", 403, "Admin only", "forbidden");
   const sb = createSupabaseAdmin();

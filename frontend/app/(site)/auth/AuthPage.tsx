@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: AuthPage.tsx
+ * Mục đích của file: Giao diện và logic xử lý chính cho Đăng nhập, Đăng ký, Quên mật khẩu.
+ * Các chức năng chính: Xử lý Form đăng nhập, form đăng ký, form quên mật khẩu (gửi OTP, đổi mật khẩu). Tương tác với Supabase Auth.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Auth Forms Component
+ * Mục đích của module: Module chứa tất cả logic liên quan đến xác thực phía Client.
+ * Phạm vi xử lý: Client Component, API routes `/auth/*`.
+ * Các thành phần chính trong module: AuthPage, ForgotPasswordForm, PasswordField, OTPInput.
+ * Module liên quan: api.ts, supabase.ts, useSessionProfile.ts.
+ * ============================================================================
+ */
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -10,6 +29,10 @@ import { useSessionProfile } from "../_hooks/useSessionProfile";
 import "./auth-page.css";
 
 // ─── Types & Constants ────────────────────────────────────────────────────────
+/**
+ * Tên class/interface: AuthMode
+ * Mục đích của class/interface: Các chế độ của trang auth.
+ */
 type AuthMode = "login" | "register" | "forgot";
 export type { AuthMode };
 
@@ -25,7 +48,16 @@ type FieldErrors = Partial<Record<
   "username"|"full_name"|"phone_number"|"email"|"password"|"login_email"|"login_password", string
 >>;
 
+/**
+ * Tên function: collapseWhitespace
+ * Mục đích của function: Xóa khoảng trắng thừa trong chuỗi.
+ */
 function collapseWhitespace(v: string) { return v.trim().replace(/\s+/g, " "); }
+
+/**
+ * Tên function: normalizePhone
+ * Mục đích của function: Chuẩn hóa số điện thoại về định dạng bắt đầu bằng số 0.
+ */
 function normalizePhone(v: string) {
   const d = v.replace(/[^\d+]/g, "");
   if (d.startsWith("+84")) return `0${d.slice(3)}`;
@@ -49,6 +81,13 @@ function pwStrength(pw: string): 0|1|2|3 {
 }
 
 // ─── OTP Input Component ──────────────────────────────────────────────────────
+/**
+ * Tên function: OTPInput
+ * Mục đích của function: Component nhập mã OTP gồm 6 ô số.
+ * Tham số đầu vào: value, onChange, hasError.
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Xử lý paste, điều hướng bằng phím mũi tên/backspace.
+ */
 function OTPInput({ value, onChange, hasError }: {
   value: string; onChange: (v: string) => void; hasError: boolean;
 }) {
@@ -109,6 +148,10 @@ function OTPInput({ value, onChange, hasError }: {
 }
 
 // ─── Password Field ───────────────────────────────────────────────────────────
+/**
+ * Tên function: PasswordField
+ * Mục đích của function: Component nhập mật khẩu, hỗ trợ hiện/ẩn và đánh giá độ mạnh.
+ */
 function PasswordField({ label, value, onChange, placeholder, autoComplete, showStrength, error, hint }: {
   label: string; value: string; onChange: (v: string) => void;
   placeholder?: string; autoComplete?: string;
@@ -154,6 +197,12 @@ function PasswordField({ label, value, onChange, placeholder, autoComplete, show
 }
 
 // ─── Forgot Password Flow ─────────────────────────────────────────────────────
+/**
+ * Tên function: ForgotPasswordForm
+ * Mục đích của function: Form xử lý quy trình 3 bước Quên mật khẩu (Nhập Email -> Nhập OTP -> Mật khẩu mới).
+ * Tham số đầu vào: onBack (hàm quay lại).
+ * Giá trị trả về: JSX Element.
+ */
 function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState<ForgotStep>("email");
   const [email, setEmail] = useState("");
@@ -175,6 +224,10 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
     return () => clearTimeout(t);
   }, [countdown]);
 
+  /**
+   * Tên function: handleSendOTP
+   * Mục đích của function: Gửi yêu cầu OTP đến email.
+   */
   async function handleSendOTP(e: React.FormEvent) {
     e.preventDefault();
     if (!EMAIL_REGEX.test(email.trim())) { setError("Email không đúng định dạng."); return; }
@@ -203,6 +256,10 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
     }
   }
 
+  /**
+   * Tên function: handleResend
+   * Mục đích của function: Gửi lại mã OTP.
+   */
   async function handleResend() {
     if (countdown > 0) return;
     setError(null); setSubmitting(true);
@@ -221,6 +278,10 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
     }
   }
 
+  /**
+   * Tên function: handleVerifyOTP
+   * Mục đích của function: Gửi mã OTP lên server để xác minh.
+   */
   async function handleVerifyOTP(e: React.FormEvent) {
     e.preventDefault();
     const otpDigits = otp.replace(/[^0-9]/g, "");
@@ -242,6 +303,10 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
     }
   }
 
+  /**
+   * Tên function: handleResetPassword
+   * Mục đích của function: Đặt lại mật khẩu với token trả về từ server.
+   */
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
     if (!PASSWORD_REGEX.test(newPass)) {
@@ -342,6 +407,12 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
 }
 
 // ─── Main AuthPage ────────────────────────────────────────────────────────────
+/**
+ * Tên function: AuthPage
+ * Mục đích của function: Component chính bọc toàn bộ giao diện Auth, quản lý logic login và register.
+ * Tham số đầu vào: initialMode.
+ * Giá trị trả về: JSX Element.
+ */
 export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -379,6 +450,10 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
   function setFE(f: keyof FieldErrors, m: string) { setFieldErrors(p => ({ ...p, [f]: m })); }
   function clearFE(f: keyof FieldErrors) { setFieldErrors(p => { const n = { ...p }; delete n[f]; return n; }); }
 
+  /**
+   * Tên function: handleLogin
+   * Mục đích của function: Xử lý submit form đăng nhập.
+   */
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault(); reset();
     const id = loginId.trim().toLowerCase();
@@ -408,6 +483,10 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
     finally { setSubmitting(false); }
   }
 
+  /**
+   * Tên function: handleRegister
+   * Mục đích của function: Xử lý submit form đăng ký.
+   */
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault(); reset();
     const errs: FieldErrors = {};

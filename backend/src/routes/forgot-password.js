@@ -1,25 +1,58 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: forgot-password.js
+ * Mục đích của file: Xử lý quy trình quên và đặt lại mật khẩu cho người dùng qua email (OTP).
+ * Các chức năng chính: Kiểm tra email, gửi OTP, xác minh OTP, đặt lại mật khẩu mới.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Forgot Password API Route
+ * Mục đích của module: Quản lý luồng lấy lại mật khẩu an toàn.
+ * Phạm vi xử lý: Public endpoints, có giới hạn thử nghiệm (Rate limit, OTP TTL). Gửi email qua nodemailer.
+ * Các thành phần chính trong module: Express Router, nodemailer, In-memory Map lưu OTP.
+ * Module liên quan: env.js (Lấy biến môi trường), supabase.js (Tương tác DB).
+ * ============================================================================
+ */
 import express from "express";
 import nodemailer from "nodemailer";
 import { createSupabaseAdmin } from "../supabase.js";
 import { HttpError, assert } from "../http/errors.js";
 import { env } from "../env.js";
 
-export const forgotPasswordRouter = express.Router();
+export const forgotPasswordRouter = express.Router(); // Ý nghĩa: Router cho các tính năng quên mật khẩu; Giá trị: Express Router instance
 
 // In-memory OTP store: { email -> { otp, expiresAt, attempts } }
 // Dùng Map để tự dọn dẹp
-const otpStore = new Map();
+const otpStore = new Map(); // Ý nghĩa: Bộ nhớ đệm lưu trữ OTP tạm thời
 
-const OTP_TTL_MS      = 10 * 60 * 1000; // 10 phút
-const MAX_ATTEMPTS    = 5;
-const RESEND_COOLDOWN = 60 * 1000;       // 1 phút
+const OTP_TTL_MS      = 10 * 60 * 1000; // Ý nghĩa: Thời gian sống của OTP (10 phút); Giá trị: số miligiây
+const MAX_ATTEMPTS    = 5; // Ý nghĩa: Số lần nhập sai OTP tối đa; Giá trị: 5
+const RESEND_COOLDOWN = 60 * 1000; // Ý nghĩa: Thời gian chờ trước khi được gửi lại OTP (1 phút); Giá trị: số miligiây
 
+/**
+ * Tên function: generateOTP
+ * Mục đích của function: Tạo mã OTP gồm 6 chữ số ngẫu nhiên.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: Chuỗi OTP 6 số.
+ * Điều kiện xử lý: Tính toán bằng Math.random().
+ * Lỗi có thể phát sinh: Không có.
+ */
 function generateOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-// ── POST /auth/check-email ─────────────────────────────────────────────────
-// Kiểm tra email có tồn tại trong hệ thống không (dùng cho bước nhập email quên mật khẩu)
+/**
+ * Tên function: POST /auth/check-email
+ * Mục đích của function: Kiểm tra email có tồn tại trong hệ thống không (bước đầu tiên khi nhập email quên mật khẩu).
+ * Tham số đầu vào: req (body: `email`), res
+ * Giá trị trả về: JSON `{ exists: boolean }`
+ * Điều kiện xử lý: Tìm email trong bảng profiles (không phân biệt chữ hoa/thường).
+ * Lỗi có thể phát sinh: 400 nếu email rỗng.
+ */
 forgotPasswordRouter.post("/auth/check-email", async (req, res) => {
   const { email } = req.body || {};
   assert(email && typeof email === "string", 400, "Email không được để trống.", "missing_email");
@@ -36,6 +69,14 @@ forgotPasswordRouter.post("/auth/check-email", async (req, res) => {
   res.json({ exists: !!profile });
 });
 
+/**
+ * Tên function: createTransporter
+ * Mục đích của function: Khởi tạo đối tượng gửi email của thư viện nodemailer cấu hình cho Gmail.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: nodemailer transporter instance.
+ * Điều kiện xử lý: Phải có GMAIL_USER và GMAIL_APP_PASSWORD từ môi trường.
+ * Lỗi có thể phát sinh: Ném lỗi nếu chưa cấu hình Gmail.
+ */
 function createTransporter() {
   if (!env.gmailUser || !env.gmailAppPassword) {
     throw new Error(
@@ -43,7 +84,7 @@ function createTransporter() {
     );
   }
   // Bỏ spaces trong App Password (Google hiển thị có spaces nhưng nodemailer cần liền)
-  const appPassword = env.gmailAppPassword.replace(/\s+/g, "");
+  const appPassword = env.gmailAppPassword.replace(/\s+/g, ""); // Ý nghĩa: Mật khẩu ứng dụng Gmail; Giá trị: chuỗi
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -53,6 +94,14 @@ function createTransporter() {
   });
 }
 
+/**
+ * Tên function: sendOTPEmail
+ * Mục đích của function: Gửi email chứa mã OTP HTML cho người dùng.
+ * Tham số đầu vào: toEmail (Email nhận), otp (Mã OTP 6 số), siteTitle (Tên trang web để làm tiêu đề).
+ * Giá trị trả về: Promise.
+ * Điều kiện xử lý: Dùng HTML template có sẵn.
+ * Lỗi có thể phát sinh: Có thể lỗi từ thư viện nodemailer (không throw để tránh block request).
+ */
 async function sendOTPEmail(toEmail, otp, siteTitle = "Cửa hàng sách") {
   const transporter = createTransporter();
   await transporter.sendMail({
@@ -74,8 +123,14 @@ async function sendOTPEmail(toEmail, otp, siteTitle = "Cửa hàng sách") {
   });
 }
 
-// ── POST /auth/forgot-password ─────────────────────────────────────────────
-// Gửi OTP về email
+/**
+ * Tên function: POST /auth/forgot-password
+ * Mục đích của function: Xử lý yêu cầu quên mật khẩu, sinh mã OTP và gửi email.
+ * Tham số đầu vào: req (body: `email`), res
+ * Giá trị trả về: JSON `{ ok: true, message: string }`
+ * Điều kiện xử lý: Luôn trả về thành công để chống dò quét email. Áp dụng giới hạn gửi lại (cooldown).
+ * Lỗi có thể phát sinh: 429 nếu yêu cầu quá nhanh.
+ */
 forgotPasswordRouter.post("/auth/forgot-password", async (req, res) => {
   const { email } = req.body || {};
   assert(email && typeof email === "string", 400, "Email không được để trống.", "missing_email");
@@ -123,8 +178,14 @@ forgotPasswordRouter.post("/auth/forgot-password", async (req, res) => {
   res.json({ ok: true, message: "Nếu email tồn tại, OTP đã được gửi." });
 });
 
-// ── POST /auth/verify-otp ──────────────────────────────────────────────────
-// Xác minh OTP, trả về reset token nếu đúng
+/**
+ * Tên function: POST /auth/verify-otp
+ * Mục đích của function: Xác minh mã OTP mà người dùng nhập vào.
+ * Tham số đầu vào: req (body: `email`, `otp`), res
+ * Giá trị trả về: JSON `{ ok: true, resetToken: string }`
+ * Điều kiện xử lý: Kiểm tra thời hạn, số lần thử sai, so khớp mã. Sinh token xác nhận nếu đúng.
+ * Lỗi có thể phát sinh: 400 (Sai mã, hết hạn, thiếu dữ liệu), 429 (Quá số lần thử).
+ */
 forgotPasswordRouter.post("/auth/verify-otp", async (req, res) => {
   const { email, otp } = req.body || {};
   assert(email && otp, 400, "Thiếu email hoặc OTP.", "missing_fields");
@@ -155,8 +216,14 @@ forgotPasswordRouter.post("/auth/verify-otp", async (req, res) => {
   res.json({ ok: true, resetToken });
 });
 
-// ── POST /auth/reset-password ──────────────────────────────────────────────
-// Đặt mật khẩu mới sau khi xác minh OTP
+/**
+ * Tên function: POST /auth/reset-password
+ * Mục đích của function: Đặt lại mật khẩu mới khi có resetToken và mật khẩu mới hợp lệ.
+ * Tham số đầu vào: req (body: `email`, `resetToken`, `newPassword`), res
+ * Giá trị trả về: JSON báo thành công.
+ * Điều kiện xử lý: Validate mật khẩu mới, kiểm tra reset token, cập nhật trong Supabase Auth và xóa OTP cache.
+ * Lỗi có thể phát sinh: 400 (Token không hợp lệ, pass yếu), 404 (Không tìm thấy user), 500 (Lỗi Supabase).
+ */
 forgotPasswordRouter.post("/auth/reset-password", async (req, res) => {
   const { email, resetToken, newPassword } = req.body || {};
   assert(email && resetToken && newPassword, 400, "Thiếu thông tin.", "missing_fields");

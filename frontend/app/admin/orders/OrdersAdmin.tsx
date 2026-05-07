@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: OrdersAdmin.tsx
+ * Mục đích của file: Quản lý toàn bộ đơn hàng của khách từ phía Admin.
+ * Các chức năng chính: Xem danh sách, cập nhật trạng thái đơn hàng và trạng thái thanh toán, tạo đơn hàng mới, xem chi tiết và xóa đơn.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Orders Admin Component
+ * Mục đích của module: Quản lý vòng đời và tiến trình xử lý đơn hàng.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminOrdersPage.
+ * Module liên quan: EntityPicker.tsx, bookImage.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,6 +38,12 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "refunded", label: "Đã hoàn tiền" },
 ];
 
+/**
+ * Tên function: AdminOrdersPage
+ * Mục đích của function: Component render giao diện quản lý đơn hàng.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function AdminOrdersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -46,6 +71,10 @@ export function AdminOrdersPage() {
     lines: [{ book_id: "", quantity: 1 }]
   });
 
+  /**
+   * Tên function: load
+   * Mục đích của function: Lấy danh sách đơn hàng từ API với các bộ lọc.
+   */
   async function load() {
     setLoading(true);
     setError(null);
@@ -72,7 +101,7 @@ export function AdminOrdersPage() {
         for (const i of (res.items || [])) s[i.key] = i.value;
         setSettings(s);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -80,6 +109,10 @@ export function AdminOrdersPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy, filterStatus, filterPayment]);
 
+  /**
+   * Tên function: openDetail
+   * Mục đích của function: Mở modal xem chi tiết đơn hàng.
+   */
   async function openDetail(orderId: number) {
     try {
       const res = await apiFetch<{ item: any }>(`/admin/orders/${orderId}`);
@@ -106,6 +139,10 @@ export function AdminOrdersPage() {
     setModalMode("edit");
   }
 
+  /**
+   * Tên function: handleSaveEdit
+   * Mục đích của function: Cập nhật thông tin nhận hàng và trạng thái cơ bản.
+   */
   async function handleSaveEdit() {
     setSaving(true);
     setSaveError(null);
@@ -123,6 +160,10 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Tên function: deleteOrder
+   * Mục đích của function: Xóa vĩnh viễn đơn hàng khỏi hệ thống.
+   */
   async function deleteOrder(orderId: number, orderCode: string) {
     if (!window.confirm(`Xóa vĩnh viễn đơn hàng "${orderCode}"?\nHành động này không thể hoàn tác.`)) return;
     try {
@@ -134,6 +175,10 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Tên function: quickPatch
+   * Mục đích của function: Cập nhật nhanh 1 trường dữ liệu (vd: trạng thái) của đơn hàng.
+   */
   async function quickPatch(orderId: number, patch: any) {
     try {
       await apiFetch(`/admin/orders/${orderId}`, {
@@ -149,6 +194,10 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Tên function: handleAddSubmit
+   * Mục đích của function: Tạo mới một đơn hàng thủ công từ Admin.
+   */
   async function handleAddSubmit() {
     setSaving(true);
     setSaveError(null);
@@ -156,7 +205,7 @@ export function AdminOrdersPage() {
       // Validate lines
       const validLines = addForm.lines.filter(l => l.book_id.trim());
       if (validLines.length === 0) throw new Error("Vui lòng nhập ít nhất 1 sản phẩm.");
-      
+
       const payload = { ...addForm, lines: validLines };
       await apiFetch("/admin/orders", {
         method: "POST",
@@ -516,7 +565,7 @@ export function AdminOrdersPage() {
                           <div className="row g-3">
                             <div className="col-12">
                               <label className="form-label fw-semibold">Khách hàng (User ID) <span className="text-danger">*</span></label>
-                              <EntityPicker 
+                              <EntityPicker
                                 entityType="users"
                                 value={addForm.user_id}
                                 onChange={val => setAddForm({ ...addForm, user_id: val })}

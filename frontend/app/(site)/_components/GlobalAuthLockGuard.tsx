@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: GlobalAuthLockGuard.tsx
+ * Mục đích của file: Chặn người dùng nếu họ bị khóa tài khoản hoặc đang trong chế độ bảo trì. Đồng bộ title và favicon từ cài đặt.
+ * Các chức năng chính: Fetch profile user, kiểm tra MaintenanceMode, khóa truy cập bằng UI tràn màn hình.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Global Security Guard
+ * Mục đích của module: Middleware phía Client ngăn chặn người dùng bị ban hoặc hệ thống bảo trì.
+ * Phạm vi xử lý: Client Component, bọc RootLayout.
+ * Các thành phần chính trong module: GlobalAuthLockGuard, GlobalAuthLockGuardInner.
+ * Module liên quan: supabase.ts, auth.ts, useSiteSettings.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode, Suspense } from "react";
@@ -6,8 +25,15 @@ import { supabase } from "@/lib/supabase";
 import { getProfile, type Profile } from "@/lib/auth";
 import { useSiteSettings } from "../_hooks/useSiteSettings";
 
+// Ý nghĩa: Khóa truy cập bỏ qua chế độ bảo trì; Giá trị: Chuỗi từ biến môi trường
 const BYPASS_KEY = process.env.NEXT_PUBLIC_MAINTENANCE_BYPASS_KEY ?? "";
 
+/**
+ * Tên function: GlobalAuthLockGuardInner
+ * Mục đích của function: Xử lý logic load auth, load settings và redirect maintenance.
+ * Tham số đầu vào: children (ReactNode)
+ * Giá trị trả về: JSX Element hoặc UI Loading / Bị Khóa.
+ */
 function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
   const { settings, isLoading: isSettingsLoading } = useSiteSettings();
   const pathname = usePathname();
@@ -159,6 +185,12 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Tên function: GlobalAuthLockGuard
+ * Mục đích của function: Component bọc Suspense cho Guard bên trong (để dùng useSearchParams an toàn).
+ * Tham số đầu vào: children (ReactNode)
+ * Giá trị trả về: JSX Element với Suspense.
+ */
 export function GlobalAuthLockGuard({ children }: { children: ReactNode }) {
   return (
     <Suspense

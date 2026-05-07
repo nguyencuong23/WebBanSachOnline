@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: SettingsAdmin.tsx
+ * Mục đích của file: Cung cấp giao diện thiết lập các thông số cấu hình chung cho hệ thống.
+ * Các chức năng chính: Đọc, lưu trữ các tùy chọn hệ thống (SEO, phí ship, liên hệ, bảo trì, upload ảnh logo).
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Settings Admin Component
+ * Mục đích của module: Giao diện quản lý biến môi trường động (dynamic config) ở Database.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminSettingsPage.
+ * Module liên quan: api.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -27,6 +46,12 @@ const EXPECTED_SETTINGS = [
   { key: "TrackingScripts", label: "Mã Google Analytics / FB Pixel", type: "textarea", tab: "system" },
 ];
 
+/**
+ * Tên function: AdminSettingsPage
+ * Mục đích của function: Component render giao diện cài đặt hệ thống.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function AdminSettingsPage() {
   const [items, setItems] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +70,10 @@ export function AdminSettingsPage() {
       .catch((e: any) => setError(e.message || String(e)));
   }, []);
 
+  /**
+   * Tên function: save
+   * Mục đích của function: Gọi API gửi mảng cấu hình để lưu vào database.
+   */
   async function save() {
     setError(null);
     setSaved(null);
@@ -62,6 +91,10 @@ export function AdminSettingsPage() {
     setItems(old => ({ ...old, [key]: value }));
   }
 
+  /**
+   * Tên function: handleFileUpload
+   * Mục đích của function: Xử lý file, convert sang Base64 và up lên server cho các cấu hình kiểu hình ảnh (Logo, QR).
+   */
   async function handleFileUpload(key: string, file: File) {
     try {
       const reader = new FileReader();

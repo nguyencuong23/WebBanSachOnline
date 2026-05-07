@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: index.js
+ * Mục đích của file: Điểm bắt đầu (entry point) của Express Backend Server.
+ * Các chức năng chính: Khởi tạo app Express, nạp middleware (cors, helmet), mount router và xử lý lỗi global.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Express Server Main
+ * Mục đích của module: Kết nối các phần của ứng dụng và lắng nghe request HTTP.
+ * Phạm vi xử lý: Toàn bộ backend service.
+ * Các thành phần chính trong module: Express app setup, Swagger setup, Middleware setup.
+ * Module liên quan: env.js, middleware.js, và tất cả các route controllers.
+ * ============================================================================
+ */
 import "express-async-errors";
 import express from "express";
 import cors from "cors";

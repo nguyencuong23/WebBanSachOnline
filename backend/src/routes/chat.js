@@ -1,10 +1,29 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: chat.js
+ * Mục đích của file: Cung cấp API tích hợp AI Chatbot hỗ trợ khách hàng.
+ * Các chức năng chính: Gọi Groq API, tìm kiếm thông tin cửa hàng, lấy thông tin sách, đơn hàng và tìm trên Wikipedia (khi cần).
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: AI Chat Route
+ * Mục đích của module: Định tuyến HTTP cho tính năng trợ lý ảo.
+ * Phạm vi xử lý: Tổng hợp dữ liệu từ Supabase, phân tích intent và gửi context cho LLM (Llama-3).
+ * Các thành phần chính trong module: Express Router, Zod validation, Groq API client, Wikipedia Search.
+ * Module liên quan: env.js (API Keys), supabase.js (DB client).
+ * ============================================================================
+ */
 import express from "express";
 import { createSupabaseUser, createSupabaseAdmin } from "../supabase.js";
 import { env } from "../env.js";
 import { assert } from "../http/errors.js";
 import { z } from "zod";
 
-export const chatRouter = express.Router();
+export const chatRouter = express.Router(); // Ý nghĩa: Router chứa endpoint chat AI; Giá trị: Express Router instance
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = "llama-3.1-8b-instant"; // Model nhỏ nhưng ổn định
@@ -12,25 +31,45 @@ const MODEL = "llama-3.1-8b-instant"; // Model nhỏ nhưng ổn định
 const ORDER_STATUS_VI = {
   pending: "Chờ xác nhận", confirmed: "Đã xác nhận", processing: "Đang xử lý",
   shipping: "Đang giao hàng", delivered: "Đã giao hàng", cancelled: "Đã hủy", returned: "Đã hoàn trả",
-};
+}; // Ý nghĩa: Map trạng thái đơn hàng tiếng Anh sang tiếng Việt
 const PAYMENT_STATUS_VI = {
   unpaid: "Chưa thanh toán", pending_confirmation: "Chờ xác nhận thanh toán",
   paid: "Đã thanh toán", partially_refunded: "Hoàn tiền một phần", refunded: "Đã hoàn tiền",
-};
+}; // Ý nghĩa: Map trạng thái thanh toán
 const PAYMENT_METHOD_VI = {
   cod: "Thanh toán khi nhận hàng (COD)", bank_transfer: "Chuyển khoản ngân hàng",
-};
+}; // Ý nghĩa: Map phương thức thanh toán
 
+/**
+ * Tên function: fmt
+ * Mục đích của function: Format số tiền theo định dạng Việt Nam đồng.
+ * Tham số đầu vào: val (Number/String)
+ * Giá trị trả về: Chuỗi tiền tệ (VD: "100.000đ")
+ */
 function fmt(val) {
   return val != null ? Number(val).toLocaleString("vi-VN") + "đ" : "N/A";
 }
+
+/**
+ * Tên function: fmtDate
+ * Mục đích của function: Format thời gian ISO sang định dạng ngày giờ Việt Nam (DD/MM/YYYY HH:mm).
+ * Tham số đầu vào: iso (Chuỗi ISO 8601)
+ * Giá trị trả về: Chuỗi thời gian.
+ */
 function fmtDate(iso) {
   if (!iso) return "N/A";
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
-// ── Wikipedia search (không cần API key) ─────────────────────────────────────
+/**
+ * Tên function: webSearch
+ * Mục đích của function: Tìm kiếm thông tin trên Wikipedia (Dùng cho nội dung sách/series).
+ * Tham số đầu vào: query (Chuỗi tìm kiếm)
+ * Giá trị trả về: Chuỗi tóm tắt từ Wikipedia hoặc null.
+ * Điều kiện xử lý: Gọi API Wikipedia, có timeout 8s.
+ * Lỗi có thể phát sinh: Lỗi mạng, API từ chối. Được catch và trả về null.
+ */
 async function webSearch(query) {
   try {
     const cleanQuery = query.replace(/[:"']/g, " ").replace(/\s+/g, " ").trim();
@@ -88,7 +127,14 @@ const TOOLS = [{
   },
 }];
 
-// ── Detect intent ─────────────────────────────────────────────────────────────
+/**
+ * Tên function: detectIntent
+ * Mục đích của function: Phân tích lịch sử chat để đoán ý định (intent) của người dùng.
+ * Tham số đầu vào: messages (Mảng các tin nhắn)
+ * Giá trị trả về: Object `{ needsOrders, needsBooks, searchKeyword }`
+ * Điều kiện xử lý: Dùng regex để check keyword.
+ * Lỗi có thể phát sinh: Không có.
+ */
 function detectIntent(messages) {
   const fullText = messages.map((m) => m.content).join(" ").toLowerCase();
   const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content || "";
@@ -114,7 +160,14 @@ function detectIntent(messages) {
   return { needsOrders, needsBooks, searchKeyword };
 }
 
-// ── Build store context ───────────────────────────────────────────────────────
+/**
+ * Tên function: buildStoreContext
+ * Mục đích của function: Xây dựng chuỗi văn bản (context) chứa thông tin cửa hàng, sách, và đơn hàng để nhồi vào prompt cho AI.
+ * Tham số đầu vào: jwt (JSON Web Token của user), messages (Lịch sử chat)
+ * Giá trị trả về: Chuỗi string context.
+ * Điều kiện xử lý: Dựa trên intent để truy vấn DB (settings, books, orders, profiles).
+ * Lỗi có thể phát sinh: Không có (Bắt lỗi từ supabase được bỏ qua hoặc fallback).
+ */
 async function buildStoreContext(jwt, messages) {
   const sbPublic = createSupabaseAdmin();
   const sbUser = jwt ? createSupabaseUser(jwt) : null;
@@ -305,7 +358,14 @@ ${orderLines.join("\n\n")}`;
   return [storeInfo, booksSection, ordersSection].filter(Boolean).join("\n\n").trim();
 }
 
-// ── Gọi Groq API ─────────────────────────────────────────────────────────────
+/**
+ * Tên function: callGroq
+ * Mục đích của function: Gọi API của Groq (tương thích OpenAI) để lấy phản hồi từ LLM.
+ * Tham số đầu vào: msgs (Mảng tin nhắn OpenAI format), allowTools (boolean), groqApiKey (string)
+ * Giá trị trả về: Object JSON từ Groq API.
+ * Điều kiện xử lý: Cấu hình nhiệt độ (temperature=0.3) và max_tokens.
+ * Lỗi có thể phát sinh: HTTP errors (429 Rate limit, 400 Tool error).
+ */
 async function callGroq(msgs, allowTools, groqApiKey) {
   const body = {
     model: MODEL,
@@ -340,7 +400,14 @@ async function callGroq(msgs, allowTools, groqApiKey) {
   return groqRes.json();
 }
 
-// ── POST /chat ────────────────────────────────────────────────────────────────
+/**
+ * Tên function: POST /chat
+ * Mục đích của function: Xử lý request nhắn tin với trợ lý AI từ Client.
+ * Tham số đầu vào: req (body: `messages`), res
+ * Giá trị trả về: JSON `{ reply: string }`
+ * Điều kiện xử lý: Phải cấu hình API key. Gộp system prompt với storeContext.
+ * Lỗi có thể phát sinh: 503 (Chưa cấu hình API Key), 429 (Rate limit), 400 (Lỗi validate).
+ */
 chatRouter.post("/chat", async (req, res) => {
   assert(env.groqApiKey, 503, "Tính năng chat AI chưa được cấu hình", "chat_not_configured");
 

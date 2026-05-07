@@ -1,8 +1,33 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: VouchersAdmin.tsx
+ * Mục đích của file: Cung cấp giao diện quản lý các mã giảm giá (Voucher).
+ * Các chức năng chính: Liệt kê, tạo mới, chỉnh sửa, khóa hoặc xóa mã giảm giá.
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Vouchers Admin Component
+ * Mục đích của module: Điều hành chiến dịch khuyến mãi.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminVouchersPage.
+ * Module liên quan: api.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
+/**
+ * Tên function: AdminVouchersPage
+ * Mục đích của function: Component render giao diện quản lý Voucher.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function AdminVouchersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -21,6 +46,10 @@ export function AdminVouchersPage() {
   const [form, setForm] = useState<any>(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Tên function: load
+   * Mục đích của function: Tải danh sách voucher từ API kèm hỗ trợ filter/sort.
+   */
   async function load() {
     try {
       const qs = new URLSearchParams();
@@ -43,6 +72,10 @@ export function AdminVouchersPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy]);
 
+  /**
+   * Tên function: save
+   * Mục đích của function: Gửi dữ liệu tạo hoặc cập nhật mã Voucher.
+   */
   async function save(e: React.FormEvent) {
     e.preventDefault();
 
@@ -69,6 +102,10 @@ export function AdminVouchersPage() {
     }
   }
 
+  /**
+   * Tên function: remove
+   * Mục đích của function: Xóa vĩnh viễn một mã giảm giá.
+   */
   async function remove(code: string) {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa voucher "${code}"?`)) return;
     try {
@@ -85,9 +122,9 @@ export function AdminVouchersPage() {
   }
 
   function openEdit(item: any) {
-    setForm({ 
-      ...item, 
-      valid_until: item.valid_until ? new Date(item.valid_until).toISOString().slice(0, 16) : emptyForm.valid_until 
+    setForm({
+      ...item,
+      valid_until: item.valid_until ? new Date(item.valid_until).toISOString().slice(0, 16) : emptyForm.valid_until
     });
     setModalMode("edit");
   }
@@ -172,17 +209,17 @@ export function AdminVouchersPage() {
                   <form id="voucherModalForm" onSubmit={save}>
                     <div className="mb-3">
                       <label className="form-label fw-bold small">Mã Voucher</label>
-                      <input 
-                        className="form-control text-uppercase font-monospace fw-bold" 
-                        required 
-                        disabled={modalMode === "edit"} 
-                        value={form.code} 
-                        onChange={(e) => setForm((f: any) => ({ ...f, code: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '') }))} 
+                      <input
+                        className="form-control text-uppercase font-monospace fw-bold"
+                        required
+                        disabled={modalMode === "edit"}
+                        value={form.code}
+                        onChange={(e) => setForm((f: any) => ({ ...f, code: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '') }))}
                         placeholder="Ví dụ: SUMMER2024"
                       />
                       {modalMode === "add" && <div className="form-text">Chỉ chứa chữ cái, số, gạch ngang và gạch dưới. Sẽ tự động in hoa.</div>}
                     </div>
-                    
+
                     <div className="row">
                       <div className="col-md-6 mb-3">
                         <label className="form-label fw-bold small text-danger">Phần trăm giảm (%)</label>

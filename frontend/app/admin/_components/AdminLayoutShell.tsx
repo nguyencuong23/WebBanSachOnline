@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: AdminLayoutShell.tsx
+ * Mục đích của file: Thành phần giao diện (Shell) bao bọc toàn bộ trang quản trị Admin.
+ * Các chức năng chính: Sidebar menu, Topbar (Avatar/Đăng xuất), bảo vệ route (chỉ cho phép admin).
+ * Phiên bản: 1.0.0
+ * Tác giả: Nguyễn Mạnh Cường
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Admin Layout Components
+ * Mục đích của module: Xây dựng cấu trúc khung cho Admin Dashboard.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminLayoutShell.
+ * Module liên quan: auth.ts, avatar.ts.
+ * ============================================================================
+ */
 "use client";
 
 import type { ReactNode } from "react";
@@ -9,6 +28,12 @@ import { getProfile, type Profile } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { getAvatarUrl } from "@/lib/avatar";
 
+/**
+ * Tên function: AdminLayoutShell
+ * Mục đích của function: Component gốc bao bọc các nội dung con trong route admin, kiểm tra quyền hạn.
+ * Tham số đầu vào: children (ReactNode).
+ * Giá trị trả về: JSX Element hoặc điều hướng nếu không có quyền.
+ */
 export function AdminLayoutShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
@@ -38,6 +63,10 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       .finally(() => setDone(true));
   }, [email, router]);
 
+  /**
+   * Tên function: logout
+   * Mục đích của function: Xử lý đăng xuất tài khoản và điều hướng về trang Auth.
+   */
   async function logout() {
     await supabase.auth.signOut();
     router.push("/auth");

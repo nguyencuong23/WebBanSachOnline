@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: BooksAdmin.tsx
+ * Mục đích của file: Cung cấp giao diện quản lý sách cho Admin (CRUD).
+ * Các chức năng chính: Hiển thị danh sách, thêm, sửa, xóa, tìm kiếm, phân trang và tải ảnh bìa lên Supabase Storage.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Books Admin Component
+ * Mục đích của module: Quản lý toàn bộ danh mục sản phẩm.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminBooksPage.
+ * Module liên quan: api.ts, supabase.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +25,13 @@ import { apiFetch } from "@/lib/api";
 
 const PROJECT_ID = "gtjrtwtbjdcznuacgrio";
 
+/**
+ * Tên function: AdminBooksPage
+ * Mục đích của function: Component render giao diện quản lý sách.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Lấy dữ liệu API, hỗ trợ upload ảnh, drag-and-drop, dán ảnh từ clipboard.
+ */
 export function AdminBooksPage() {
   const [items, setItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -40,7 +66,10 @@ export function AdminBooksPage() {
   const [form, setForm] = useState<any>(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
-  // Tải danh sách thể loại (chỉ cần gọi 1 lần lúc đầu)
+  /**
+   * Tên function: loadCategories
+   * Mục đích của function: Tải danh sách thể loại từ API phục vụ dropdown.
+   */
   async function loadCategories() {
     try {
       const resCats = await apiFetch<{ items: any[] }>("/categories");
@@ -50,7 +79,10 @@ export function AdminBooksPage() {
     }
   }
 
-  // Lấy dữ liệu sách qua API Backend (hỗ trợ lọc & tìm kiếm)
+  /**
+   * Tên function: load
+   * Mục đích của function: Tải danh sách sách từ API, hỗ trợ tìm kiếm và sắp xếp.
+   */
   async function load() {
     try {
       const qs = new URLSearchParams();
@@ -268,7 +300,10 @@ export function AdminBooksPage() {
     return () => window.removeEventListener("paste", handleGlobalPaste);
   }, [modalMode]);
 
-  // Thêm mới/Cập nhật dữ liệu bằng Supabase
+  /**
+   * Tên function: saveBook
+   * Mục đích của function: Thêm mới hoặc cập nhật sách, bao gồm upload ảnh lên Storage.
+   */
   async function saveBook(e: React.FormEvent) {
     e.preventDefault();
     if (modalMode === "detail") {
@@ -338,7 +373,10 @@ export function AdminBooksPage() {
     }
   }
 
-  // Khôi phục hàm Xóa (Xóa ảnh trên Storage, sau đó xóa dòng trong DB)
+  /**
+   * Tên function: remove
+   * Mục đích của function: Xóa sách và xóa file ảnh tương ứng trên Storage.
+   */
   async function remove(bookId: string) {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa "${bookId}"? Hành động này sẽ xóa cả ảnh đi kèm.`)) return;
     try {

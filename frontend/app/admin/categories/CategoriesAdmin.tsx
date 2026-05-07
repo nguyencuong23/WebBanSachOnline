@@ -1,8 +1,33 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: CategoriesAdmin.tsx
+ * Mục đích của file: Quản lý danh mục thể loại sách từ phía Admin.
+ * Các chức năng chính: Hiển thị danh sách, thêm, sửa, xóa thể loại sách.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Categories Admin Component
+ * Mục đích của module: Kiểm soát cấu trúc phân loại sản phẩm.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminCategoriesPage.
+ * Module liên quan: api.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
+/**
+ * Tên function: AdminCategoriesPage
+ * Mục đích của function: Component render giao diện quản lý thể loại sách.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function AdminCategoriesPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -19,6 +44,10 @@ export function AdminCategoriesPage() {
   const [form, setForm] = useState<any>(emptyForm);
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
 
+  /**
+   * Tên function: load
+   * Mục đích của function: Tải danh sách thể loại sách từ API, hỗ trợ tìm kiếm và sắp xếp.
+   */
   async function load() {
     try {
       const qs = new URLSearchParams();
@@ -41,6 +70,10 @@ export function AdminCategoriesPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy]);
 
+  /**
+   * Tên function: saveCategory
+   * Mục đích của function: Gọi API để thêm mới hoặc cập nhật một thể loại.
+   */
   async function saveCategory(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -56,6 +89,10 @@ export function AdminCategoriesPage() {
     }
   }
 
+  /**
+   * Tên function: remove
+   * Mục đích của function: Xóa một thể loại khỏi hệ thống.
+   */
   async function remove(id: string) {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa thể loại "${id}"? Hành động này không thể hoàn tác.`)) return;
     try {

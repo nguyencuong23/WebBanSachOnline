@@ -1,16 +1,38 @@
 /**
- * cart.ts — Tiện ích giỏ hàng client-side.
- *
- * addToCart / getCart / saveCart: dùng localStorage để "gửi" sản phẩm
- * lên API ngay khi user bấm "Thêm vào giỏ" trên trang sách.
- * CartPage sẽ gọi API /cart trực tiếp để hiển thị đầy đủ.
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: cart.ts
+ * Mục đích của file: Quản lý thao tác giỏ hàng phía Client.
+ * Các chức năng chính: Thêm sách vào giỏ (gọi API hoặc lưu LocalStorage), lấy/lưu giỏ hàng LocalStorage (fallback).
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Cart Utils
+ * Mục đích của module: Tiện ích giỏ hàng client-side.
+ * Phạm vi xử lý: Client-side.
+ * Các thành phần chính trong module: addToCart, getCart, saveCart.
+ * Module liên quan: api.ts.
+ * ============================================================================
  */
 import { apiFetch } from "./api";
 
+/**
+ * Tên class/interface: CartLine
+ * Mục đích của class/interface: Kiểu dữ liệu lưu cấu trúc cơ bản của 1 dòng giỏ hàng trong LocalStorage.
+ */
 export type CartLine = { book_id: string; quantity: number; title?: string; unit_price?: number };
 
 const KEY = "btllib_cart";
 
+/**
+ * Tên function: getCart
+ * Mục đích của function: Đọc danh sách giỏ hàng fallback từ LocalStorage.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: Mảng CartLine.
+ */
 export function getCart(): CartLine[] {
   try {
     return JSON.parse(localStorage.getItem(KEY) || "[]");
@@ -19,13 +41,21 @@ export function getCart(): CartLine[] {
   }
 }
 
+/**
+ * Tên function: saveCart
+ * Mục đích của function: Lưu danh sách giỏ hàng fallback vào LocalStorage.
+ * Tham số đầu vào: lines (mảng CartLine).
+ * Giá trị trả về: Không có.
+ */
 export function saveCart(lines: CartLine[]) {
   localStorage.setItem(KEY, JSON.stringify(lines));
 }
 
 /**
- * Thêm sách vào giỏ hàng qua API (dành cho user đã đăng nhập).
- * Nếu gọi API thất bại (ví dụ chưa login), fallback về localStorage.
+ * Tên function: addToCart
+ * Mục đích của function: Thêm sách vào giỏ hàng qua API. Nếu API fail (vd chưa login), fallback lưu vào LocalStorage.
+ * Tham số đầu vào: book (thông tin sách), qty (số lượng).
+ * Giá trị trả về: Promise<void>.
  */
 export async function addToCart(
   book: { book_id: string; title: string; price: number; sale_price?: number | null; is_on_sale?: boolean },

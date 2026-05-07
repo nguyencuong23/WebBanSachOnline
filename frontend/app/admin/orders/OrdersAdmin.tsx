@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: OrdersAdmin.tsx
+ * Mục đích của file: Quản lý toàn bộ đơn hàng của khách từ phía Admin.
+ * Các chức năng chính: Xem danh sách, cập nhật trạng thái đơn hàng và trạng thái thanh toán, tạo đơn hàng mới, xem chi tiết và xóa đơn.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Orders Admin Component
+ * Mục đích của module: Quản lý vòng đời và tiến trình xử lý đơn hàng.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminOrdersPage.
+ * Module liên quan: EntityPicker.tsx, bookImage.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,6 +38,12 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "refunded", label: "Đã hoàn tiền" },
 ];
 
+/**
+ * Tên function: AdminOrdersPage
+ * Mục đích của function: Component render giao diện quản lý đơn hàng.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function AdminOrdersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -46,6 +71,10 @@ export function AdminOrdersPage() {
     lines: [{ book_id: "", quantity: 1 }]
   });
 
+  /**
+   * Tên function: load
+   * Mục đích của function: Lấy danh sách đơn hàng từ API với các bộ lọc.
+   */
   async function load() {
     setLoading(true);
     setError(null);
@@ -80,6 +109,10 @@ export function AdminOrdersPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy, filterStatus, filterPayment]);
 
+  /**
+   * Tên function: openDetail
+   * Mục đích của function: Mở modal xem chi tiết đơn hàng.
+   */
   async function openDetail(orderId: number) {
     try {
       const res = await apiFetch<{ item: any }>(`/admin/orders/${orderId}`);
@@ -106,6 +139,10 @@ export function AdminOrdersPage() {
     setModalMode("edit");
   }
 
+  /**
+   * Tên function: handleSaveEdit
+   * Mục đích của function: Cập nhật thông tin nhận hàng và trạng thái cơ bản.
+   */
   async function handleSaveEdit() {
     setSaving(true);
     setSaveError(null);
@@ -123,6 +160,10 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Tên function: deleteOrder
+   * Mục đích của function: Xóa vĩnh viễn đơn hàng khỏi hệ thống.
+   */
   async function deleteOrder(orderId: number, orderCode: string) {
     if (!window.confirm(`Xóa vĩnh viễn đơn hàng "${orderCode}"?\nHành động này không thể hoàn tác.`)) return;
     try {
@@ -134,6 +175,10 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Tên function: quickPatch
+   * Mục đích của function: Cập nhật nhanh 1 trường dữ liệu (vd: trạng thái) của đơn hàng.
+   */
   async function quickPatch(orderId: number, patch: any) {
     try {
       await apiFetch(`/admin/orders/${orderId}`, {
@@ -149,6 +194,10 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Tên function: handleAddSubmit
+   * Mục đích của function: Tạo mới một đơn hàng thủ công từ Admin.
+   */
   async function handleAddSubmit() {
     setSaving(true);
     setSaveError(null);
@@ -163,7 +212,7 @@ export function AdminOrdersPage() {
         body: JSON.stringify(payload)
       });
       setModalMode(null);
-      setAddForm({ user_id: "", receiver_name: "", receiver_phone: "", shipping_address: "", note: "", payment_method: "cod", lines: [{ book_id: "", quantity: 1 }] });
+      setAddForm({ user_id: "", receiver_name: "", receiver_phone: "", shipping_address: "", note: "", payment_method: "cod", shipping_fee: 0, lines: [{ book_id: "", quantity: 1 }] });
       load();
     } catch (e: any) {
       setSaveError(e.message || String(e));

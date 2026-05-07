@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: ReviewsSection.tsx
+ * Mục đích của file: Component cho phép người dùng xem, viết, sửa, xóa đánh giá sách.
+ * Các chức năng chính: Fetch danh sách review, tạo mới review (nếu đăng nhập), tính tổng sao trung bình.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Reviews Component
+ * Mục đích của module: Quản lý đánh giá và bình luận sách.
+ * Phạm vi xử lý: Client Component, API `/books/[id]/reviews`.
+ * Các thành phần chính trong module: ReviewsSection, StarDisplay, StarPicker.
+ * Module liên quan: BookDetailPage.tsx.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -6,6 +25,10 @@ import { supabase } from "@/lib/supabase";
 import { getAvatarUrl } from "@/lib/avatar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+/**
+ * Tên class/interface: ReviewProfile
+ * Mục đích của class/interface: Type chứa thông tin user viết review.
+ */
 interface ReviewProfile {
   user_id: string;
   username: string;
@@ -13,6 +36,10 @@ interface ReviewProfile {
   avatar_url?: string;
 }
 
+/**
+ * Tên class/interface: Review
+ * Mục đích của class/interface: Type cho một item đánh giá.
+ */
 interface Review {
   id: number;
   rating: number;
@@ -22,6 +49,10 @@ interface Review {
   profiles: ReviewProfile;
 }
 
+/**
+ * Tên class/interface: ReviewsData
+ * Mục đích của class/interface: Cấu trúc response trả về từ API đánh giá.
+ */
 interface ReviewsData {
   items: Review[];
   total: number;
@@ -33,6 +64,10 @@ interface ReviewsData {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+/**
+ * Tên function: StarDisplay
+ * Mục đích của function: Hiển thị số sao (cố định).
+ */
 function StarDisplay({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
     <span style={{ display: "inline-flex", gap: 2 }}>
@@ -47,6 +82,10 @@ function StarDisplay({ rating, size = 16 }: { rating: number; size?: number }) {
   );
 }
 
+/**
+ * Tên function: StarPicker
+ * Mục đích của function: Cho phép người dùng chọn sao (có hover effect).
+ */
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [hover, setHover] = useState(0);
   return (
@@ -65,6 +104,10 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
+/**
+ * Tên function: timeAgo
+ * Mục đích của function: Chuyển đổi timestamp thành chuỗi thời gian thân thiện (Vừa xong, 5 phút trước,...).
+ */
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
@@ -79,9 +122,17 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(mo / 12)} năm trước`;
 }
 
+// Ý nghĩa: Nhãn văn bản mô tả số sao; Giá trị: Array strings
 const STAR_LABELS = ["", "Rất tệ", "Tệ", "Bình thường", "Tốt", "Xuất sắc"];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+/**
+ * Tên function: ReviewsSection
+ * Mục đích của function: Component tổng hiển thị khu vực Review.
+ * Tham số đầu vào: bookId (Mã sách).
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Tách biệt load review của "tôi" và danh sách review chung.
+ */
 export function ReviewsSection({ bookId }: { bookId: string }) {
   const [data, setData]           = useState<ReviewsData | null>(null);
   const [myReview, setMyReview]   = useState<Review | null>(null);
@@ -105,6 +156,10 @@ export function ReviewsSection({ bookId }: { bookId: string }) {
   }, []);
 
   // Load reviews + my review
+  /**
+   * Tên function: loadReviews
+   * Mục đích của function: Fetch dữ liệu review (có phân trang) và review của chính user.
+   */
   const loadReviews = useCallback(async (p = 1) => {
     setIsLoading(true);
     try {
@@ -129,6 +184,10 @@ export function ReviewsSection({ bookId }: { bookId: string }) {
 
   useEffect(() => { loadReviews(page); }, [loadReviews, page]);
 
+  /**
+   * Tên function: handleSubmit
+   * Mục đích của function: Xử lý submit đánh giá mới hoặc cập nhật.
+   */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (formRating === 0) { setFormError("Vui lòng chọn số sao."); return; }
@@ -151,6 +210,10 @@ export function ReviewsSection({ bookId }: { bookId: string }) {
     }
   }
 
+  /**
+   * Tên function: handleDelete
+   * Mục đích của function: Gọi API xóa đánh giá hiện tại của user.
+   */
   async function handleDelete() {
     if (!confirm("Xóa đánh giá của bạn?")) return;
     try {

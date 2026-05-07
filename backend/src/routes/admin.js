@@ -1,17 +1,46 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: admin.js
+ * Mục đích của file: Cung cấp toàn bộ các endpoint quản trị hệ thống (Admin).
+ * Các chức năng chính: Thống kê Dashboard, Quản lý Người dùng, Đơn hàng, Giỏ hàng, Thông báo nội bộ.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Admin API Routes
+ * Mục đích của module: Giao tiếp dữ liệu phục vụ riêng cho trang quản trị hệ thống.
+ * Phạm vi xử lý: Yêu cầu đăng nhập và phân quyền (role = admin) cho toàn bộ route.
+ * Các thành phần chính trong module: Express Router, Zod validation, Supabase Admin Client.
+ * Module liên quan: verify.js, supabase.js, errors.js.
+ * ============================================================================
+ */
 import express from "express";
 import { z } from "zod";
 import { requireUser, requireAdmin } from "../auth/verify.js";
 import { createSupabaseUser, createSupabaseAdmin } from "../supabase.js";
 import { assert } from "../http/errors.js";
 
+// Ý nghĩa: Các hằng số Regex để validate dữ liệu đầu vào.
 const USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9._]{2,28}[a-z0-9])?$/;
 const FULL_NAME_REGEX = /^[\p{L}](?:[\p{L}\s'.-]{0,98}[\p{L}])?$/u;
 const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/;
 
-export const adminRouter = express.Router();
+export const adminRouter = express.Router(); // Ý nghĩa: Router chứa các endpoint quản trị; Giá trị: Express Router instance
 
+// Middleware bảo vệ toàn bộ route /admin bằng quyền Admin
 adminRouter.use("/admin", requireUser, requireAdmin);
 
+/**
+ * Tên function: GET /admin/dashboard/summary
+ * Mục đích của function: Lấy các con số tổng quan cho Dashboard.
+ * Tham số đầu vào: req, res
+ * Giá trị trả về: JSON `{ total_books, total_users, total_orders, revenue }`
+ * Điều kiện xử lý: Lọc doanh thu của tháng hiện tại và đơn hàng không bị hủy.
+ * Lỗi có thể phát sinh: Bỏ qua lỗi, fallback về 0.
+ */
 adminRouter.get("/admin/dashboard/summary", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
 
@@ -39,6 +68,12 @@ adminRouter.get("/admin/dashboard/summary", async (req, res) => {
   });
 });
 
+/**
+ * Tên function: GET /admin/dashboard/stats
+ * Mục đích của function: Lấy thống kê chi tiết cho Dashboard (Phân phối trạng thái, sách bán chạy, ...).
+ * Tham số đầu vào: req, res
+ * Giá trị trả về: JSON với nhiều chỉ số.
+ */
 adminRouter.get("/admin/dashboard/stats", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
 
@@ -102,6 +137,12 @@ adminRouter.get("/admin/dashboard/stats", async (req, res) => {
   });
 });
 
+/**
+ * Tên function: GET /admin/monthly-stats
+ * Mục đích của function: Lấy thống kê doanh thu theo 12 tháng trong năm hiện tại.
+ * Tham số đầu vào: req, res
+ * Giá trị trả về: JSON mảng 12 tháng.
+ */
 adminRouter.get("/admin/monthly-stats", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const year = new Date().getUTCFullYear();
@@ -134,6 +175,12 @@ adminRouter.get("/admin/monthly-stats", async (req, res) => {
   res.json(result);
 });
 
+/**
+ * Tên function: GET /admin/borrowing-trends
+ * Mục đích của function: Lấy xu hướng số lượng và doanh thu trong 30 ngày gần nhất.
+ * Tham số đầu vào: req, res
+ * Giá trị trả về: JSON `{ order_volume, revenue }`
+ */
 adminRouter.get("/admin/borrowing-trends", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const end = new Date();
@@ -170,6 +217,13 @@ adminRouter.get("/admin/borrowing-trends", async (req, res) => {
 });
 
 // --- QUẢN LÝ ĐƠN HÀNG (THÊM MỚI TỪ ADMIN) ---
+/**
+ * Tên function: POST /admin/orders
+ * Mục đích của function: Thêm mới đơn hàng từ trang Admin.
+ * Tham số đầu vào: req (body: thông tin đơn và list sản phẩm), res
+ * Giá trị trả về: JSON đơn hàng đã tạo.
+ * Điều kiện xử lý: Kiểm tra tồn kho, trừ tồn kho, tính ship.
+ */
 adminRouter.post("/admin/orders", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -263,6 +317,12 @@ adminRouter.post("/admin/orders", async (req, res) => {
 });
 
 
+/**
+ * Tên function: GET /admin/users
+ * Mục đích của function: Lấy danh sách người dùng kèm bộ lọc và tìm kiếm.
+ * Tham số đầu vào: req (query: role, active, search, sort), res
+ * Giá trị trả về: JSON `{ items }`
+ */
 adminRouter.get("/admin/users", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const role = (req.query.role || "").toString();
@@ -304,6 +364,13 @@ adminRouter.get("/admin/users", async (req, res) => {
   res.json({ items: data });
 });
 
+/**
+ * Tên function: PATCH /admin/users/:userId
+ * Mục đích của function: Cập nhật thông tin profile người dùng.
+ * Tham số đầu vào: req (params: userId, body: ...), res
+ * Giá trị trả về: JSON `{ item }`
+ * Điều kiện xử lý: Sync email sang Supabase Auth. Không tự khóa tài khoản chính mình.
+ */
 adminRouter.patch("/admin/users/:userId", async (req, res) => {
   const schema = z.object({
     username: z.string().trim().regex(USERNAME_REGEX, "Tên đăng nhập phải dài 4-30 ký tự, chỉ gồm chữ thường, số, dấu chấm và dấu gạch dưới.").optional().nullable().or(z.literal("")),
@@ -351,6 +418,12 @@ adminRouter.patch("/admin/users/:userId", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: POST /admin/users
+ * Mục đích của function: Admin tạo thêm tài khoản người dùng mới.
+ * Tham số đầu vào: req (body: email, password, full_name, ...), res
+ * Giá trị trả về: JSON `{ item }`
+ */
 adminRouter.post("/admin/users", async (req, res) => {
   const schema = z.object({
     email: z.string().email("Email không hợp lệ.").max(100, "Email không được vượt quá 100 ký tự."),
@@ -404,20 +477,29 @@ adminRouter.post("/admin/users", async (req, res) => {
   res.status(201).json({ item: profile });
 });
 
+/**
+ * Tên function: DELETE /admin/users/:userId
+ * Mục đích của function: Admin xóa vĩnh viễn tài khoản người dùng.
+ * Tham số đầu vào: req (params: userId), res
+ * Giá trị trả về: JSON `{ ok: true }`
+ */
 adminRouter.delete("/admin/users/:userId", async (req, res) => {
   const sbAdmin = createSupabaseAdmin();
   const userId = req.params.userId;
 
   assert(userId !== req.profile?.user_id, 400, "Bạn không thể xóa tài khoản của chính mình.", "cannot_delete_self");
 
-  // Xóa user trong auth, row trong profiles sẽ tự động cascade hoặc phải xóa thủ công tùy setup DB.
-  // Nếu Supabase setup cascade:
   const { error } = await sbAdmin.auth.admin.deleteUser(userId);
   assert(!error, 400, "Lỗi xóa người dùng", "user_delete_failed", error?.message);
 
   res.json({ ok: true });
 });
 
+/**
+ * Tên function: POST /admin/users/:userId/toggle-status
+ * Mục đích của function: Bật / Tắt trạng thái hoạt động (khóa) của tài khoản.
+ * Tham số đầu vào: req (params: userId), res
+ */
 adminRouter.post("/admin/users/:userId/toggle-status", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const userId = req.params.userId;
@@ -433,6 +515,11 @@ adminRouter.post("/admin/users/:userId/toggle-status", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: POST /admin/users/:userId/change-password
+ * Mục đích của function: Đổi mật khẩu cho người dùng từ phía Admin.
+ * Tham số đầu vào: req (params: userId, body: password), res
+ */
 adminRouter.post("/admin/users/:userId/change-password", async (req, res) => {
   const schema = z.object({
     password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự.")
@@ -448,6 +535,11 @@ adminRouter.post("/admin/users/:userId/change-password", async (req, res) => {
   res.json({ message: "Cập nhật mật khẩu thành công" });
 });
 
+/**
+ * Tên function: POST /admin/users/:userId/avatar
+ * Mục đích của function: Upload và cập nhật ảnh đại diện của người dùng.
+ * Tham số đầu vào: req (body: image base64), res
+ */
 adminRouter.post("/admin/users/:userId/avatar", async (req, res) => {
   const { image } = req.body;
   assert(image, 400, "Thiếu dữ liệu hình ảnh (Base64)", "missing_image");
@@ -488,6 +580,11 @@ adminRouter.post("/admin/users/:userId/avatar", async (req, res) => {
   res.json({ message: "Cập nhật ảnh đại diện thành công", avatar_url: fileName, profile });
 });
 
+/**
+ * Tên function: DELETE /admin/users/:userId/avatar
+ * Mục đích của function: Xóa ảnh đại diện của người dùng.
+ * Tham số đầu vào: req (params: userId), res
+ */
 adminRouter.delete("/admin/users/:userId/avatar", async (req, res) => {
   const sbAdmin = createSupabaseAdmin();
   const userId = req.params.userId;
@@ -511,6 +608,11 @@ adminRouter.delete("/admin/users/:userId/avatar", async (req, res) => {
 
 // --- QUẢN LÝ ĐƠN HÀNG (ADMIN) ---
 
+/**
+ * Tên function: GET /admin/orders
+ * Mục đích của function: Lấy danh sách toàn bộ đơn hàng kèm filter (Admin).
+ * Tham số đầu vào: req (query: search, status, sort), res
+ */
 adminRouter.get("/admin/orders", async (req, res) => {
   const search = (req.query.search || "").toString().trim();
   const searchBy = (req.query.searchBy || "all").toString();
@@ -539,10 +641,13 @@ adminRouter.get("/admin/orders", async (req, res) => {
 
   const { data, error } = await q.limit(500);
   if (error) console.error("[ORDERS GET]", JSON.stringify(error));
-  assert(!error, 400, "Lỗi tải danh sách đơn hàng", "orders_fetch_failed", error?.message);
-  res.json({ items: data });
+  assert(!error, 400, "Lỗi tải danh sách đơn hàng", "orders_fetch_failed", error?.message);  res.json({ items: data });
 });
 
+/**
+ * Tên function: GET /admin/orders/:orderId
+ * Mục đích của function: Lấy chi tiết đơn hàng (Admin).
+ */
 adminRouter.get("/admin/orders/:orderId", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { data, error } = await sb
@@ -554,6 +659,10 @@ adminRouter.get("/admin/orders/:orderId", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: PATCH /admin/orders/:orderId
+ * Mục đích của function: Cập nhật thông tin và trạng thái đơn hàng (Admin). Tự động tạo thông báo.
+ */
 adminRouter.patch("/admin/orders/:orderId", async (req, res) => {
   const sb = createSupabaseAdmin();
 
@@ -616,6 +725,10 @@ adminRouter.patch("/admin/orders/:orderId", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: DELETE /admin/orders/:orderId
+ * Mục đích của function: Xóa vĩnh viễn đơn hàng.
+ */
 adminRouter.delete("/admin/orders/:orderId", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { error } = await sb.from("orders").delete().eq("order_id", req.params.orderId);
@@ -625,6 +738,10 @@ adminRouter.delete("/admin/orders/:orderId", async (req, res) => {
 
 // --- QUẢN LÝ GIỎ HÀNG (ADMIN) ---
 
+/**
+ * Tên function: GET /admin/carts
+ * Mục đích của function: Xem danh sách giỏ hàng của tất cả người dùng (Admin).
+ */
 adminRouter.get("/admin/carts", async (req, res) => {
   const search = (req.query.search || "").toString().toLowerCase().trim();
   const sort = (req.query.sort || "created_at-desc").toString();
@@ -679,6 +796,10 @@ adminRouter.get("/admin/carts", async (req, res) => {
   res.json({ items });
 });
 
+/**
+ * Tên function: POST /admin/carts
+ * Mục đích của function: Thêm sách vào giỏ hàng của một User bất kỳ.
+ */
 adminRouter.post("/admin/carts", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -701,6 +822,10 @@ adminRouter.post("/admin/carts", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: PATCH /admin/carts/:id
+ * Mục đích của function: Cập nhật số lượng sản phẩm trong giỏ.
+ */
 adminRouter.patch("/admin/carts/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -718,6 +843,10 @@ adminRouter.patch("/admin/carts/:id", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: DELETE /admin/carts/:id
+ * Mục đích của function: Xóa sản phẩm khỏi giỏ.
+ */
 adminRouter.delete("/admin/carts/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { error } = await sb.from("cart_items").delete().eq("id", req.params.id);
@@ -727,6 +856,10 @@ adminRouter.delete("/admin/carts/:id", async (req, res) => {
 
 // --- QUẢN LÝ THÔNG BÁO (ADMIN) ---
 
+/**
+ * Tên function: GET /admin/notifications
+ * Mục đích của function: Xem danh sách các thông báo do admin đã gửi.
+ */
 adminRouter.get("/admin/notifications", async (req, res) => {
   const sb = createSupabaseAdmin();
   const sort = (req.query.sort || "created_at-desc").toString();
@@ -747,6 +880,10 @@ adminRouter.get("/admin/notifications", async (req, res) => {
   res.json({ items: data });
 });
 
+/**
+ * Tên function: GET /admin/notifications/:id
+ * Mục đích của function: Xem chi tiết 1 thông báo (Admin).
+ */
 adminRouter.get("/admin/notifications/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { data, error } = await sb.from("admin_notifications").select("*").eq("id", req.params.id).maybeSingle();
@@ -754,6 +891,10 @@ adminRouter.get("/admin/notifications/:id", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: POST /admin/notifications
+ * Mục đích của function: Admin tạo mới một chiến dịch thông báo và gửi cho users.
+ */
 adminRouter.post("/admin/notifications", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -811,6 +952,10 @@ adminRouter.post("/admin/notifications", async (req, res) => {
   res.status(201).json({ item: adminNotif });
 });
 
+/**
+ * Tên function: PATCH /admin/notifications/:id
+ * Mục đích của function: Sửa lại nội dung thông báo.
+ */
 adminRouter.patch("/admin/notifications/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -842,6 +987,10 @@ adminRouter.patch("/admin/notifications/:id", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tên function: DELETE /admin/notifications/:id
+ * Mục đích của function: Xóa chiến dịch thông báo.
+ */
 adminRouter.delete("/admin/notifications/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { error } = await sb.from("admin_notifications").delete().eq("id", req.params.id);
@@ -853,6 +1002,10 @@ adminRouter.delete("/admin/notifications/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+/**
+ * Tên function: POST /admin/notifications/upload-image
+ * Mục đích của function: Tải lên ảnh base64 dùng trong thông báo.
+ */
 adminRouter.post("/admin/notifications/upload-image", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({

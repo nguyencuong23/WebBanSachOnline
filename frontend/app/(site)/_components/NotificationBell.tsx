@@ -1,10 +1,33 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: NotificationBell.tsx
+ * Mục đích của file: Component Chuông thông báo trên Header.
+ * Các chức năng chính: Hiển thị số lượng thông báo chưa đọc, danh sách thông báo dạng Dropdown, Popup xem chi tiết.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Notification UI
+ * Mục đích của module: Thông báo các sự kiện (đơn hàng, khuyến mãi) cho người dùng.
+ * Phạm vi xử lý: Client Component, gọi API `/notifications`.
+ * Các thành phần chính trong module: NotificationBell.
+ * Module liên quan: useSessionProfile.ts, api.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useSessionProfile } from "../_hooks/useSessionProfile";
 import { apiFetch } from "@/lib/api";
-import Link from "next/link";
 
+/**
+ * Tên class/interface: Notification
+ * Mục đích của class/interface: Cấu trúc dữ liệu của một thông báo.
+ * Vai trò trong hệ thống: Interface Type.
+ */
 interface Notification {
   id: number;
   title: string;
@@ -15,6 +38,12 @@ interface Notification {
   created_at: string;
 }
 
+/**
+ * Tên function: NotificationBell
+ * Mục đích của function: Render chuông thông báo và logic dropdown.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element hoặc null (nếu chưa đăng nhập).
+ */
 export function NotificationBell() {
   const { profile } = useSessionProfile();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -40,10 +69,14 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * Tên function: fetchNotifications
+   * Mục đích của function: Gọi API lấy danh sách thông báo của User.
+   */
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const data = await apiFetch<{ items: Notification[] }>("/api/notifications");
+      const data = await apiFetch<{ items: Notification[] }>("/notifications");
       setNotifications(data.items || []);
     } catch (error) {
       console.error(error);
@@ -52,9 +85,14 @@ export function NotificationBell() {
     }
   };
 
+  /**
+   * Tên function: markAsRead
+   * Mục đích của function: Đánh dấu một thông báo cụ thể là đã đọc.
+   * Tham số đầu vào: id (Mã thông báo)
+   */
   const markAsRead = async (id: number) => {
     try {
-      await apiFetch(`/api/notifications/${id}/read`, { method: "PATCH" });
+      await apiFetch(`/notifications/${id}/read`, { method: "PATCH" });
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );
@@ -63,21 +101,34 @@ export function NotificationBell() {
     }
   };
 
+  /**
+   * Tên function: markAllAsRead
+   * Mục đích của function: Đánh dấu tất cả thông báo là đã đọc.
+   */
   const markAllAsRead = async () => {
     try {
-      await apiFetch("/api/notifications/read-all", { method: "POST" });
+      await apiFetch("/notifications/read-all", { method: "POST" });
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     } catch (error) {
       console.error(error);
     }
   };
 
+  /**
+   * Tên function: handleItemClick
+   * Mục đích của function: Xử lý khi user click vào một dòng thông báo. Mở popup chi tiết và đánh dấu đã đọc.
+   * Tham số đầu vào: n (Notification)
+   */
   const handleItemClick = (n: Notification) => {
     setActiveNotif(n);
     setShowDropdown(false);
     if (!n.is_read) markAsRead(n.id);
   };
 
+  /**
+   * Tên function: closeModal
+   * Mục đích của function: Đóng popup thông báo chi tiết.
+   */
   const closeModal = () => setActiveNotif(null);
 
   if (!profile) return null;
@@ -242,14 +293,29 @@ export function NotificationBell() {
                   {/* Link chuyển hướng (Nếu không phải ảnh) */}
                   {activeNotif.link && !(activeNotif.link.match(/\.(jpeg|jpg|gif|png|webp)$/i) || activeNotif.link.includes("supabase.co/storage")) && (
                     <div className="mb-3">
-                      <Link 
-                        href={activeNotif.link} 
-                        className="btn btn-sm btn-outline-primary rounded-pill px-3"
+                      <a
+                        href={activeNotif.link}
+                        className="notif-action-link"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          background: "#2563eb",
+                          color: "#fff",
+                          borderRadius: 50,
+                          padding: "6px 16px",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          textDecoration: "none",
+                          border: "none",
+                          outline: "none",
+                          position: "static",
+                        }}
                         onClick={closeModal}
                       >
-                        <i className="fas fa-external-link-alt me-2" />
+                        <i className="fas fa-external-link-alt" />
                         Xem chi tiết liên quan
-                      </Link>
+                      </a>
                     </div>
                   )}
 

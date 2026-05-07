@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: AdminDashboard.tsx
+ * Mục đích của file: Hiển thị bảng điều khiển tổng quan cho Admin.
+ * Các chức năng chính: Lấy dữ liệu thống kê, vẽ biểu đồ doanh thu, đơn hàng, sách bán chạy, trạng thái đơn.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Admin Dashboard Component
+ * Mục đích của module: Xử lý giao diện và lấy dữ liệu thống kê cho Dashboard.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminDashboardPage.
+ * Module liên quan: page.tsx, API backend thống kê.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,6 +30,13 @@ import {
 } from "recharts";
 import { TrendingUp, Users, ShoppingBag, Coins, BarChart3, PieChart as PieChartIcon, Package, CreditCard } from "lucide-react";
 
+/**
+ * Tên function: AdminDashboardPage
+ * Mục đích của function: Component render trang Dashboard với các thẻ thống kê và biểu đồ (Recharts).
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Gọi song song 4 API thống kê qua Promise.all.
+ */
 export function AdminDashboardPage() {
   const [summary, setSummary] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);

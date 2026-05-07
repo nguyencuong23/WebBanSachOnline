@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: home.tsx
+ * Mục đích của file: Cung cấp giao diện trang chủ của cửa hàng sách.
+ * Các chức năng chính: Hiển thị banner, danh sách thể loại, sách mới nhất, sách giảm giá, sách bán chạy.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Trang Chủ
+ * Mục đích của module: Trang landing page thu hút khách hàng.
+ * Phạm vi xử lý: Client Component, fetch dữ liệu từ nhiều endpoint: /books/latest, /books/featured, /categories.
+ * Các thành phần chính trong module: HomePage, ShelfCard, BestsellerCard, InfiniteShelf.
+ * Module liên quan: api.ts, cart.ts, bookImage.ts.
+ * ============================================================================
+ */
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -29,10 +48,22 @@ interface Category {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+/**
+ * Tên function: fmt
+ * Mục đích của function: Format số tiền.
+ * Tham số đầu vào: n (number)
+ * Giá trị trả về: Chuỗi VNĐ.
+ */
 function fmt(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
 }
 
+/**
+ * Tên function: getPrice
+ * Mục đích của function: Tính toán giá gốc và giá khuyến mãi dựa trên trạng thái của sách.
+ * Tham số đầu vào: b (Book)
+ * Giá trị trả về: Object `{ sale, original }`
+ */
 function getPrice(b: Book) {
   if (b.is_on_sale && b.sale_price != null && b.sale_price > 0) {
     return { sale: b.sale_price, original: b.price };
@@ -40,11 +71,17 @@ function getPrice(b: Book) {
   return { sale: null, original: b.price };
 }
 
+/**
+ * Tên function: pct
+ * Mục đích của function: Tính phần trăm giảm giá.
+ * Tham số đầu vào: orig (Giá gốc), sale (Giá bán)
+ * Giá trị trả về: Số phần trăm nguyên (ví dụ: 20).
+ */
 function pct(orig: number, sale: number) {
   return Math.round((1 - sale / orig) * 100);
 }
 
-// icon + color cho từng category prefix
+// Ý nghĩa: Định nghĩa icon và màu sắc cho các mã thể loại; Lý do cần: Hiển thị UI sinh động
 const CAT_META: Record<string, { icon: string; color: string; bg: string }> = {
   VH: { icon: "fa-feather-alt",   color: "#7c3aed", bg: "#f5f3ff" },
   KT: { icon: "fa-chart-line",    color: "#0891b2", bg: "#ecfeff" },
@@ -58,12 +95,24 @@ const CAT_META: Record<string, { icon: string; color: string; bg: string }> = {
   LN: { icon: "fa-book-open",     color: "#ea580c", bg: "#fff7ed" },
 };
 
+/**
+ * Tên function: getCatMeta
+ * Mục đích của function: Lấy thông tin màu sắc và icon từ mã danh mục.
+ * Tham số đầu vào: categoryId (Mã danh mục)
+ * Giá trị trả về: Object chứa icon, color, bg.
+ */
 function getCatMeta(categoryId: string) {
   const prefix = String(categoryId).split("-")[0].toUpperCase();
   return CAT_META[prefix] || { icon: "fa-book", color: "#6b7280", bg: "#f9fafb" };
 }
 
 // ─── Shelf Book Card ──────────────────────────────────────────────────────────
+/**
+ * Tên function: ShelfCard
+ * Mục đích của function: Component hiển thị một thẻ sách trên giá sách (trang chủ).
+ * Tham số đầu vào: book, badge (nhãn), onAddCart (hàm thêm vào giỏ).
+ * Giá trị trả về: JSX Element.
+ */
 function ShelfCard({
   book,
   badge,
@@ -125,6 +174,12 @@ function ShelfCard({
 }
 
 // ─── Bestseller Card ──────────────────────────────────────────────────────────
+/**
+ * Tên function: BestsellerCard
+ * Mục đích của function: Component hiển thị sách bán chạy kèm thứ hạng.
+ * Tham số đầu vào: book, rank (hạng), onAddCart.
+ * Giá trị trả về: JSX Element.
+ */
 function BestsellerCard({
   book,
   rank,
@@ -182,6 +237,12 @@ function BestsellerCard({
 }
 
 // ─── Skeleton shelf ───────────────────────────────────────────────────────────
+/**
+ * Tên function: ShelfSkeleton
+ * Mục đích của function: Hiển thị hiệu ứng loading (skeleton) cho danh sách sách.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 function ShelfSkeleton() {
   return (
     <div style={{ display: "flex", gap: 18, overflow: "hidden" }}>
@@ -198,9 +259,16 @@ function ShelfSkeleton() {
 }
 
 // ─── Infinite Loop Shelf ─────────────────────────────────────────────────────
-const CARD_W = 186; // 168px card + 18px gap
-const SCROLL_BY = CARD_W * 3;
+const CARD_W = 186; // Ý nghĩa: Chiều rộng một thẻ sách (168px card + 18px gap) dùng để tính toán cuộn; Giá trị: 186
+const SCROLL_BY = CARD_W * 3; // Ý nghĩa: Khoảng cách cuộn mỗi lần nhấn nút; Giá trị: 3 thẻ
 
+/**
+ * Tên function: InfiniteShelf
+ * Mục đích của function: Component hiển thị giá sách cuộn vô tận (Carousel).
+ * Tham số đầu vào: books (Danh sách sách), badge, onAddCart.
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Tạo bản sao (clone) của danh sách để lừa thị giác.
+ */
 function InfiniteShelf({
   books,
   badge,
@@ -297,8 +365,15 @@ function InfiniteShelf({
   );
 }
 
+/**
+ * Tên function: HomePage
+ * Mục đích của function: Component chính chứa toàn bộ giao diện trang chủ.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Sử dụng Promise.allSettled để nạp đồng thời nhiều API không chặn nhau.
+ */
 export function HomePage() {
-  const router = useRouter();
+  const router = useRouter(); // Ý nghĩa: Đối tượng dùng để chuyển hướng trang; Giá trị: Next Router
 
   const [latestBooks, setLatestBooks]         = useState<Book[]>([]);
   const [featuredBooks, setFeaturedBooks]     = useState<Book[]>([]);
@@ -347,16 +422,31 @@ export function HomePage() {
     load();
   }, []);
 
+  /**
+   * Tên function: showToast
+   * Mục đích của function: Hiển thị thông báo (toast) tạm thời.
+   * Tham số đầu vào: msg (Nội dung thông báo)
+   */
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   }
 
+  /**
+   * Tên function: handleAddCart
+   * Mục đích của function: Xử lý sự kiện nhấn nút thêm vào giỏ.
+   * Tham số đầu vào: book (Sách)
+   */
   async function handleAddCart(book: Book) {
     await addToCart(book, 1);
     showToast(`Đã thêm "${book.title}" vào giỏ hàng`);
   }
 
+  /**
+   * Tên function: handleSearch
+   * Mục đích của function: Xử lý submit form tìm kiếm trang chủ.
+   * Tham số đầu vào: e (React.FormEvent)
+   */
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (searchQ.trim()) {
@@ -372,7 +462,6 @@ export function HomePage() {
 
   return (
     <>
-      {/* ── Hero ── */}
       <section className="home-hero">
         <div className="hero-inner">
           <div className="hero-text">
@@ -416,7 +505,6 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* Logo visual */}
           <div className="hero-visual">
             <div className="hero-logo-wrap">
               {logoUrl ? (
@@ -440,7 +528,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Features strip ── */}
       <div className="container" style={{ padding: "32px 24px 0" }}>
         <div className="features-strip">
           <div className="feature-item">
@@ -482,7 +569,6 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* ── Categories ── */}
       <section className="home-section">
         <div className="container">
           <div className="home-section-header">
@@ -531,7 +617,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Sách mới nhất ── */}
       <section className="home-section home-section-alt">
         <div className="container">
           <div className="home-section-header">
@@ -557,7 +642,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Sale banner ── */}
       <section className="home-section">
         <div className="container">
           <div className="sale-banner">
@@ -574,7 +658,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Sách đang giảm giá ── */}
       {(loading || featuredBooks.length > 0) && (
         <section className="home-section home-section-alt">
           <div className="container">
@@ -600,7 +683,6 @@ export function HomePage() {
         </section>
       )}
 
-      {/* ── Bán chạy nhất ── */}
       <section className="home-section">
         <div className="container">
           <div className="home-section-header">
@@ -639,7 +721,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA cuối trang ── */}
       <section className="home-section home-section-alt">
         <div className="container" style={{ textAlign: "center", maxWidth: 600, margin: "0 auto" }}>
           <div style={{ fontSize: "3rem", marginBottom: 16 }}>📖</div>
@@ -655,7 +736,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── Toast ── */}
       {toast && (
         <div className="home-toast">
           <i className="fas fa-check-circle" style={{ color: "#34d399" }} />

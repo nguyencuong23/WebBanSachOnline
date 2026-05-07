@@ -1,9 +1,34 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: UsersAdmin.tsx
+ * Mục đích của file: Quản lý thông tin tài khoản người dùng và phân quyền từ phía Admin.
+ * Các chức năng chính: Hiển thị danh sách, thêm/sửa tài khoản, khóa/mở khóa, quản lý điểm loyalty và avatar.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Users Admin Component
+ * Mục đích của module: Kiểm soát truy cập và thông tin khách hàng.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: AdminUsersPage.
+ * Module liên quan: api.ts, avatar.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 import { apiFetch } from "@/lib/api";
 import { getAvatarUrl } from "@/lib/avatar";
 
+/**
+ * Tên function: AdminUsersPage
+ * Mục đích của function: Component render giao diện quản lý người dùng.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function AdminUsersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -25,6 +50,10 @@ export function AdminUsersPage() {
   const [savingAvatar, setSavingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Tên function: load
+   * Mục đích của function: Tải danh sách người dùng với các bộ lọc tương ứng.
+   */
   async function load() {
     try {
       const qs = new URLSearchParams();
@@ -49,6 +78,10 @@ export function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy, filterRole, filterActive]);
 
+  /**
+   * Tên function: saveUser
+   * Mục đích của function: Thêm mới hoặc cập nhật thông tin người dùng.
+   */
   async function saveUser(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -97,6 +130,10 @@ export function AdminUsersPage() {
     }
   }
 
+  /**
+   * Tên function: handleAvatarChange
+   * Mục đích của function: Xử lý upload ảnh đại diện (Base64) lên backend.
+   */
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !form.user_id) return;
@@ -126,6 +163,10 @@ export function AdminUsersPage() {
     reader.readAsDataURL(file);
   };
 
+  /**
+   * Tên function: handleDeleteAvatar
+   * Mục đích của function: Gửi request xóa ảnh đại diện của người dùng.
+   */
   const handleDeleteAvatar = async () => {
     if (!form.user_id) return;
     if (!confirm("Bạn có chắc muốn xóa ảnh đại diện?")) return;
@@ -155,6 +196,10 @@ export function AdminUsersPage() {
     setModalMode("edit");
   }
 
+  /**
+   * Tên function: removeUser
+   * Mục đích của function: Xóa vĩnh viễn tài khoản người dùng.
+   */
   async function removeUser(id: string, name: string) {
     if (currentUser?.user_id === id) {
       alert("Bạn không thể xóa tài khoản của chính mình.");
@@ -169,6 +214,10 @@ export function AdminUsersPage() {
     }
   }
 
+  /**
+   * Tên function: toggleLockUser
+   * Mục đích của function: Thay đổi trạng thái hoạt động (khóa/mở khóa) của tài khoản.
+   */
   async function toggleLockUser(id: string, name: string, is_active: boolean) {
     if (currentUser?.user_id === id) {
       alert("Bạn không thể khóa/mở khóa tài khoản của chính mình.");

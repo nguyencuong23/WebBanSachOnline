@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: BookDetailPage.tsx
+ * Mục đích của file: Hiển thị giao diện chi tiết của một cuốn sách.
+ * Các chức năng chính: Hiển thị thông tin sách, chọn số lượng, thêm vào giỏ, hiển thị đánh giá và sách cùng thể loại.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Book Detail UI
+ * Mục đích của module: Hiển thị thông tin sách chi tiết.
+ * Phạm vi xử lý: Client Component, fetch API `/books/[id]`.
+ * Các thành phần chính trong module: BookDetailPage, Skeleton, Helper functions.
+ * Module liên quan: ReviewsSection.tsx, cart.ts, bookImage.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -10,6 +29,10 @@ import { ReviewsSection } from "./ReviewsSection";
 import "./book-detail.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+/**
+ * Tên class/interface: Book
+ * Mục đích của class/interface: Type cho dữ liệu sách chi tiết.
+ */
 interface Book {
   book_id: string;
   title: string;
@@ -30,10 +53,18 @@ interface Book {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+/**
+ * Tên function: fmt
+ * Mục đích của function: Format giá tiền (VNĐ).
+ */
 function fmt(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
 }
 
+/**
+ * Tên function: getPrice
+ * Mục đích của function: Tính toán giá hiển thị (có sale hay không).
+ */
 function getPrice(b: Book) {
   if (b.is_on_sale && b.sale_price != null && b.sale_price > 0) {
     return { sale: b.sale_price, original: b.price };
@@ -41,11 +72,19 @@ function getPrice(b: Book) {
   return { sale: null, original: b.price };
 }
 
+/**
+ * Tên function: pct
+ * Mục đích của function: Tính phần trăm giảm giá.
+ */
 function pct(orig: number, sale: number) {
   return Math.round((1 - sale / orig) * 100);
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
+/**
+ * Tên function: Skeleton
+ * Mục đích của function: Hiển thị khung sườn (loading) trước khi có dữ liệu.
+ */
 function Skeleton() {
   return (
     <div className="bd-wrap">
@@ -71,6 +110,13 @@ function Skeleton() {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+/**
+ * Tên function: BookDetailPage
+ * Mục đích của function: Component render toàn bộ chi tiết sách, giỏ hàng và danh sách liên quan.
+ * Tham số đầu vào: bookId (string).
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Xử lý cuộn vô tận cho slider, load data và settings đồng thời.
+ */
 export function BookDetailPage({ bookId }: { bookId: string }) {
   const router = useRouter();
 
@@ -89,6 +135,10 @@ export function BookDetailPage({ bookId }: { bookId: string }) {
   const CARD_WIDTH = 186; // 170px card + 16px gap
   const SCROLL_AMOUNT = CARD_WIDTH * 3; // ~3 cards per click
 
+  /**
+   * Tên function: scrollSlider
+   * Mục đích của function: Cuộn danh sách sách liên quan sang trái/phải.
+   */
   function scrollSlider(dir: "left" | "right") {
     const el = sliderRef.current;
     if (!el || !related.length) return;
@@ -182,11 +232,19 @@ export function BookDetailPage({ bookId }: { bookId: string }) {
     load();
   }, [bookId]);
 
+  /**
+   * Tên function: showToast
+   * Mục đích của function: Hiển thị thông báo (thêm giỏ hàng thành công).
+   */
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2800);
   }
 
+  /**
+   * Tên function: handleAddCart
+   * Mục đích của function: Xử lý sự kiện bấm Thêm vào giỏ.
+   */
   async function handleAddCart() {
     if (!book) return;
     setAddingCart(true);
@@ -198,6 +256,10 @@ export function BookDetailPage({ bookId }: { bookId: string }) {
     }
   }
 
+  /**
+   * Tên function: handleBuyNow
+   * Mục đích của function: Chuyển hướng trực tiếp sang trang checkout kèm book_id.
+   */
   async function handleBuyNow() {
     if (!book) return;
     setAddingCart(true);

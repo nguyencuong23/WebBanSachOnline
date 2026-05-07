@@ -1,9 +1,34 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: NotificationsAdmin.tsx
+ * Mục đích của file: Quản lý hệ thống thông báo gửi đến người dùng.
+ * Các chức năng chính: Tạo thông báo mới (hàng loạt hoặc chọn lọc), xem chi tiết, chỉnh sửa và thu hồi thông báo. Upload ảnh đính kèm.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Notifications Admin Component
+ * Mục đích của module: Công cụ giao tiếp với khách hàng từ phía Admin.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: NotificationsAdmin.
+ * Module liên quan: EntityPicker.tsx, api.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { EntityPicker } from "../_components/EntityPicker";
 
+/**
+ * Tên function: NotificationsAdmin
+ * Mục đích của function: Component render giao diện quản lý thông báo.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function NotificationsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -30,6 +55,10 @@ export function NotificationsAdmin() {
   const [detailRecipients, setDetailRecipients] = useState<any[]>([]);
   const [loadingRecipients, setLoadingRecipients] = useState(false);
 
+  /**
+   * Tên function: load
+   * Mục đích của function: Tải danh sách lịch sử thông báo từ API.
+   */
   async function load() {
     setLoading(true);
     setError(null);
@@ -107,6 +136,10 @@ export function NotificationsAdmin() {
     setModalMode("edit");
   }
 
+  /**
+   * Tên function: handleAddSubmit
+   * Mục đích của function: Gửi thông báo mới lên server.
+   */
   async function handleAddSubmit() {
     setSaving(true);
     setSaveError(null);
@@ -134,6 +167,10 @@ export function NotificationsAdmin() {
     }
   }
 
+  /**
+   * Tên function: handleEditSubmit
+   * Mục đích của function: Cập nhật nội dung thông báo hiện có.
+   */
   async function handleEditSubmit() {
     setSaving(true);
     setSaveError(null);
@@ -154,6 +191,10 @@ export function NotificationsAdmin() {
     }
   }
 
+  /**
+   * Tên function: deleteNotif
+   * Mục đích của function: Xóa một thông báo và thu hồi khỏi tất cả người dùng đã nhận.
+   */
   async function deleteNotif(id: number) {
     if (!window.confirm(`Xóa lịch sử thông báo này và thu hồi khỏi người nhận?`)) return;
     try {
@@ -165,6 +206,10 @@ export function NotificationsAdmin() {
     }
   }
 
+  /**
+   * Tên function: handleImageUpload
+   * Mục đích của function: Chuyển đổi ảnh sang Base64 và tải lên server để làm banner thông báo.
+   */
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

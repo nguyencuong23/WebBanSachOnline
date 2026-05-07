@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: CartsAdmin.tsx
+ * Mục đích của file: Quản lý toàn bộ giỏ hàng của khách hàng từ phía Admin.
+ * Các chức năng chính: Hiển thị danh sách giỏ hàng, cập nhật số lượng, thêm sản phẩm vào giỏ hàng user, xóa sản phẩm.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Carts Admin Component
+ * Mục đích của module: Kiểm soát trạng thái giỏ hàng của người dùng.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: CartsAdmin.
+ * Module liên quan: EntityPicker.tsx, bookImage.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,6 +24,12 @@ import { apiFetch } from "@/lib/api";
 import { EntityPicker } from "../_components/EntityPicker";
 import { getBookImageUrl } from "@/lib/bookImage";
 
+/**
+ * Tên function: CartsAdmin
+ * Mục đích của function: Component render giao diện quản lý giỏ hàng.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function CartsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +45,10 @@ export function CartsAdmin() {
   const [addError, setAddError] = useState<string | null>(null);
   const [addSaving, setAddSaving] = useState(false);
 
+  /**
+   * Tên function: load
+   * Mục đích của function: Gọi API lấy danh sách giỏ hàng, hỗ trợ filter & sort.
+   */
   async function load() {
     setLoading(true);
     setError(null);
@@ -42,6 +71,10 @@ export function CartsAdmin() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy]);
 
+  /**
+   * Tên function: updateQuantity
+   * Mục đích của function: Cập nhật số lượng sản phẩm trong giỏ hàng.
+   */
   async function updateQuantity(id: number, quantity: number) {
     if (quantity < 1) return removeCartItem(id);
     try {
@@ -55,6 +88,10 @@ export function CartsAdmin() {
     }
   }
 
+  /**
+   * Tên function: removeCartItem
+   * Mục đích của function: Xóa mục sản phẩm khỏi giỏ hàng.
+   */
   async function removeCartItem(id: number) {
     if (!window.confirm("Xóa sản phẩm này khỏi giỏ hàng?")) return;
     try {
@@ -65,6 +102,10 @@ export function CartsAdmin() {
     }
   }
 
+  /**
+   * Tên function: handleAddItem
+   * Mục đích của function: Thêm sản phẩm mới vào giỏ hàng của user cụ thể.
+   */
   async function handleAddItem() {
     setAddError(null);
     if (!addForm.user_id.trim()) { setAddError("Vui lòng nhập User ID."); return; }

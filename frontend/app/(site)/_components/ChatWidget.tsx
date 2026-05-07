@@ -1,26 +1,49 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: ChatWidget.tsx
+ * Mục đích của file: Component Widget Chat AI hiển thị góc phải dưới màn hình.
+ * Các chức năng chính: Bật/tắt cửa sổ chat, hiển thị tin nhắn, gửi tin nhắn tới API `/chat`.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: AI Chat Widget
+ * Mục đích của module: Hỗ trợ người dùng qua chatbot AI.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: ChatWidget.
+ * Module liên quan: supabase.ts, chat-widget.css.
+ * ============================================================================
+ */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import "./chat-widget.css";
 
+/**
+ * Tên class/interface: Message
+ * Mục đích của class/interface: Kiểu dữ liệu định nghĩa một tin nhắn trong hệ thống.
+ * Vai trò trong hệ thống: Dùng làm Type cho mảng tin nhắn.
+ * Thuộc tính chính: role (user hoặc assistant), content (Nội dung tin nhắn).
+ */
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY;
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.1-8b-instant";
+// Ý nghĩa: Base URL của API; Giá trị: Chuỗi URL từ env
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
-const SYSTEM_PROMPT = `Bạn là trợ lý AI của cửa hàng sách trực tuyến. Nhiệm vụ của bạn là:
-- Giúp khách hàng tìm kiếm sách theo thể loại, tác giả, chủ đề
-- Tư vấn sách phù hợp với sở thích của khách
-- Giải đáp thắc mắc về đơn hàng, vận chuyển, thanh toán
-- Giới thiệu các sách nổi bật, bestseller
-- Hỗ trợ khách hàng một cách thân thiện và nhiệt tình
-
-Hãy trả lời ngắn gọn, rõ ràng bằng tiếng Việt. Nếu không biết thông tin cụ thể, hãy hướng dẫn khách liên hệ nhân viên hỗ trợ.`;
-
+/**
+ * Tên function: ChatWidget
+ * Mục đích của function: Hiển thị Widget Chatbot và quản lý state chat.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Load history tin nhắn vào state. Nếu chưa có tin nhắn, tự động chào.
+ */
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,7 +57,8 @@ export function ChatWidget() {
       setMessages([
         {
           role: "assistant",
-          content: "Xin chào! 👋 Tôi là trợ lý AI của cửa hàng sách. Tôi có thể giúp bạn tìm sách, tư vấn thể loại, hoặc giải đáp thắc mắc. Bạn cần hỗ trợ gì?",
+          content:
+            "Xin chào! 👋 Tôi là trợ lý AI của cửa hàng sách. Tôi có thể giúp bạn tìm sách, tư vấn thể loại, hoặc giải đáp thắc mắc. Bạn cần hỗ trợ gì?",
         },
       ]);
     }
@@ -50,6 +74,11 @@ export function ChatWidget() {
     }
   }, [open]);
 
+  /**
+   * Tên function: sendMessage
+   * Mục đích của function: Gửi nội dung tin nhắn của User lên Server và lấy phản hồi của AI.
+   * Tham số đầu vào: Không có (lấy từ state `input`).
+   */
   async function sendMessage() {
     const text = input.trim();
     if (!text || loading) return;
@@ -60,38 +89,43 @@ export function ChatWidget() {
     setLoading(true);
 
     try {
-      const res = await fetch(GROQ_API_URL, {
+      // Lấy JWT nếu user đã đăng nhập (để AI biết đơn hàng của user)
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token ?? null;
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-        },
+        headers,
         body: JSON.stringify({
-          model: MODEL,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...newMessages.map((m) => ({ role: m.role, content: m.content })),
-          ],
-          max_tokens: 512,
-          temperature: 0.7,
+          // Bỏ tin nhắn chào đầu tiên của assistant ra khỏi history gửi lên
+          messages: newMessages.filter((m) => !(m.role === "assistant")),
         }),
       });
 
       if (!res.ok) {
-        throw new Error(`Groq API error: ${res.status}`);
+        const err = await res.json().catch(() => ({}));
+        const msg = err?.error?.message || `Lỗi ${res.status}`;
+        throw new Error(msg);
       }
 
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content ?? "Xin lỗi, tôi không thể trả lời lúc này.";
+      const reply = data.reply ?? "Xin lỗi, tôi không thể trả lời lúc này.";
 
       setMessages([...newMessages, { role: "assistant", content: reply }]);
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Có lỗi xảy ra";
       setMessages([
         ...newMessages,
         {
           role: "assistant",
-          content: "⚠️ Có lỗi xảy ra khi kết nối AI. Vui lòng thử lại sau.",
+          content: `⚠️ ${message}`,
         },
       ]);
     } finally {
@@ -99,6 +133,11 @@ export function ChatWidget() {
     }
   }
 
+  /**
+   * Tên function: handleKeyDown
+   * Mục đích của function: Bắt sự kiện Enter để gửi tin nhắn thay vì xuống dòng.
+   * Tham số đầu vào: e (React.KeyboardEvent)
+   */
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -106,6 +145,10 @@ export function ChatWidget() {
     }
   }
 
+  /**
+   * Tên function: clearChat
+   * Mục đích của function: Xóa lịch sử chat hiện tại và hiển thị lại câu chào mặc định.
+   */
   function clearChat() {
     setMessages([]);
     setTimeout(() => {
@@ -182,7 +225,9 @@ export function ChatWidget() {
                   <i className="fas fa-robot" />
                 </div>
                 <div className="chat-msg-bubble chat-typing">
-                  <span /><span /><span />
+                  <span />
+                  <span />
+                  <span />
                 </div>
               </div>
             )}

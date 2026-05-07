@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: OrdersPage.tsx
+ * Mục đích của file: Quản lý và hiển thị danh sách đơn hàng của người dùng.
+ * Các chức năng chính: Lấy danh sách đơn hàng, hiển thị trạng thái thanh toán và vận chuyển, hủy đơn hàng.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Orders Component
+ * Mục đích của module: Xử lý nghiệp vụ quản lý đơn hàng cá nhân phía Client.
+ * Phạm vi xử lý: Client Component, API `/orders`, `/orders/[id]/cancel`.
+ * Các thành phần chính trong module: OrdersPage.
+ * Module liên quan: page.tsx, OrderDetailsPage.tsx.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,6 +24,12 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import "./orders.css";
 
+/**
+ * Tên function: OrdersPage
+ * Mục đích của function: Component render danh sách đơn hàng.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function OrdersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,6 +39,10 @@ export function OrdersPage() {
     fetchOrders();
   }, []);
 
+  /**
+   * Tên function: fetchOrders
+   * Mục đích của function: Gọi API lấy danh sách toàn bộ đơn hàng của user.
+   */
   const fetchOrders = () => {
     setLoading(true);
     apiFetch<{ items: any[] }>("/orders")
@@ -27,6 +56,11 @@ export function OrdersPage() {
       });
   };
 
+  /**
+   * Tên function: handleCancel
+   * Mục đích của function: Gửi yêu cầu hủy đơn hàng.
+   * Điều kiện xử lý: Chỉ hủy được đơn ở trạng thái "pending".
+   */
   const handleCancel = async (orderId: number) => {
     if (!confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?")) return;
     try {
@@ -38,6 +72,10 @@ export function OrdersPage() {
     }
   };
 
+  /**
+   * Tên function: getStatusInfo
+   * Mục đích của function: Trả về style và label tương ứng với trạng thái vận chuyển của đơn hàng.
+   */
   const getStatusInfo = (status: string) => {
     switch (status) {
       case "pending":
@@ -55,6 +93,10 @@ export function OrdersPage() {
     }
   };
 
+  /**
+   * Tên function: getPaymentStatusInfo
+   * Mục đích của function: Trả về style và label tương ứng với trạng thái thanh toán của đơn hàng.
+   */
   const getPaymentStatusInfo = (status: string) => {
     switch (status) {
       case "unpaid":

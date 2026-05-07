@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: EntityPicker.tsx
+ * Mục đích của file: Component dùng chung để chọn một đối tượng (Người dùng hoặc Sách) thông qua tìm kiếm.
+ * Các chức năng chính: Hiển thị thanh tìm kiếm với Dropdown kết quả (debounce). Chọn và trả về ID.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Entity Picker Component
+ * Mục đích của module: Component UI tìm kiếm và chọn đối tượng (User/Book) cho các form Admin.
+ * Phạm vi xử lý: Client Component.
+ * Các thành phần chính trong module: EntityPicker.
+ * Module liên quan: api.ts, bookImage.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -14,6 +33,12 @@ interface Props {
   placeholder?: string;
 }
 
+/**
+ * Tên function: EntityPicker
+ * Mục đích của function: Component Input hỗ trợ tìm kiếm động (autocomplete) và chọn đối tượng.
+ * Tham số đầu vào: entityType, value, onChange, onSelect, placeholder.
+ * Giá trị trả về: JSX Element.
+ */
 export function EntityPicker({ entityType, value, onChange, onSelect, placeholder }: Props) {
   const [query, setQuery] = useState("");
   const [searchBy, setSearchBy] = useState("all");
@@ -38,6 +63,10 @@ export function EntityPicker({ entityType, value, onChange, onSelect, placeholde
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * Tên function: performSearch
+   * Mục đích của function: Gửi API lấy dữ liệu tương ứng (books hoặc users) dựa vào từ khóa.
+   */
   const performSearch = useCallback(async (q: string, by: string) => {
     setLoading(true);
     try {
@@ -66,11 +95,19 @@ export function EntityPicker({ entityType, value, onChange, onSelect, placeholde
   }, [query, searchBy, showDropdown, performSearch]);
 
   // Show dropdown & immediately fetch on focus
+  /**
+   * Tên function: handleFocus
+   * Mục đích của function: Khi người dùng focus vào input, mở dropdown và tự động gọi tìm kiếm.
+   */
   const handleFocus = () => {
     setShowDropdown(true);
     performSearch(query, searchBy);
   };
 
+  /**
+   * Tên function: handleSelect
+   * Mục đích của function: Xử lý khi click vào 1 mục trong dropdown, cập nhật trạng thái ra component cha.
+   */
   const handleSelect = (item: any) => {
     const id = entityType === "users" ? item.user_id : item.book_id;
     setQuery(id);

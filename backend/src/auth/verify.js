@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: verify.js
+ * Mục đích của file: Middleware xác thực và phân quyền.
+ * Các chức năng chính: Kiểm tra JWT, lấy profile user, kiểm tra quyền Admin.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Authentication Middleware
+ * Mục đích của module: Bảo vệ các API riêng tư, giới hạn quyền truy cập.
+ * Phạm vi xử lý: Middleware layer.
+ * Các thành phần chính trong module: requireUser, requireAdmin.
+ * Module liên quan: errors.js, supabase.js, các router cần xác thực.
+ * ============================================================================
+ */
 import { assert } from "../http/errors.js";
 import { createSupabaseAdmin } from "../supabase.js";
 import { createSupabaseUser } from "../supabase.js";

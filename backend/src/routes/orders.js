@@ -1,11 +1,38 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: orders.js
+ * Mục đích của file: Quản lý các endpoint liên quan đến đơn hàng của người dùng.
+ * Các chức năng chính: Xem danh sách đơn hàng, xem chi tiết, hủy đơn hàng, thanh toán (checkout).
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Orders API Route
+ * Mục đích của module: Xử lý logic tạo, xem và hủy đơn hàng từ phía Client.
+ * Phạm vi xử lý: Yêu cầu đăng nhập. Thao tác nhiều bảng: orders, order_items, books, cart_items, vouchers, settings.
+ * Các thành phần chính trong module: Express Router, Supabase query, Zod validation.
+ * Module liên quan: verify.js (Xác thực user), supabase.js (DB client).
+ * ============================================================================
+ */
 import express from "express";
 import { z } from "zod";
 import { requireUser } from "../auth/verify.js";
 import { createSupabaseUser } from "../supabase.js";
 import { assert } from "../http/errors.js";
 
-export const ordersRouter = express.Router();
+export const ordersRouter = express.Router(); // Ý nghĩa: Router chứa các endpoint quản lý đơn hàng; Giá trị: Express Router instance
 
+/**
+ * Tên function: GET /orders
+ * Mục đích của function: Lấy danh sách toàn bộ đơn hàng của người dùng hiện tại.
+ * Tham số đầu vào: req, res
+ * Giá trị trả về: JSON `{ items: Array }`
+ * Điều kiện xử lý: Yêu cầu user_id khớp với người đang đăng nhập.
+ * Lỗi có thể phát sinh: 400 nếu có lỗi DB.
+ */
 ordersRouter.get("/orders", requireUser, async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const { data, error } = await sb
@@ -18,6 +45,14 @@ ordersRouter.get("/orders", requireUser, async (req, res) => {
   res.json({ items: data });
 });
 
+/**
+ * Tên function: GET /orders/:id
+ * Mục đích của function: Lấy chi tiết một đơn hàng kèm theo danh sách sản phẩm.
+ * Tham số đầu vào: req (params: `id`), res
+ * Giá trị trả về: JSON `{ order: Object, items: Array }`
+ * Điều kiện xử lý: Hỗ trợ tra cứu theo ID số hoặc order_code. Phải là đơn hàng của chính user đó.
+ * Lỗi có thể phát sinh: 404 (Không tìm thấy đơn hàng), 400 (Lỗi DB).
+ */
 ordersRouter.get("/orders/:id", requireUser, async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const idParam = req.params.id;
@@ -44,7 +79,14 @@ ordersRouter.get("/orders/:id", requireUser, async (req, res) => {
   res.json({ order, items });
 });
 
-// Cancel order (only if pending)
+/**
+ * Tên function: PATCH /orders/:orderId/cancel
+ * Mục đích của function: Hủy đơn hàng đang ở trạng thái pending.
+ * Tham số đầu vào: req (params: `orderId`), res
+ * Giá trị trả về: JSON báo thành công.
+ * Điều kiện xử lý: Đơn hàng phải của chính user và đang ở trạng thái 'pending'. Hoàn lại số lượng (stock) cho sách.
+ * Lỗi có thể phát sinh: 403 (Không có quyền), 404 (Không tìm thấy), 400 (Trạng thái không hợp lệ, lỗi DB).
+ */
 ordersRouter.patch("/orders/:orderId/cancel", requireUser, async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const orderId = Number(req.params.orderId);
@@ -69,7 +111,6 @@ ordersRouter.patch("/orders/:orderId/cancel", requireUser, async (req, res) => {
   
   assert(!uErr, 400, "Failed to cancel order", "cancel_failed", uErr?.message);
 
-  // Return items to stock
   const { data: items } = await sb.from("order_items").select("book_id, quantity").eq("order_id", orderId);
   if (items) {
     for (const item of items) {
@@ -83,7 +124,14 @@ ordersRouter.patch("/orders/:orderId/cancel", requireUser, async (req, res) => {
   res.json({ message: "Order cancelled successfully" });
 });
 
-// Checkout: place order (server-side stock check & decrement)
+/**
+ * Tên function: POST /checkout
+ * Mục đích của function: Tạo đơn hàng mới từ các sản phẩm được chọn (Thanh toán).
+ * Tham số đầu vào: req (body: thông tin người nhận, địa chỉ, phương thức thanh toán, mã giảm giá, danh sách `lines`), res
+ * Giá trị trả về: JSON `{ order_id, order_code }`
+ * Điều kiện xử lý: Validate Zod. Trừ tồn kho sách. Tính phí ship, voucher. Xóa sản phẩm khỏi giỏ hàng sau khi thành công.
+ * Lỗi có thể phát sinh: 400 (Hết hàng, sách không tồn tại, lỗi tạo đơn, lỗi cập nhật tồn kho).
+ */
 ordersRouter.post("/checkout", requireUser, async (req, res) => {
   const schema = z.object({
     receiver_name: z.string().trim().min(1).max(100),
@@ -204,7 +252,6 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
   const { error: itErr } = await sb.from("order_items").insert(itemsToInsert);
   assert(!itErr, 400, "Failed to create order items", "order_items_create_failed", itErr?.message);
 
-  // Decrement stock (best-effort; for strict atomicity, replace with SQL RPC)
   for (const line of body.lines) {
     const b = books.find((x) => x.book_id === line.book_id);
     const newQty = (b.quantity ?? 0) - line.quantity;
@@ -212,9 +259,7 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
     assert(!uErr, 400, "Failed to update stock", "stock_update_failed", uErr?.message);
   }
 
-  // Clear user cart after successful checkout
   const { error: cErr } = await sb.from("cart_items").delete().eq("user_id", req.auth.user.id);
-  // We don't fail the order if clearing cart fails, it's non-critical, but good to log
   if (cErr) console.error("Failed to clear cart:", cErr);
 
   res.status(201).json({ order_id: order.order_id, order_code: order.order_code });

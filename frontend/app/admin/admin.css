@@ -1,4 +1,3 @@
-/* ===== ADMIN LAYOUT STYLES ===== */
 :root {
   --sidebar-width: 260px;
   --sidebar-bg: #1a1d29;
@@ -25,7 +24,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ===== SIDEBAR ===== */
 .admin-sidebar {
   position: fixed;
   top: 0;
@@ -120,7 +118,6 @@ body {
   color: #94a3b8;
 }
 
-/* ===== TOPBAR ===== */
 .admin-topbar {
   position: fixed;
   top: 0;
@@ -184,7 +181,6 @@ body {
   color: var(--text-secondary);
 }
 
-/* ===== CONTENT AREA ===== */
 .admin-content {
   margin-left: var(--sidebar-width);
   margin-top: var(--topbar-height);
@@ -192,7 +188,6 @@ body {
   min-height: calc(100vh - var(--topbar-height));
 }
 
-/* ===== DROPDOWN MENU ===== */
 .dropdown-menu {
   border: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -222,7 +217,6 @@ body {
 
 
 
-/* ===== DASHBOARD ENHANCEMENTS ===== */
 .bg-gradient-primary {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
 }
@@ -311,7 +305,6 @@ body {
   padding: 1.5rem;
 }
 
-/* Chart Legend */
 .chart-legend {
   display: flex;
   flex-direction: column;
@@ -332,7 +325,6 @@ body {
   display: inline-block;
 }
 
-/* Quick Actions */
 .quick-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -369,7 +361,6 @@ body {
   text-align: center;
 }
 
-/* User Avatar Small */
 .user-avatar-small {
   width: 32px;
   height: 32px;
@@ -383,7 +374,6 @@ body {
   font-size: 0.85rem;
 }
 
-/* Top Books List */
 .top-books-list {
   display: flex;
   flex-direction: column;
@@ -460,7 +450,6 @@ body {
   background-color: #f1f5f9;
 }
 
-/* Xoay mũi tên khi mở dropdown */
 .rotate-180 {
   transform: rotate(180deg);
 }

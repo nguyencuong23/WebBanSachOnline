@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: SearchPage.tsx
+ * Mục đích của file: Trang tìm kiếm, lọc và phân trang hiển thị sách.
+ * Các chức năng chính: Tìm kiếm theo từ khóa, lọc theo thể loại, giá, trạng thái; thay đổi dạng xem (grid/list).
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Search Component
+ * Mục đích của module: Hiển thị kết quả tìm kiếm và bộ lọc phía Client.
+ * Phạm vi xử lý: Client Component, API `/books`, `/categories`.
+ * Các thành phần chính trong module: SearchPage, BookCard, BookListItem.
+ * Module liên quan: page.tsx, cart.ts.
+ * ============================================================================
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -9,6 +28,10 @@ import { getBookImageUrl } from "@/lib/bookImage";
 import "./search.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+/**
+ * Tên class/interface: Book
+ * Mục đích của class/interface: Kiểu dữ liệu sách.
+ */
 interface Book {
   book_id: string;
   title: string;
@@ -25,6 +48,10 @@ interface Book {
   categories?: { name: string };
 }
 
+/**
+ * Tên class/interface: Category
+ * Mục đích của class/interface: Kiểu dữ liệu thể loại sách.
+ */
 interface Category {
   category_id: string;
   name: string;
@@ -49,10 +76,18 @@ const SEARCH_BY_OPTIONS = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+/**
+ * Tên function: formatPrice
+ * Mục đích của function: Format giá tiền (VNĐ).
+ */
 function formatPrice(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
 }
 
+/**
+ * Tên function: getDisplayPrice
+ * Mục đích của function: Tính toán giá hiển thị dựa trên giá gốc và giá khuyến mãi.
+ */
 function getDisplayPrice(b: Book) {
   if (b.is_on_sale && b.sale_price != null && b.sale_price > 0) {
     return { sale: b.sale_price, original: b.price };
@@ -60,11 +95,19 @@ function getDisplayPrice(b: Book) {
   return { sale: null, original: b.price };
 }
 
+/**
+ * Tên function: getSalePercent
+ * Mục đích của function: Tính phần trăm giảm giá.
+ */
 function getSalePercent(original: number, sale: number) {
   return Math.round((1 - sale / original) * 100);
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
+/**
+ * Tên function: SkeletonGrid
+ * Mục đích của function: Hiển thị placeholder dạng lưới trong lúc chờ dữ liệu.
+ */
 function SkeletonGrid() {
   return (
     <div className="books-grid">
@@ -84,6 +127,12 @@ function SkeletonGrid() {
 }
 
 // ─── Book Card (Grid) ─────────────────────────────────────────────────────────
+/**
+ * Tên function: BookCard
+ * Mục đích của function: Component hiển thị một cuốn sách dưới dạng thẻ lưới (Grid view).
+ * Tham số đầu vào: book (dữ liệu sách), onAddCart (hàm thêm giỏ).
+ * Giá trị trả về: JSX Element.
+ */
 function BookCard({ book, onAddCart }: {
   book: Book;
   onAddCart: (b: Book) => void;
@@ -136,6 +185,12 @@ function BookCard({ book, onAddCart }: {
 }
 
 // ─── Book List Item ───────────────────────────────────────────────────────────
+/**
+ * Tên function: BookListItem
+ * Mục đích của function: Component hiển thị một cuốn sách dưới dạng danh sách (List view).
+ * Tham số đầu vào: book (dữ liệu sách), onAddCart (hàm thêm giỏ).
+ * Giá trị trả về: JSX Element.
+ */
 function BookListItem({ book, onAddCart }: {
   book: Book;
   onAddCart: (b: Book) => void;
@@ -282,6 +337,13 @@ function BookModal({ book, onClose, onAddCart }: {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+/**
+ * Tên function: SearchPage
+ * Mục đích của function: Component chính quản lý trạng thái bộ lọc, phân trang và render kết quả.
+ * Tham số đầu vào: Không có (sử dụng url params).
+ * Giá trị trả về: JSX Element.
+ * Điều kiện xử lý: Sync param với state nội bộ. Lọc theo category trên server, các tiêu chí khác trên client (demo).
+ */
 export function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -329,6 +391,10 @@ export function SearchPage() {
   }, []);
 
   // Load books when filters change
+  /**
+   * Tên function: fetchBooks
+   * Mục đích của function: Gọi API lấy sách theo từ khóa, sort và category.
+   */
   const fetchBooks = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -391,6 +457,10 @@ export function SearchPage() {
     return tags;
   }, [q, categoryId, onlyInStock, onlyOnSale, minPrice, maxPrice, categories]);
 
+  /**
+   * Tên function: handleSearch
+   * Mục đích của function: Xử lý sự kiện submit form tìm kiếm.
+   */
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setQ(inputQ);
@@ -398,11 +468,19 @@ export function SearchPage() {
     setPage(1);
   }
 
+  /**
+   * Tên function: resetFilters
+   * Mục đích của function: Xóa tất cả bộ lọc, trở về trạng thái mặc định.
+   */
   function resetFilters() {
     setCategoryId(""); setOnlyInStock(false); setOnlyOnSale(false);
     setMinPrice(""); setMaxPrice("");
   }
 
+  /**
+   * Tên function: handleAddCart
+   * Mục đích của function: Thêm sách vào giỏ hàng và hiện toast.
+   */
   async function handleAddCart(book: Book, qty = 1) {
     await addToCart(book, qty);
     setToast(`Đã thêm "${book.title}" vào giỏ hàng`);
@@ -410,6 +488,10 @@ export function SearchPage() {
   }
 
   // Pagination buttons
+  /**
+   * Tên function: renderPagination
+   * Mục đích của function: Component con tự render danh sách nút phân trang.
+   */
   function renderPagination() {
     if (totalPages <= 1) return null;
     const pages: (number | "...")[] = [];

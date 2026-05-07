@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: OrderDetailsPage.tsx
+ * Mục đích của file: Hiển thị chi tiết một đơn hàng cụ thể.
+ * Các chức năng chính: Xem thông tin giao hàng, danh sách sản phẩm, thanh toán, hủy đơn.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Order Details Component
+ * Mục đích của module: Xử lý hiển thị thông tin chi tiết của một đơn hàng.
+ * Phạm vi xử lý: Client Component, API `/orders/[code]`, `/orders/[code]/cancel`.
+ * Các thành phần chính trong module: OrderDetailsPage.
+ * Module liên quan: page.tsx.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,6 +26,12 @@ import { apiFetch } from "@/lib/api";
 import { getBookImageUrl } from "@/lib/bookImage";
 import "../orders.css";
 
+/**
+ * Tên function: OrderDetailsPage
+ * Mục đích của function: Component render giao diện chi tiết đơn hàng theo mã (code).
+ * Tham số đầu vào: Không có (sử dụng url params).
+ * Giá trị trả về: JSX Element.
+ */
 export function OrderDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -21,6 +46,10 @@ export function OrderDetailsPage() {
     fetchOrder();
   }, [code]);
 
+  /**
+   * Tên function: fetchOrder
+   * Mục đích của function: Gọi API lấy thông tin chi tiết và danh sách sản phẩm của đơn hàng.
+   */
   const fetchOrder = () => {
     setLoading(true);
     apiFetch(`/orders/${code}`)
@@ -34,6 +63,10 @@ export function OrderDetailsPage() {
       });
   };
 
+  /**
+   * Tên function: handleCancel
+   * Mục đích của function: Gửi yêu cầu hủy đơn hàng.
+   */
   const handleCancel = async () => {
     if (!confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?")) return;
     setCancelling(true);

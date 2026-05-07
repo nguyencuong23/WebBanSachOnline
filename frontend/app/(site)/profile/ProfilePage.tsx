@@ -1,9 +1,27 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file: ProfilePage.tsx
+ * Mục đích của file: Giao diện quản lý thông tin cá nhân.
+ * Các chức năng chính: Xem và sửa họ tên, email, sđt, địa chỉ; đổi mật khẩu, tải lên/xóa ảnh đại diện.
+ * Phiên bản: 1.0.0
+ * Tác giả: Antigravity
+ * Ngày tạo: 2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * 
+ * Tên module: Profile Component
+ * Mục đích của module: Quản lý hồ sơ cá nhân người dùng.
+ * Phạm vi xử lý: Client Component, API `/me` và `/me/*`.
+ * Các thành phần chính trong module: ProfilePage.
+ * Module liên quan: page.tsx, auth hook.
+ * ============================================================================
+ */
 "use client";
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { getAvatarUrl } from "@/lib/avatar";
-import { supabase } from "@/lib/supabase";
 import "./profile.css";
 
 const FULL_NAME_REGEX = /^[\p{L}](?:[\p{L}\s'.-]{0,98}[\p{L}])?$/u;
@@ -11,6 +29,12 @@ const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,64}$/;
 
+/**
+ * Tên function: ProfilePage
+ * Mục đích của function: Component render giao diện thông tin cá nhân.
+ * Tham số đầu vào: Không có.
+ * Giá trị trả về: JSX Element.
+ */
 export function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +51,10 @@ export function ProfilePage() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  /**
+   * Tên function: showToast
+   * Mục đích của function: Hiển thị thông báo (success/error).
+   */
   const showToast = (message: string, type: "success" | "danger" = "success") => {
     console.log(`[Toast] ${type}: ${message}`);
     setToast({ message, type });
@@ -41,6 +69,10 @@ export function ProfilePage() {
     email: "",
   });
 
+  /**
+   * Tên function: fetchProfile
+   * Mục đích của function: Gọi API lấy thông tin profile hiện tại.
+   */
   const fetchProfile = async () => {
     setLoading(true);
     try {
@@ -63,6 +95,10 @@ export function ProfilePage() {
     fetchProfile();
   }, []);
 
+  /**
+   * Tên function: handleUpdate
+   * Mục đích của function: Lưu lại thông tin cá nhân khi người dùng sửa.
+   */
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -96,6 +132,10 @@ export function ProfilePage() {
     }
   };
 
+  /**
+   * Tên function: handleAvatarChange
+   * Mục đích của function: Đọc file ảnh dưới dạng base64 và gửi lên server cập nhật avatar.
+   */
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -125,6 +165,10 @@ export function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
+  /**
+   * Tên function: handleDeleteAvatar
+   * Mục đích của function: Xóa ảnh đại diện hiện tại.
+   */
   const handleDeleteAvatar = async () => {
     if (!confirm("Bạn có chắc muốn xóa ảnh đại diện?")) return;
     setSaving(true);
@@ -139,6 +183,10 @@ export function ProfilePage() {
     }
   };
 
+  /**
+   * Tên function: handleChangePassword
+   * Mục đích của function: Gửi yêu cầu đổi mật khẩu.
+   */
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!PASSWORD_REGEX.test(passwordData.newPassword)) {
@@ -152,21 +200,13 @@ export function ProfilePage() {
 
     setChangingPassword(true);
     try {
-      // 1. Verify current password
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: profile.email,
-        password: passwordData.currentPassword,
+      await apiFetch("/me/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
       });
-
-      if (signInError) throw new Error("Mật khẩu hiện tại không chính xác");
-
-      // 2. Update to new password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: passwordData.newPassword
-      });
-
-      if (updateError) throw new Error(updateError.message);
-
       showToast("Đổi mật khẩu thành công", "success");
       closePasswordModal();
     } catch (e: any) {
@@ -176,6 +216,10 @@ export function ProfilePage() {
     }
   };
 
+  /**
+   * Tên function: closePasswordModal
+   * Mục đích của function: Đóng modal đổi mật khẩu và reset form.
+   */
   const closePasswordModal = () => {
     setShowPasswordModal(false);
     setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });

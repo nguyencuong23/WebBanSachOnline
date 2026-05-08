@@ -1,4 +1,29 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      CheckoutPage.tsx
+ * Mục đích:      Trang thanh toán — thu thập thông tin giao hàng, chọn phương
+ *                thức thanh toán, áp dụng voucher và đặt hàng. Hỗ trợ 2 luồng:
+ *                mua từ giỏ hàng và mua ngay (buy now) từ trang chi tiết sách.
+ * Các chức năng chính:
+ *   - Form thông tin giao hàng (tên, SĐT, địa chỉ, ghi chú)
+ *   - Chọn phương thức: COD hoặc chuyển khoản (hiển thị QR)
+ *   - Áp dụng/xóa voucher với preview số tiền giảm
+ *   - Tóm tắt đơn hàng: subtotal, phí ship, giảm giá, tổng
+ *   - Submit đặt hàng và redirect đến trang chi tiết đơn
+ *
+ * Tên module:    Checkout Page
+ * Module liên quan: lib/api.ts, backend/routes/orders.js (POST /checkout)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Lã Anh Tuấn
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";

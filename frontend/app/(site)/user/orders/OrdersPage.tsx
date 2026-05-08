@@ -1,4 +1,27 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      OrdersPage.tsx
+ * Mục đích:      Trang lịch sử đơn hàng của người dùng — hiển thị danh sách
+ *                tất cả đơn hàng, trạng thái, thông tin giao hàng và cho phép
+ *                hủy đơn đang ở trạng thái "pending".
+ * Các chức năng chính:
+ *   - Hiển thị danh sách đơn hàng với trạng thái và thông tin thanh toán
+ *   - Hủy đơn hàng đang chờ xác nhận
+ *   - Điều hướng đến trang chi tiết đơn hàng
+ *
+ * Tên module:    User Orders
+ * Module liên quan: lib/api.ts, app/(site)/user/orders/[code]/
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -38,6 +61,12 @@ export function OrdersPage() {
     }
   };
 
+/**
+ * Lấy thông tin hiển thị (nhãn, class CSS, icon) cho trạng thái đơn hàng.
+ *
+ * @param {string} status - Mã trạng thái đơn hàng (pending, confirmed, shipping, delivered, cancelled).
+ * @returns {{ label: string, class: string, icon: string }} Thông tin hiển thị tương ứng.
+ */
   const getStatusInfo = (status: string) => {
     switch (status) {
       case "pending":
@@ -55,6 +84,12 @@ export function OrdersPage() {
     }
   };
 
+/**
+ * Lấy thông tin hiển thị (nhãn, class CSS) cho trạng thái thanh toán.
+ *
+ * @param {string} status - Mã trạng thái thanh toán (unpaid, paid, pending_confirmation, refunded).
+ * @returns {{ label: string, class: string }} Thông tin hiển thị tương ứng.
+ */
   const getPaymentStatusInfo = (status: string) => {
     switch (status) {
       case "unpaid":

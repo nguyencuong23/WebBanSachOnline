@@ -1,8 +1,36 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      VouchersAdmin.tsx
+ * Mục đích:      Trang quản lý voucher giảm giá trong khu vực admin — cho phép
+ *                xem, thêm, chỉnh sửa và xóa voucher.
+ * Các chức năng chính:
+ *   - Hiển thị danh sách voucher với tìm kiếm theo mã và sắp xếp
+ *   - Thêm voucher mới (mã tự động uppercase, không thể sửa sau khi tạo)
+ *   - Chỉnh sửa phần trăm giảm, số tiền tối đa, ngày hết hạn, trạng thái
+ *   - Xóa voucher sau khi xác nhận
+ *
+ * Tên module:    Admin Voucher Management
+ * Module liên quan: lib/api.ts, routes/vouchers.js (backend)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
+/**
+ * @component AdminVouchersPage
+ * @description Trang quản lý voucher giảm giá trong khu vực admin.
+ *              Cung cấp giao diện CRUD cho voucher với tìm kiếm và sắp xếp.
+ */
 export function AdminVouchersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -21,6 +49,12 @@ export function AdminVouchersPage() {
   const [form, setForm] = useState<any>(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Tải danh sách voucher từ API với các tham số tìm kiếm và sắp xếp hiện tại.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function load() {
     try {
       const qs = new URLSearchParams();
@@ -43,6 +77,14 @@ export function AdminVouchersPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy]);
 
+  /**
+   * Lưu voucher mới hoặc cập nhật voucher hiện có.
+   * Khi edit, loại bỏ trường `code` khỏi payload vì code không thể thay đổi.
+   *
+   * @async
+   * @param {React.FormEvent} e - Sự kiện submit của form.
+   * @returns {Promise<void>}
+   */
   async function save(e: React.FormEvent) {
     e.preventDefault();
 
@@ -69,6 +111,13 @@ export function AdminVouchersPage() {
     }
   }
 
+  /**
+   * Xóa voucher sau khi xác nhận.
+   *
+   * @async
+   * @param {string} code - Mã voucher cần xóa.
+   * @returns {Promise<void>}
+   */
   async function remove(code: string) {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa voucher "${code}"?`)) return;
     try {

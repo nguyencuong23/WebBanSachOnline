@@ -1,3 +1,25 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      MaintenancePage.tsx
+ * Mục đích:      Trang thông báo bảo trì hệ thống — hiển thị khi admin bật
+ *                chế độ MaintenanceMode trong cài đặt. Tự động fetch thông điệp
+ *                bảo trì và tên site từ API để hiển thị động.
+ * Các chức năng chính:
+ *   - Hiển thị thông điệp bảo trì từ cài đặt hệ thống
+ *   - Giao diện glassmorphism với animation pulse
+ *
+ * Tên module:    Maintenance
+ * Module liên quan: app/(site)/_components/GlobalAuthLockGuard.tsx (điều hướng đến đây)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";

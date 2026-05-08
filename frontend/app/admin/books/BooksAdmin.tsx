@@ -1,11 +1,46 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      BooksAdmin.tsx
+ * Mục đích:      Trang quản lý sách trong khu vực admin — cho phép xem, thêm,
+ *                chỉnh sửa và xóa sách kèm theo upload ảnh bìa lên Supabase Storage.
+ * Các chức năng chính:
+ *   - Hiển thị danh sách sách với tìm kiếm, lọc và sắp xếp realtime
+ *   - Thêm sách mới với tự động sinh book_id từ category + số thứ tự
+ *   - Chỉnh sửa thông tin sách (partial update)
+ *   - Xóa sách kèm xóa ảnh trên Storage
+ *   - Upload ảnh bìa: hỗ trợ chọn file, kéo thả, dán từ clipboard/URL
+ *   - Tự động chuyển đổi ảnh sang định dạng WebP (chất lượng 85%)
+ *
+ * Tên module:    Admin Book Management
+ * Module liên quan: lib/api.ts, lib/supabase.ts, routes/books.js (backend)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * Ghi chú:       Ảnh bìa được lưu vào bucket riêng theo thể loại sách
+ *                (ví dụ: van-hoc-images, manga-images, v.v.).
+ * ============================================================================
+ */
+
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
 
+// ID project Supabase — dùng để xây dựng URL Storage khi cần
 const PROJECT_ID = "gtjrtwtbjdcznuacgrio";
 
+/**
+ * @component AdminBooksPage
+ * @description Trang quản lý sách trong khu vực admin.
+ *              Cung cấp giao diện CRUD đầy đủ cho sách kèm upload ảnh bìa.
+ *              Tìm kiếm và sắp xếp được thực hiện qua API backend (không lọc client-side).
+ */
 export function AdminBooksPage() {
   const [items, setItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -41,6 +76,13 @@ export function AdminBooksPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Tải danh sách thể loại (chỉ cần gọi 1 lần lúc đầu)
+  /**
+   * Tải danh sách thể loại sách từ API để dùng trong dropdown form.
+   * Chỉ gọi một lần khi component mount.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function loadCategories() {
     try {
       const resCats = await apiFetch<{ items: any[] }>("/categories");
@@ -51,6 +93,12 @@ export function AdminBooksPage() {
   }
 
   // Lấy dữ liệu sách qua API Backend (hỗ trợ lọc & tìm kiếm)
+  /**
+   * Tải danh sách sách từ API với các tham số tìm kiếm và sắp xếp hiện tại.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function load() {
     try {
       const qs = new URLSearchParams();
@@ -84,11 +132,25 @@ export function AdminBooksPage() {
     }
   }, [form.category_id, skuNumber, modalMode]);
 
+  /**
+   * Tạo slug URL-friendly từ tiêu đề sách.
+   * Chuẩn hóa Unicode, loại bỏ ký tự đặc biệt và thay khoảng trắng bằng dấu gạch ngang.
+   *
+   * @param {string} title - Tiêu đề sách cần tạo slug.
+   * @returns {string} Chuỗi slug đã được chuẩn hóa.
+   */
   const generateSlug = (title: string) => {
     return title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d")
       .replace(/([^0-9a-z-\s])/g, "").replace(/(\s+)/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
   };
 
+  /**
+   * Lấy tên bucket Supabase Storage tương ứng với mã thể loại sách.
+   * Mỗi thể loại có bucket riêng để tổ chức ảnh bìa theo nhóm.
+   *
+   * @param {string} catId - Mã thể loại (ví dụ: "VH", "MG", "LN").
+   * @returns {string} Tên bucket Storage tương ứng, mặc định là "books" nếu không tìm thấy.
+   */
   const getBucketName = (catId: string) => {
     const bucketMap: Record<string, string> = {
       'VH': 'van-hoc-images',
@@ -105,6 +167,13 @@ export function AdminBooksPage() {
     return bucketMap[String(catId).toUpperCase()] || 'books';
   };
 
+  /**
+   * Lấy URL công khai của ảnh bìa sách từ Supabase Storage.
+   *
+   * @param {string} catId    - Mã thể loại để xác định bucket.
+   * @param {string} fileName - Tên file ảnh trong bucket.
+   * @returns {string} URL công khai của ảnh, kèm timestamp để tránh cache.
+   */
   const getStorageUrl = (catId: string, fileName: string) => {
     if (!fileName) return "";
     const bucket = getBucketName(catId);
@@ -112,6 +181,14 @@ export function AdminBooksPage() {
     return `${data.publicUrl}?t=${Date.now()}`;
   };
 
+  /**
+   * Xử lý sự kiện chọn file ảnh từ input.
+   * Tự động chuyển đổi ảnh sang WebP (chất lượng 85%) trước khi lưu vào state.
+   *
+   * @async
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Sự kiện change của input file.
+   * @returns {Promise<void>}
+   */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -268,7 +345,16 @@ export function AdminBooksPage() {
     return () => window.removeEventListener("paste", handleGlobalPaste);
   }, [modalMode]);
 
-  // Thêm mới/Cập nhật dữ liệu bằng Supabase
+  /**
+   * Lưu sách mới hoặc cập nhật sách hiện có.
+   * Xử lý upload ảnh lên Storage trước khi gọi API backend.
+   * Nếu có ảnh mới: xóa ảnh cũ → upload ảnh mới.
+   * Nếu xóa tên file: xóa ảnh cũ trên Storage.
+   *
+   * @async
+   * @param {React.FormEvent} e - Sự kiện submit của form.
+   * @returns {Promise<void>}
+   */
   async function saveBook(e: React.FormEvent) {
     e.preventDefault();
     if (modalMode === "detail") {
@@ -338,7 +424,14 @@ export function AdminBooksPage() {
     }
   }
 
-  // Khôi phục hàm Xóa (Xóa ảnh trên Storage, sau đó xóa dòng trong DB)
+  /**
+   * Xóa sách và ảnh bìa tương ứng trên Supabase Storage.
+   * Hiển thị confirm dialog trước khi thực hiện.
+   *
+   * @async
+   * @param {string} bookId - Mã sách cần xóa.
+   * @returns {Promise<void>}
+   */
   async function remove(bookId: string) {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa "${bookId}"? Hành động này sẽ xóa cả ảnh đi kèm.`)) return;
     try {
@@ -385,6 +478,12 @@ export function AdminBooksPage() {
     }
   }
 
+  /**
+   * Lấy tên thể loại hiển thị từ mã thể loại.
+   *
+   * @param {string} rawId - Mã thể loại cần tra cứu.
+   * @returns {string} Tên thể loại hoặc mã gốc nếu không tìm thấy.
+   */
   const getCategoryName = (rawId: string) => {
     if (!rawId) return "";
     const safeId = String(rawId).trim().toUpperCase();

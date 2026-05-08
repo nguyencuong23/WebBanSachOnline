@@ -1,5 +1,29 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      AdminLayoutShell.tsx
+ * Mục đích:      Shell layout cho khu vực quản trị — bao gồm sidebar điều hướng,
+ *                topbar với thông tin admin và dropdown menu. Tự động kiểm tra
+ *                quyền admin và redirect về trang chủ nếu không đủ quyền.
+ * Các chức năng chính:
+ *   - Sidebar với các link điều hướng đến từng trang quản trị
+ *   - Topbar hiển thị tên admin, avatar và dropdown (profile/logout)
+ *   - Bảo vệ route: chỉ render nếu user có role "admin"
+ *
+ * Tên module:    Admin Layout Shell
+ * Module liên quan: lib/auth.ts, lib/supabase.ts, lib/avatar.ts,
+ *                   app/(site)/_components/NavLinkNext.tsx
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";

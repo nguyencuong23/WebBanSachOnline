@@ -1,4 +1,28 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      CartPage.tsx
+ * Mục đích:      Trang giỏ hàng — hiển thị danh sách sản phẩm đã thêm vào giỏ,
+ *                cho phép cập nhật số lượng, xóa từng sản phẩm hoặc xóa toàn bộ,
+ *                và hiển thị tóm tắt đơn hàng trước khi thanh toán.
+ * Các chức năng chính:
+ *   - Hiển thị danh sách cart items với ảnh, tên, giá, số lượng
+ *   - Cập nhật số lượng (kiểm tra tồn kho)
+ *   - Xóa từng sản phẩm hoặc xóa toàn bộ giỏ
+ *   - Tóm tắt: tạm tính, ghi chú phí ship, nút checkout
+ *
+ * Tên module:    Cart Page
+ * Module liên quan: lib/api.ts, lib/bookImage.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Phạm Thị Hồng Chúc
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";

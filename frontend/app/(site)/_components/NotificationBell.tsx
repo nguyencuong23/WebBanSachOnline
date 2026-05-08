@@ -1,4 +1,29 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      NotificationBell.tsx
+ * Mục đích:      Component chuông thông báo trên header — hiển thị số thông báo
+ *                chưa đọc, dropdown danh sách và modal chi tiết khi click vào
+ *                từng thông báo. Tự động đánh dấu đã đọc khi mở.
+ * Các chức năng chính:
+ *   - Icon chuông với badge số thông báo chưa đọc
+ *   - Dropdown danh sách thông báo (tối đa 50)
+ *   - Đánh dấu đọc từng thông báo hoặc tất cả
+ *   - Modal chi tiết thông báo với link điều hướng
+ *   - Đóng dropdown khi click ra ngoài
+ *
+ * Tên module:    Notification Bell
+ * Module liên quan: _hooks/useSessionProfile.ts, lib/api.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import { useEffect, useState, useRef } from "react";
 import { useSessionProfile } from "../_hooks/useSessionProfile";

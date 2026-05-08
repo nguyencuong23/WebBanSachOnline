@@ -1,4 +1,30 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      GlobalAuthLockGuard.tsx
+ * Mục đích:      Component bảo vệ toàn cục — xử lý 3 tình huống đặc biệt:
+ *                1. Chế độ bảo trì (MaintenanceMode): redirect về /maintenance
+ *                2. Tài khoản bị khóa (is_active = false): hiển thị màn hình khóa
+ *                3. Đồng bộ title và favicon động từ cài đặt hệ thống
+ *                Bọc toàn bộ ứng dụng trong RootLayout để áp dụng cho mọi trang.
+ * Các chức năng chính:
+ *   - GlobalAuthLockGuardInner : Logic chính (cần Suspense vì dùng useSearchParams)
+ *   - GlobalAuthLockGuard      : Wrapper bọc Inner trong Suspense
+ *
+ * Tên module:    Auth Guard
+ * Module liên quan: _hooks/useSiteSettings.ts, lib/supabase.ts, lib/auth.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * Ghi chú:       BYPASS_KEY cho phép admin truy cập /auth khi đang bảo trì
+ *                bằng cách thêm ?bypass=<key> vào URL.
+ * ============================================================================
+ */
 
 import { useEffect, useRef, useState, type ReactNode, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";

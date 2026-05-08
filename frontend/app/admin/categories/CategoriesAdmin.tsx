@@ -1,8 +1,36 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      CategoriesAdmin.tsx
+ * Mục đích:      Trang quản lý thể loại sách trong khu vực admin — cho phép
+ *                xem, thêm, chỉnh sửa và xóa thể loại.
+ * Các chức năng chính:
+ *   - Hiển thị danh sách thể loại với tìm kiếm và sắp xếp realtime
+ *   - Thêm thể loại mới (mã thể loại không thể sửa sau khi tạo)
+ *   - Chỉnh sửa tên và mô tả thể loại
+ *   - Xóa thể loại (có confirm dialog)
+ *
+ * Tên module:    Admin Category Management
+ * Module liên quan: lib/api.ts, routes/categories.js (backend)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
+/**
+ * @component AdminCategoriesPage
+ * @description Trang quản lý thể loại sách trong khu vực admin.
+ *              Cung cấp giao diện CRUD cho thể loại với tìm kiếm và sắp xếp realtime.
+ */
 export function AdminCategoriesPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -19,6 +47,12 @@ export function AdminCategoriesPage() {
   const [form, setForm] = useState<any>(emptyForm);
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
 
+  /**
+   * Tải danh sách thể loại từ API với các tham số tìm kiếm và sắp xếp hiện tại.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function load() {
     try {
       const qs = new URLSearchParams();
@@ -41,6 +75,13 @@ export function AdminCategoriesPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy]);
 
+  /**
+   * Lưu thể loại mới hoặc cập nhật thể loại hiện có.
+   *
+   * @async
+   * @param {React.FormEvent} e - Sự kiện submit của form.
+   * @returns {Promise<void>}
+   */
   async function saveCategory(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -56,6 +97,13 @@ export function AdminCategoriesPage() {
     }
   }
 
+  /**
+   * Xóa thể loại sau khi xác nhận.
+   *
+   * @async
+   * @param {string} id - Mã thể loại cần xóa.
+   * @returns {Promise<void>}
+   */
   async function remove(id: string) {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa thể loại "${id}"? Hành động này không thể hoàn tác.`)) return;
     try {

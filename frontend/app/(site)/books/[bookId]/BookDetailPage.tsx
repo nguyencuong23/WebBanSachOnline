@@ -1,5 +1,32 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      BookDetailPage.tsx
+ * Mục đích:      Trang chi tiết sách — hiển thị đầy đủ thông tin sách, giá,
+ *                tồn kho, chính sách, tabs (mô tả/thông số/đánh giá) và
+ *                slider sách cùng thể loại với infinite loop.
+ * Các chức năng chính:
+ *   - Hiển thị thông tin chi tiết sách (ảnh, giá, tồn kho, meta)
+ *   - Chọn số lượng và thêm vào giỏ hàng / mua ngay
+ *   - Tabs: mô tả, thông số kỹ thuật, đánh giá (ReviewsSection)
+ *   - Slider sách cùng thể loại với infinite loop
+ *   - Breadcrumb điều hướng
+ *
+ * Tên module:    Book Detail
+ * Module liên quan: lib/api.ts, lib/cart.ts, lib/bookImage.ts, ReviewsSection.tsx
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

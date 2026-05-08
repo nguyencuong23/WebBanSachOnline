@@ -1,4 +1,30 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      AuthPage.tsx
+ * Mục đích:      Trang xác thực tổng hợp — chứa 3 luồng trong một component:
+ *                đăng nhập, đăng ký và quên mật khẩu (3 bước OTP).
+ *                Tự động redirect về trang chủ nếu đã đăng nhập.
+ * Các chức năng chính:
+ *   - Form đăng nhập (email/username + password)
+ *   - Form đăng ký với validation đầy đủ phía client
+ *   - Luồng quên mật khẩu 3 bước: nhập email → OTP → mật khẩu mới
+ *   - OTPInput: component nhập 6 chữ số với paste support
+ *   - PasswordField: input mật khẩu với toggle hiện/ẩn và strength meter
+ *
+ * Tên module:    Authentication Page
+ * Module liên quan: lib/api.ts, lib/supabase.ts, lib/auth.ts,
+ *                   _hooks/useSessionProfile.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";

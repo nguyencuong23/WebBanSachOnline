@@ -1,11 +1,49 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      EntityPicker.tsx
+ * Mục đích:      Component tìm kiếm và chọn entity (người dùng hoặc sách) với
+ *                dropdown kết quả realtime — dùng trong các form admin cần
+ *                chọn user_id hoặc book_id từ danh sách có sẵn.
+ * Các chức năng chính:
+ *   - Tìm kiếm debounced (300ms) theo nhiều tiêu chí
+ *   - Hiển thị dropdown kết quả với avatar/ảnh bìa sách
+ *   - Đóng dropdown khi click ra ngoài
+ *   - Hỗ trợ 2 loại entity: "users" và "books"
+ *
+ * Tên module:    Admin Entity Picker
+ * Module liên quan: lib/api.ts, lib/bookImage.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { getBookImageUrl } from "@/lib/bookImage";
 
+/**
+ * Loại entity mà picker hỗ trợ tìm kiếm.
+ * - "users": tìm kiếm người dùng theo username, email, SĐT
+ * - "books": tìm kiếm sách theo ID, tên sách
+ */
 type EntityType = "users" | "books";
 
+/**
+ * Props của EntityPicker.
+ * @typedef {object} EntityPickerProps
+ * @property {EntityType} entityType  - Loại entity cần tìm kiếm ("users" hoặc "books").
+ * @property {string}     value       - Giá trị hiện tại (user_id hoặc book_id).
+ * @property {Function}   onChange    - Callback khi giá trị thay đổi (nhận string).
+ * @property {Function}   [onSelect]  - Callback khi chọn một item từ dropdown (nhận object entity đầy đủ).
+ * @property {string}     [placeholder] - Placeholder cho input tìm kiếm.
+ */
 interface Props {
   entityType: EntityType;
   value: string;
@@ -38,6 +76,15 @@ export function EntityPicker({ entityType, value, onChange, onSelect, placeholde
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * Thực hiện tìm kiếm entity từ API dựa trên query và searchBy.
+   * Giới hạn kết quả tối đa 20 item để tránh dropdown quá dài.
+   *
+   * @async
+   * @param {string} q  - Từ khóa tìm kiếm.
+   * @param {string} by - Trường tìm kiếm (all, username, email, book_id, title, ...).
+   * @returns {Promise<void>}
+   */
   const performSearch = useCallback(async (q: string, by: string) => {
     setLoading(true);
     try {

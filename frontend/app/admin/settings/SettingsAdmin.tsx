@@ -1,8 +1,38 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      SettingsAdmin.tsx
+ * Mục đích:      Trang cài đặt hệ thống trong khu vực admin — cho phép cấu hình
+ *                các thông số toàn cục của website qua giao diện tab.
+ * Các chức năng chính:
+ *   - Tab "Chung": tiêu đề, mô tả SEO, logo, favicon
+ *   - Tab "Bán hàng": phí ship, ngưỡng freeship, QR chuyển khoản
+ *   - Tab "Liên hệ": hotline, email, địa chỉ, mạng xã hội
+ *   - Tab "Hệ thống": chế độ bảo trì, thông báo top bar, tracking scripts
+ *   - Upload ảnh (logo, favicon, QR) lên Supabase Storage
+ *   - Lưu tất cả cài đặt bằng một lần gọi API (upsert hàng loạt)
+ *
+ * Tên module:    Admin System Settings
+ * Module liên quan: lib/api.ts, routes/settings.js (backend)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
+/**
+ * Danh sách định nghĩa các trường cài đặt hệ thống.
+ * Mỗi item chứa key (tên trong DB), label (hiển thị), type (loại input) và tab (nhóm).
+ * @type {Array<{key: string, label: string, type: string, tab: string}>}
+ */
 const EXPECTED_SETTINGS = [
   { key: "SiteTitle", label: "Tiêu đề trang web (hiển thị trên tab trình duyệt)", type: "text", tab: "general" },
   { key: "SiteDescription", label: "Mô tả trang web (SEO)", type: "textarea", tab: "general" },
@@ -27,6 +57,11 @@ const EXPECTED_SETTINGS = [
   { key: "TrackingScripts", label: "Mã Google Analytics / FB Pixel", type: "textarea", tab: "system" },
 ];
 
+/**
+ * @component AdminSettingsPage
+ * @description Trang cài đặt hệ thống trong khu vực admin.
+ *              Hiển thị các trường cài đặt theo tab và cho phép lưu hàng loạt.
+ */
 export function AdminSettingsPage() {
   const [items, setItems] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +80,12 @@ export function AdminSettingsPage() {
       .catch((e: any) => setError(e.message || String(e)));
   }, []);
 
+  /**
+   * Lưu tất cả cài đặt hiện tại lên server bằng một lần gọi API (upsert hàng loạt).
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function save() {
     setError(null);
     setSaved(null);
@@ -58,10 +99,25 @@ export function AdminSettingsPage() {
     }
   }
 
+  /**
+   * Cập nhật giá trị của một cài đặt trong state local.
+   *
+   * @param {string} key   - Key của cài đặt cần cập nhật.
+   * @param {string} value - Giá trị mới.
+   */
   function updateValue(key: string, value: string) {
     setItems(old => ({ ...old, [key]: value }));
   }
 
+  /**
+   * Upload file ảnh lên Supabase Storage thông qua API backend.
+   * Đọc file dưới dạng Base64 rồi gửi lên server để xử lý.
+   *
+   * @async
+   * @param {string} key  - Key cài đặt liên quan (dùng để đặt tên file).
+   * @param {File}   file - File ảnh cần upload.
+   * @returns {Promise<void>}
+   */
   async function handleFileUpload(key: string, file: File) {
     try {
       const reader = new FileReader();
@@ -83,6 +139,12 @@ export function AdminSettingsPage() {
     }
   }
 
+  /**
+   * Render một trường cài đặt dựa trên định nghĩa (type: text, textarea, image, checkbox, number).
+   *
+   * @param {object} def - Định nghĩa trường cài đặt từ EXPECTED_SETTINGS.
+   * @returns {JSX.Element} Element input tương ứng với loại trường.
+   */
   const renderField = (def: any) => {
     const val = items[def.key] ?? "";
     if (def.type === "image") {

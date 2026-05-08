@@ -1,5 +1,31 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      ReviewsSection.tsx
+ * Mục đích:      Section đánh giá sách — hiển thị thống kê tổng hợp (điểm TB,
+ *                phân phối sao), form viết/sửa đánh giá và danh sách đánh giá
+ *                có phân trang. Dùng upsert nên mỗi user chỉ có 1 đánh giá/sách.
+ * Các chức năng chính:
+ *   - Thống kê: điểm trung bình, phân phối 1-5 sao
+ *   - Form đánh giá: chọn sao (StarPicker), nhập bình luận, submit/update/delete
+ *   - Danh sách đánh giá với avatar, tên, thời gian tương đối
+ *   - Phân trang (5 đánh giá/trang)
+ *
+ * Tên module:    Reviews Section
+ * Module liên quan: lib/api.ts, lib/supabase.ts, lib/avatar.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
+"use client";
+
 import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { supabase } from "@/lib/supabase";

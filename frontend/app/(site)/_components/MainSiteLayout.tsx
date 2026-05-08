@@ -1,4 +1,31 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      MainSiteLayout.tsx
+ * Mục đích:      Layout chính cho toàn bộ trang người dùng — bao gồm header
+ *                điều hướng, footer thông tin cửa hàng và chat widget AI.
+ *                Xử lý bảo vệ route (redirect về /auth nếu chưa đăng nhập),
+ *                hiển thị menu theo trạng thái đăng nhập và quyền admin.
+ * Các chức năng chính:
+ *   - Header: logo, nav links, dropdown user, chuông thông báo
+ *   - Footer: thông tin cửa hàng, liên hệ, mạng xã hội
+ *   - Bảo vệ route: redirect nếu chưa đăng nhập mà vào trang cần auth
+ *   - Tích hợp ChatWidget AI
+ *
+ * Tên module:    Main Site Layout
+ * Module liên quan: _hooks/useSessionProfile.ts, _hooks/useSiteSettings.ts,
+ *                   _components/NavLinkNext.tsx, _components/NotificationBell.tsx,
+ *                   _components/ChatWidget.tsx
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";

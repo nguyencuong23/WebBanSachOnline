@@ -1,10 +1,42 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      CartsAdmin.tsx
+ * Mục đích:      Trang quản lý giỏ hàng trong khu vực admin — cho phép xem,
+ *                thêm, cập nhật số lượng và xóa sản phẩm trong giỏ hàng của
+ *                bất kỳ người dùng nào.
+ * Các chức năng chính:
+ *   - Hiển thị danh sách cart_items với thông tin user và sách kèm theo
+ *   - Tìm kiếm theo tên khách hàng, email hoặc tên sách
+ *   - Cập nhật số lượng trực tiếp trên bảng (inline edit)
+ *   - Xóa sản phẩm khỏi giỏ hàng
+ *   - Thêm sản phẩm vào giỏ hàng của user bất kỳ (dùng EntityPicker)
+ *   - Cảnh báo khi số lượng trong giỏ vượt quá tồn kho
+ *
+ * Tên module:    Admin Cart Management
+ * Module liên quan: lib/api.ts, _components/EntityPicker.tsx, lib/bookImage.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { EntityPicker } from "../_components/EntityPicker";
 import { getBookImageUrl } from "@/lib/bookImage";
 
+/**
+ * @component CartsAdmin
+ * @description Trang quản lý giỏ hàng trong khu vực admin.
+ *              Hiển thị tất cả cart_items của mọi người dùng với khả năng
+ *              chỉnh sửa số lượng và xóa sản phẩm trực tiếp.
+ */
 export function CartsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +52,12 @@ export function CartsAdmin() {
   const [addError, setAddError] = useState<string | null>(null);
   const [addSaving, setAddSaving] = useState(false);
 
+  /**
+   * Tải danh sách cart_items từ API với các tham số tìm kiếm và sắp xếp hiện tại.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function load() {
     setLoading(true);
     setError(null);
@@ -42,6 +80,15 @@ export function CartsAdmin() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy]);
 
+  /**
+   * Cập nhật số lượng sản phẩm trong giỏ hàng.
+   * Nếu số lượng < 1, tự động xóa sản phẩm khỏi giỏ.
+   *
+   * @async
+   * @param {number} id       - ID của cart_item cần cập nhật.
+   * @param {number} quantity - Số lượng mới (nếu < 1 sẽ xóa item).
+   * @returns {Promise<void>}
+   */
   async function updateQuantity(id: number, quantity: number) {
     if (quantity < 1) return removeCartItem(id);
     try {
@@ -55,6 +102,13 @@ export function CartsAdmin() {
     }
   }
 
+  /**
+   * Xóa một sản phẩm khỏi giỏ hàng sau khi xác nhận.
+   *
+   * @async
+   * @param {number} id - ID của cart_item cần xóa.
+   * @returns {Promise<void>}
+   */
   async function removeCartItem(id: number) {
     if (!window.confirm("Xóa sản phẩm này khỏi giỏ hàng?")) return;
     try {
@@ -65,6 +119,13 @@ export function CartsAdmin() {
     }
   }
 
+  /**
+   * Xử lý submit form thêm sản phẩm vào giỏ hàng của user.
+   * Validate dữ liệu đầu vào trước khi gọi API.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function handleAddItem() {
     setAddError(null);
     if (!addForm.user_id.trim()) { setAddError("Vui lòng nhập User ID."); return; }

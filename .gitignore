@@ -1,19 +1,19 @@
 # Dependencies
-node_modules/
-backend/node_modules/
-frontend/node_modules/
-**/.npm/
+node_modules
+backend/node_modules
+frontend/node_modules
+**/.npm
 
 # Build results and compiled files
-frontend/dist/
-frontend/.next/
-[Bb]in/
-[Oo]bj/
+frontend/dist
+frontend/.next
+[Bb]in
+[Oo]bj
 *.pyc
-__pycache__/
+__pycache__
 
 # Logs
-logs/
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -28,13 +28,13 @@ yarn-error.log*
 !**/.env.example
 
 # OS and IDE/Editor files
-.vscode/
-.vs/
-.idea/
+.vscode
+.vs
+.idea
 *.suo
 *.user
 .DS_Store
 Thumbs.db
 
 # Documentation
-docs/
+docs

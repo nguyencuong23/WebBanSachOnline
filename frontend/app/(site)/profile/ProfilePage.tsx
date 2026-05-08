@@ -1,4 +1,29 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      ProfilePage.tsx
+ * Mục đích:      Trang hồ sơ cá nhân — cho phép người dùng xem và chỉnh sửa
+ *                thông tin cá nhân, upload/xóa ảnh đại diện và đổi mật khẩu.
+ * Các chức năng chính:
+ *   - Hiển thị avatar, tên, username, role, điểm tích lũy
+ *   - Form chỉnh sửa: họ tên, email, SĐT, địa chỉ mặc định
+ *   - Upload ảnh đại diện (chuyển sang Base64 rồi gửi lên API)
+ *   - Xóa ảnh đại diện
+ *   - Modal đổi mật khẩu (xác minh mật khẩu cũ trước)
+ *   - Toast notification cho phản hồi thành công/lỗi
+ *
+ * Tên module:    Profile Page
+ * Module liên quan: lib/api.ts, lib/avatar.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";

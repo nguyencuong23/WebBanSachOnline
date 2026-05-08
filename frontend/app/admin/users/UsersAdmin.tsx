@@ -1,9 +1,39 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      UsersAdmin.tsx
+ * Mục đích:      Trang quản lý người dùng trong khu vực admin — cho phép xem,
+ *                thêm, chỉnh sửa, khóa/mở khóa và xóa tài khoản người dùng.
+ * Các chức năng chính:
+ *   - Hiển thị danh sách người dùng với tìm kiếm, lọc theo role/trạng thái
+ *   - Thêm tài khoản mới (tạo cả auth user lẫn profile)
+ *   - Chỉnh sửa thông tin profile, đổi mật khẩu, upload/xóa avatar
+ *   - Khóa/mở khóa tài khoản (toggle is_active)
+ *   - Xóa tài khoản vĩnh viễn
+ *   - Bảo vệ: admin không thể tự xóa/khóa tài khoản của chính mình
+ *
+ * Tên module:    Admin User Management
+ * Module liên quan: lib/api.ts, lib/avatar.ts, routes/admin.js (backend)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useEffect, useState, useRef } from "react";
 import { apiFetch } from "@/lib/api";
 import { getAvatarUrl } from "@/lib/avatar";
 
+/**
+ * @component AdminUsersPage
+ * @description Trang quản lý người dùng trong khu vực admin.
+ *              Cung cấp giao diện CRUD đầy đủ cho tài khoản người dùng.
+ */
 export function AdminUsersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -25,6 +55,12 @@ export function AdminUsersPage() {
   const [savingAvatar, setSavingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Tải danh sách người dùng từ API với các tham số lọc và sắp xếp hiện tại.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function load() {
     try {
       const qs = new URLSearchParams();
@@ -49,6 +85,14 @@ export function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy, filterRole, filterActive]);
 
+  /**
+   * Lưu người dùng mới hoặc cập nhật thông tin người dùng hiện có.
+   * Nếu có mật khẩu mới trong form edit, gọi thêm API đổi mật khẩu.
+   *
+   * @async
+   * @param {React.FormEvent} e - Sự kiện submit của form.
+   * @returns {Promise<void>}
+   */
   async function saveUser(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -97,6 +141,14 @@ export function AdminUsersPage() {
     }
   }
 
+  /**
+   * Xử lý upload ảnh đại diện cho người dùng.
+   * Đọc file dưới dạng Base64 và gửi lên API backend để upload lên Storage.
+   *
+   * @async
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Sự kiện change của input file.
+   * @returns {Promise<void>}
+   */
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !form.user_id) return;
@@ -126,6 +178,12 @@ export function AdminUsersPage() {
     reader.readAsDataURL(file);
   };
 
+  /**
+   * Xóa ảnh đại diện của người dùng sau khi xác nhận.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   const handleDeleteAvatar = async () => {
     if (!form.user_id) return;
     if (!confirm("Bạn có chắc muốn xóa ảnh đại diện?")) return;
@@ -155,6 +213,15 @@ export function AdminUsersPage() {
     setModalMode("edit");
   }
 
+  /**
+   * Xóa tài khoản người dùng vĩnh viễn sau khi xác nhận.
+   * Ngăn admin tự xóa tài khoản của chính mình.
+   *
+   * @async
+   * @param {string} id   - UUID của người dùng cần xóa.
+   * @param {string} name - Tên hiển thị để dùng trong confirm dialog.
+   * @returns {Promise<void>}
+   */
   async function removeUser(id: string, name: string) {
     if (currentUser?.user_id === id) {
       alert("Bạn không thể xóa tài khoản của chính mình.");
@@ -169,6 +236,16 @@ export function AdminUsersPage() {
     }
   }
 
+  /**
+   * Đảo ngược trạng thái hoạt động (khóa/mở khóa) của người dùng.
+   * Ngăn admin tự khóa tài khoản của chính mình.
+   *
+   * @async
+   * @param {string}  id        - UUID của người dùng.
+   * @param {string}  name      - Tên hiển thị để dùng trong confirm dialog.
+   * @param {boolean} is_active - Trạng thái hiện tại (true = đang hoạt động).
+   * @returns {Promise<void>}
+   */
   async function toggleLockUser(id: string, name: string, is_active: boolean) {
     if (currentUser?.user_id === id) {
       alert("Bạn không thể khóa/mở khóa tài khoản của chính mình.");

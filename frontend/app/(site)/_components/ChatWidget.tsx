@@ -1,4 +1,29 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      ChatWidget.tsx
+ * Mục đích:      Widget chat AI nổi ở góc màn hình — cho phép người dùng
+ *                hỏi về sách, đơn hàng và thông tin cửa hàng. Tự động gửi
+ *                JWT nếu đã đăng nhập để AI có thể truy cập đơn hàng của user.
+ * Các chức năng chính:
+ *   - Bubble button mở/đóng cửa sổ chat
+ *   - Gửi/nhận tin nhắn với AI (POST /chat)
+ *   - Hiển thị typing indicator khi AI đang xử lý
+ *   - Xóa lịch sử chat
+ *   - Tự động scroll xuống tin nhắn mới nhất
+ *
+ * Tên module:    Chat Widget
+ * Module liên quan: lib/supabase.ts (lấy JWT), backend/routes/chat.js
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";

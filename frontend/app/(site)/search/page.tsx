@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      page.tsx (search)
+ * Mục đích:      Route handler cho trang tìm kiếm tại "/search".
+ *                Bọc SearchPage trong Suspense vì dùng useSearchParams.
+ *
+ * Tên module:    Search Route
+ * Module liên quan: SearchPage.tsx
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { Suspense } from "react";
 import { SearchPage } from "./SearchPage";
 

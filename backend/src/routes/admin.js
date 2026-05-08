@@ -1,17 +1,73 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      admin.js
+ * Mục đích:      Định tuyến toàn bộ API quản trị hệ thống — chỉ dành cho
+ *                người dùng có role "admin". Bao gồm dashboard thống kê,
+ *                quản lý đơn hàng, người dùng, giỏ hàng, thông báo và đánh giá.
+ * Các chức năng chính:
+ *   Dashboard:
+ *     - GET /admin/dashboard/summary   : Tổng quan nhanh (sách, user, đơn, doanh thu tháng)
+ *     - GET /admin/dashboard/stats     : Thống kê chi tiết (top sách, phân phối trạng thái)
+ *     - GET /admin/monthly-stats       : Doanh thu theo tháng trong năm
+ *     - GET /admin/borrowing-trends    : Xu hướng đơn hàng & doanh thu 30 ngày
+ *   Đơn hàng:
+ *     - GET/POST/PATCH/DELETE /admin/orders
+ *     - GET /admin/orders/:orderId
+ *   Người dùng:
+ *     - GET/POST/PATCH/DELETE /admin/users
+ *     - POST /admin/users/:userId/toggle-status
+ *     - POST /admin/users/:userId/change-password
+ *     - POST/DELETE /admin/users/:userId/avatar
+ *   Giỏ hàng:
+ *     - GET/POST/PATCH/DELETE /admin/carts
+ *   Thông báo:
+ *     - GET/POST/PATCH/DELETE /admin/notifications
+ *   Đánh giá:
+ *     - GET /admin/reviews
+ *
+ * Tên module:    Admin Management
+ * Module liên quan: auth/verify.js, supabase.js, http/errors.js
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * Ghi chú:       Tất cả route /admin/* đều được bảo vệ bởi requireUser + requireAdmin
+ *                middleware được áp dụng toàn cục qua adminRouter.use("/admin", ...).
+ * ============================================================================
+ */
+
 import express from "express";
 import { z } from "zod";
 import { requireUser, requireAdmin } from "../auth/verify.js";
 import { createSupabaseUser, createSupabaseAdmin } from "../supabase.js";
 import { assert } from "../http/errors.js";
 
+// Regex kiểm tra định dạng username: 4-30 ký tự, chữ thường/số/dấu chấm/gạch dưới
 const USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9._]{2,28}[a-z0-9])?$/;
+// Regex kiểm tra họ tên: chỉ chữ cái Unicode và dấu cách hợp lệ, 2-100 ký tự
 const FULL_NAME_REGEX = /^[\p{L}](?:[\p{L}\s'.-]{0,98}[\p{L}])?$/u;
+// Regex kiểm tra số điện thoại di động Việt Nam (đầu số 03x, 05x, 07x, 08x, 09x)
 const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/;
 
 export const adminRouter = express.Router();
 
+// Áp dụng requireUser + requireAdmin cho TẤT CẢ route bắt đầu bằng /admin
 adminRouter.use("/admin", requireUser, requireAdmin);
 
+/**
+ * Lấy tổng quan nhanh cho dashboard: tổng sách tồn kho, số khách hàng,
+ * tổng đơn hàng và doanh thu tháng hiện tại (không tính đơn đã hủy).
+ *
+ * @route   GET /admin/dashboard/summary
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Request object.
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON `{ total_books, total_users, total_orders, revenue }`.
+ */
 adminRouter.get("/admin/dashboard/summary", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
 
@@ -39,6 +95,17 @@ adminRouter.get("/admin/dashboard/summary", async (req, res) => {
   });
 });
 
+/**
+ * Lấy thống kê chi tiết cho dashboard: top 10 sách bán chạy, phân phối
+ * trạng thái đơn hàng, thống kê theo thể loại và 5 đơn hàng gần nhất.
+ *
+ * @route   GET /admin/dashboard/stats
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Request object.
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON gồm các trường thống kê chi tiết.
+ */
 adminRouter.get("/admin/dashboard/stats", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
 
@@ -102,6 +169,18 @@ adminRouter.get("/admin/dashboard/stats", async (req, res) => {
   });
 });
 
+/**
+ * Lấy doanh thu theo từng tháng trong năm hiện tại, phân theo phương thức
+ * thanh toán (COD và chuyển khoản). Bỏ qua đơn đã hủy.
+ *
+ * @route   GET /admin/monthly-stats
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Request object.
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON array 12 phần tử, mỗi phần tử: `{ name, cod, bank_transfer, count }`.
+ * @throws {HttpError} 400 nếu truy vấn database thất bại.
+ */
 adminRouter.get("/admin/monthly-stats", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const year = new Date().getUTCFullYear();
@@ -134,6 +213,18 @@ adminRouter.get("/admin/monthly-stats", async (req, res) => {
   res.json(result);
 });
 
+/**
+ * Lấy xu hướng đơn hàng và doanh thu trong 30 ngày gần nhất.
+ * Trả về 2 mảng theo ngày: số lượng đơn và tổng doanh thu.
+ *
+ * @route   GET /admin/borrowing-trends
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Request object.
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON `{ order_volume: [{date, count}], revenue: [{date, revenue}] }`.
+ * @throws {HttpError} 400 nếu truy vấn database thất bại.
+ */
 adminRouter.get("/admin/borrowing-trends", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const end = new Date();
@@ -170,6 +261,21 @@ adminRouter.get("/admin/borrowing-trends", async (req, res) => {
 });
 
 // --- QUẢN LÝ ĐƠN HÀNG (THÊM MỚI TỪ ADMIN) ---
+
+/**
+ * Tạo một đơn hàng mới từ phía admin (thay mặt khách hàng).
+ * Tự động tính subtotal, áp dụng phí ship từ cài đặt hệ thống,
+ * sinh mã order_code, trừ tồn kho sau khi tạo thành công.
+ *
+ * @route   POST /admin/orders
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Request chứa body đơn hàng.
+ * @param {import("express").Response} res - Response trả về đơn hàng vừa tạo.
+ * @returns {Promise<void>} HTTP 201 với `{ item: order }`.
+ * @throws {ZodError} 400 nếu body không hợp lệ.
+ * @throws {HttpError} 400 nếu sách không tồn tại, không đủ tồn kho, hoặc lỗi DB.
+ */
 adminRouter.post("/admin/orders", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -263,6 +369,18 @@ adminRouter.post("/admin/orders", async (req, res) => {
 });
 
 
+/**
+ * Lấy danh sách người dùng với hỗ trợ lọc theo role, trạng thái hoạt động,
+ * tìm kiếm theo nhiều trường và sắp xếp linh hoạt.
+ *
+ * @route   GET /admin/users
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Query params: `role`, `active`, `search`, `searchBy`, `sort`.
+ * @param {import("express").Response} res - Response trả về danh sách profile.
+ * @returns {Promise<void>} JSON `{ items: Profile[] }`.
+ * @throws {HttpError} 400 nếu truy vấn DB thất bại.
+ */
 adminRouter.get("/admin/users", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const role = (req.query.role || "").toString();
@@ -304,6 +422,20 @@ adminRouter.get("/admin/users", async (req, res) => {
   res.json({ items: data });
 });
 
+/**
+ * Cập nhật thông tin hồ sơ của một người dùng.
+ * Nếu có thay đổi email, đồng thời cập nhật trong Supabase Auth.
+ * Admin không thể tự khóa tài khoản của chính mình.
+ *
+ * @route   PATCH /admin/users/:userId
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `userId`; Body: các trường profile cần cập nhật.
+ * @param {import("express").Response} res - Response trả về profile sau khi cập nhật.
+ * @returns {Promise<void>} JSON `{ item: Profile }`.
+ * @throws {ZodError} 400 nếu body không hợp lệ.
+ * @throws {HttpError} 409 nếu email bị trùng; 400 nếu lỗi Auth hoặc DB.
+ */
 adminRouter.patch("/admin/users/:userId", async (req, res) => {
   const schema = z.object({
     username: z.string().trim().regex(USERNAME_REGEX, "Tên đăng nhập phải dài 4-30 ký tự, chỉ gồm chữ thường, số, dấu chấm và dấu gạch dưới.").optional().nullable().or(z.literal("")),
@@ -351,6 +483,20 @@ adminRouter.patch("/admin/users/:userId", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tạo tài khoản người dùng mới từ phía admin.
+ * Tự động xác nhận email mà không cần gửi link verify.
+ * Nếu tạo profile thất bại, hệ thống sẽ rollback bằng cách xóa tài khoản Auth vừa tạo.
+ *
+ * @route   POST /admin/users
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Body: `email`, `password`, `full_name`, v.v.
+ * @param {import("express").Response} res - Response trả về profile vừa tạo.
+ * @returns {Promise<void>} HTTP 201 với `{ item: Profile }`.
+ * @throws {ZodError} 400 nếu body không hợp lệ.
+ * @throws {HttpError} 400 nếu tạo Auth thất bại hoặc email/username/SĐT bị trùng.
+ */
 adminRouter.post("/admin/users", async (req, res) => {
   const schema = z.object({
     email: z.string().email("Email không hợp lệ.").max(100, "Email không được vượt quá 100 ký tự."),
@@ -404,6 +550,18 @@ adminRouter.post("/admin/users", async (req, res) => {
   res.status(201).json({ item: profile });
 });
 
+/**
+ * Xóa vĩnh viễn một tài khoản người dùng khỏi hệ thống (Supabase Auth).
+ * Admin không thể tự xóa tài khoản của chính mình.
+ *
+ * @route   DELETE /admin/users/:userId
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `userId` (UUID).
+ * @param {import("express").Response} res - Response xác nhận xóa thành công.
+ * @returns {Promise<void>} JSON `{ ok: true }`.
+ * @throws {HttpError} 400 nếu xóa thất bại hoặc đang tự xóa chính mình.
+ */
 adminRouter.delete("/admin/users/:userId", async (req, res) => {
   const sbAdmin = createSupabaseAdmin();
   const userId = req.params.userId;
@@ -416,6 +574,18 @@ adminRouter.delete("/admin/users/:userId", async (req, res) => {
   res.json({ ok: true });
 });
 
+/**
+ * Đảo ngược trạng thái hoạt động (khóa/mở khóa) của một người dùng.
+ * Admin không thể tự khóa/mở khóa tài khoản của chính mình.
+ *
+ * @route   POST /admin/users/:userId/toggle-status
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `userId`.
+ * @param {import("express").Response} res - Response trả về profile sau khi cập nhật.
+ * @returns {Promise<void>} JSON `{ item: Profile }`.
+ * @throws {HttpError} 400 nếu không tìm thấy user hoặc đang tự khóa chính mình.
+ */
 adminRouter.post("/admin/users/:userId/toggle-status", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const userId = req.params.userId;
@@ -431,6 +601,18 @@ adminRouter.post("/admin/users/:userId/toggle-status", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Thay đổi mật khẩu của người dùng bất kỳ từ phía admin.
+ *
+ * @route   POST /admin/users/:userId/change-password
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `userId`; Body: `{ password: string }`.
+ * @param {import("express").Response} res - Response xác nhận thành công.
+ * @returns {Promise<void>} JSON `{ message: string }`.
+ * @throws {ZodError} 400 nếu mật khẩu ngắn hơn 8 ký tự.
+ * @throws {HttpError} 400 nếu Supabase Auth từ chối cập nhật.
+ */
 adminRouter.post("/admin/users/:userId/change-password", async (req, res) => {
   const schema = z.object({
     password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự.")
@@ -446,6 +628,18 @@ adminRouter.post("/admin/users/:userId/change-password", async (req, res) => {
   res.json({ message: "Cập nhật mật khẩu thành công" });
 });
 
+/**
+ * Tải lên ảnh đại diện cho người dùng từ cọui Base64.
+ * Tự động xóa ảnh cũ trước khi upload ảnh mới.
+ *
+ * @route   POST /admin/users/:userId/avatar
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `userId`; Body: `{ image: string }` (Base64).
+ * @param {import("express").Response} res - Response trả về tên file và profile đã cập nhật.
+ * @returns {Promise<void>} JSON `{ message, avatar_url, profile }`.
+ * @throws {HttpError} 400 nếu thiếu dữ liệu, định dạng không hợp lệ, hoặc upload thất bại.
+ */
 adminRouter.post("/admin/users/:userId/avatar", async (req, res) => {
   const { image } = req.body;
   assert(image, 400, "Thiếu dữ liệu hình ảnh (Base64)", "missing_image");
@@ -486,6 +680,17 @@ adminRouter.post("/admin/users/:userId/avatar", async (req, res) => {
   res.json({ message: "Cập nhật ảnh đại diện thành công", avatar_url: fileName, profile });
 });
 
+/**
+ * Xóa ảnh đại diện của người dùng khỏi storage và đặt `avatar_url = null` trong profile.
+ *
+ * @route   DELETE /admin/users/:userId/avatar
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `userId`.
+ * @param {import("express").Response} res - Response xác nhận đã xóa.
+ * @returns {Promise<void>} JSON `{ message, profile }`.
+ * @throws {HttpError} 400 nếu cập nhật DB thất bại.
+ */
 adminRouter.delete("/admin/users/:userId/avatar", async (req, res) => {
   const sbAdmin = createSupabaseAdmin();
   const userId = req.params.userId;
@@ -509,6 +714,18 @@ adminRouter.delete("/admin/users/:userId/avatar", async (req, res) => {
 
 // --- QUẢN LÝ ĐƠN HÀNG (ADMIN) ---
 
+/**
+ * Lấy danh sách đơn hàng với hỗ trợ tìm kiếm theo mã đơn/khách hàng,
+ * lọc theo trạng thái và sắp xếp linh hoạt.
+ *
+ * @route   GET /admin/orders
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Query params: `search`, `searchBy`, `status`, `sort`.
+ * @param {import("express").Response} res - Response trả về danh sách đơn hàng.
+ * @returns {Promise<void>} JSON `{ items: Order[] }`.
+ * @throws {HttpError} 400 nếu truy vấn DB thất bại.
+ */
 adminRouter.get("/admin/orders", async (req, res) => {
   const search = (req.query.search || "").toString().trim();
   const searchBy = (req.query.searchBy || "all").toString();
@@ -540,6 +757,17 @@ adminRouter.get("/admin/orders", async (req, res) => {
   assert(!error, 400, "Lỗi tải danh sách đơn hàng", "orders_fetch_failed", error?.message);  res.json({ items: data });
 });
 
+/**
+ * Lấy chi tiết một đơn hàng bao gồm danh sách sản phẩm (điều kiện join).
+ *
+ * @route   GET /admin/orders/:orderId
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `orderId`.
+ * @param {import("express").Response} res - Response trả về chi tiết đơn hàng.
+ * @returns {Promise<void>} JSON `{ item: Order }` (kèm `order_items` và thông tin sách).
+ * @throws {HttpError} 400 nếu không tìm thấy đơn hàng.
+ */
 adminRouter.get("/admin/orders/:orderId", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { data, error } = await sb
@@ -551,6 +779,20 @@ adminRouter.get("/admin/orders/:orderId", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Cập nhật thông tin đơn hàng (trạng thái, thanh toán, người nhận, phi ship, v.v.).
+ * Tự động ghi timestamp khi chuyển sang các trạng thái `confirmed`, `delivered`, `cancelled`.
+ * Tự động gửi thông báo cho khách hàng khi trạng thái thay đổi.
+ *
+ * @route   PATCH /admin/orders/:orderId
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `orderId`; Body: các trường cần cập nhật.
+ * @param {import("express").Response} res - Response trả về đơn hàng sau khi cập nhật.
+ * @returns {Promise<void>} JSON `{ item: Order }`.
+ * @throws {ZodError} 400 nếu body không hợp lệ.
+ * @throws {HttpError} 400 nếu không tìm thấy đơn hoặc lỗi cập nhật.
+ */
 adminRouter.patch("/admin/orders/:orderId", async (req, res) => {
   const sb = createSupabaseAdmin();
 
@@ -613,6 +855,17 @@ adminRouter.patch("/admin/orders/:orderId", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Xóa vĩnh viễn một đơn hàng khỏi hệ thống.
+ *
+ * @route   DELETE /admin/orders/:orderId
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `orderId`.
+ * @param {import("express").Response} res - Response xác nhận xóa.
+ * @returns {Promise<void>} JSON `{ ok: true }`.
+ * @throws {HttpError} 400 nếu xóa thất bại.
+ */
 adminRouter.delete("/admin/orders/:orderId", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { error } = await sb.from("orders").delete().eq("order_id", req.params.orderId);
@@ -622,6 +875,18 @@ adminRouter.delete("/admin/orders/:orderId", async (req, res) => {
 
 // --- QUẢN LÝ GIỎ HÀNG (ADMIN) ---
 
+/**
+ * Lấy toàn bộ giỏ hàng của tất cả người dùng, join thông tin sách và profile.
+ * Hỗ trợ tìm kiếm client-side theo tên user/email/tên sách và sắp xếp.
+ *
+ * @route   GET /admin/carts
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Query params: `search`, `searchBy`, `sort`.
+ * @param {import("express").Response} res - Response trả về danh sách các mục giỏ hàng.
+ * @returns {Promise<void>} JSON `{ items: CartItem[] }` (đã đính kèm `books` và `user`).
+ * @throws {HttpError} 400 nếu truy vấn DB thất bại.
+ */
 adminRouter.get("/admin/carts", async (req, res) => {
   const search = (req.query.search || "").toString().toLowerCase().trim();
   const sort = (req.query.sort || "created_at-desc").toString();
@@ -676,6 +941,18 @@ adminRouter.get("/admin/carts", async (req, res) => {
   res.json({ items });
 });
 
+/**
+ * Thêm một sản phẩm vào giỏ hàng của người dùng bất kỳ từ phía admin.
+ *
+ * @route   POST /admin/carts
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Body: `{ user_id, book_id, quantity }`.
+ * @param {import("express").Response} res - Response trả về mục giỏ hàng vừa thêm.
+ * @returns {Promise<void>} JSON `{ item: CartItem }`.
+ * @throws {ZodError} 400 nếu body không hợp lệ.
+ * @throws {HttpError} 400 nếu sách không tồn tại hoặc thêm thất bại.
+ */
 adminRouter.post("/admin/carts", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -698,6 +975,18 @@ adminRouter.post("/admin/carts", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Cập nhật số lượng của một mục trong giỏ hàng.
+ *
+ * @route   PATCH /admin/carts/:id
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `id` (cart_item id); Body: `{ quantity: number }`.
+ * @param {import("express").Response} res - Response trả về mục giỏ hàng sau khi cập nhật.
+ * @returns {Promise<void>} JSON `{ item: CartItem }`.
+ * @throws {ZodError} 400 nếu số lượng không hợp lệ.
+ * @throws {HttpError} 400 nếu cập nhật thất bại.
+ */
 adminRouter.patch("/admin/carts/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -715,6 +1004,17 @@ adminRouter.patch("/admin/carts/:id", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Xóa một mục khỏi giỏ hàng.
+ *
+ * @route   DELETE /admin/carts/:id
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `id` (cart_item id).
+ * @param {import("express").Response} res - Response xác nhận xóa.
+ * @returns {Promise<void>} JSON `{ ok: true }`.
+ * @throws {HttpError} 400 nếu xóa thất bại.
+ */
 adminRouter.delete("/admin/carts/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { error } = await sb.from("cart_items").delete().eq("id", req.params.id);
@@ -724,6 +1024,17 @@ adminRouter.delete("/admin/carts/:id", async (req, res) => {
 
 // --- QUẢN LÝ THÔNG BÁO (ADMIN) ---
 
+/**
+ * Lấy danh sách thông báo hệ thống do admin gửi, hỗ trợ tìm kiếm và sắp xếp.
+ *
+ * @route   GET /admin/notifications
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Query params: `search` (tìm theo tiêu đề/nội dung), `sort`.
+ * @param {import("express").Response} res - Response trả về danh sách thông báo.
+ * @returns {Promise<void>} JSON `{ items: AdminNotification[] }`.
+ * @throws {HttpError} 400 nếu truy vấn DB thất bại.
+ */
 adminRouter.get("/admin/notifications", async (req, res) => {
   const sb = createSupabaseAdmin();
   const sort = (req.query.sort || "created_at-desc").toString();
@@ -744,6 +1055,17 @@ adminRouter.get("/admin/notifications", async (req, res) => {
   res.json({ items: data });
 });
 
+/**
+ * Lấy chi tiết một thông báo hệ thống theo ID.
+ *
+ * @route   GET /admin/notifications/:id
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `id`.
+ * @param {import("express").Response} res - Response trả về thông báo.
+ * @returns {Promise<void>} JSON `{ item: AdminNotification }`.
+ * @throws {HttpError} 400 nếu không tìm thấy thông báo.
+ */
 adminRouter.get("/admin/notifications/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { data, error } = await sb.from("admin_notifications").select("*").eq("id", req.params.id).maybeSingle();
@@ -751,6 +1073,20 @@ adminRouter.get("/admin/notifications/:id", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Tạo một thông báo hệ thống mới và gửi đến người dùng mục tiêu.
+ * Hỗ trợ gửi hàng loạt ("all") hoặc chọn riêng người nhận ("custom").
+ * Insert thông báo theo từng batch 1000 bản ghi để tránh quá tải DB.
+ *
+ * @route   POST /admin/notifications
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Body: `{ title, message, link?, type?, recipients_type, recipient_ids? }`.
+ * @param {import("express").Response} res - Response trả về thông báo vừa tạo.
+ * @returns {Promise<void>} HTTP 201 với `{ item: AdminNotification }`.
+ * @throws {ZodError} 400 nếu body không hợp lệ.
+ * @throws {HttpError} 400 nếu recipients_type là "custom" nhưng không có người nhận.
+ */
 adminRouter.post("/admin/notifications", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -808,6 +1144,19 @@ adminRouter.post("/admin/notifications", async (req, res) => {
   res.status(201).json({ item: adminNotif });
 });
 
+/**
+ * Cập nhật nội dung một thông báo hệ thống.
+ * Đồng thời cập nhật tất cả bản ghi thông báo user có `related_entity_id` tương ứng.
+ *
+ * @route   PATCH /admin/notifications/:id
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `id`; Body: `{ title?, message?, link?, type? }`.
+ * @param {import("express").Response} res - Response trả về thông báo sau khi cập nhật.
+ * @returns {Promise<void>} JSON `{ item: AdminNotification }`.
+ * @throws {ZodError} 400 nếu body không hợp lệ.
+ * @throws {HttpError} 400 nếu cập nhật thất bại.
+ */
 adminRouter.patch("/admin/notifications/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({
@@ -839,6 +1188,17 @@ adminRouter.patch("/admin/notifications/:id", async (req, res) => {
   res.json({ item: data });
 });
 
+/**
+ * Xóa một thông báo hệ thống và tất cả bản ghi thông báo user liên quan.
+ *
+ * @route   DELETE /admin/notifications/:id
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Params: `id`.
+ * @param {import("express").Response} res - Response xác nhận xóa.
+ * @returns {Promise<void>} JSON `{ ok: true }`.
+ * @throws {HttpError} 400 nếu xóa thất bại.
+ */
 adminRouter.delete("/admin/notifications/:id", async (req, res) => {
   const sb = createSupabaseAdmin();
   const { error } = await sb.from("admin_notifications").delete().eq("id", req.params.id);
@@ -850,6 +1210,19 @@ adminRouter.delete("/admin/notifications/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+/**
+ * Tải ảnh lên Supabase Storage để nhúng vào nội dung thông báo.
+ * Nhận dữ liệu Base64 và trả về public URL của ảnh sau khi upload.
+ *
+ * @route   POST /admin/notifications/upload-image
+ * @access  Private (admin)
+ * @async
+ * @param {import("express").Request} req - Body: `{ base64: string, contentType: string }`.
+ * @param {import("express").Response} res - Response trả về URL công khai của ảnh.
+ * @returns {Promise<void>} JSON `{ url: string }`.
+ * @throws {ZodError} 400 nếu thiếu dữ liệu.
+ * @throws {HttpError} 400 nếu upload thất bại.
+ */
 adminRouter.post("/admin/notifications/upload-image", async (req, res) => {
   const sb = createSupabaseAdmin();
   const schema = z.object({

@@ -1,4 +1,31 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      SearchPage.tsx
+ * Mục đích:      Trang tìm kiếm và lọc sách — cho phép người dùng tìm theo
+ *                từ khóa, lọc theo thể loại/giá/tồn kho/khuyến mãi, sắp xếp
+ *                và xem kết quả dạng lưới hoặc danh sách với phân trang.
+ * Các chức năng chính:
+ *   - Thanh tìm kiếm với lựa chọn trường tìm (tên/tác giả/NXB/tất cả)
+ *   - Sidebar lọc: thể loại, khoảng giá, còn hàng, đang giảm giá
+ *   - Hiển thị kết quả dạng grid (BookCard) hoặc list (BookListItem)
+ *   - Modal xem nhanh thông tin sách (BookModal)
+ *   - Phân trang client-side (20 sách/trang)
+ *   - Active filter tags với nút xóa từng bộ lọc
+ *   - Đồng bộ state với URL search params
+ *
+ * Tên module:    Search Page
+ * Module liên quan: lib/api.ts, lib/cart.ts, lib/bookImage.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";

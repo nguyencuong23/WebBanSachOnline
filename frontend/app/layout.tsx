@@ -1,3 +1,26 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      layout.tsx
+ * Mục đích:      Root layout của toàn bộ ứng dụng Next.js — bao bọc tất cả các trang.
+ *                Tải metadata động từ API (title, description, favicon),
+ *                nhúng CSS framework và bọc nội dung trong GlobalAuthLockGuard.
+ * Các chức năng chính:
+ *   - generateMetadata : Fetch cài đặt từ API để tạo metadata động (SEO)
+ *   - RootLayout       : Component layout gốc, nhúng Bootstrap, Font Awesome
+ *                        và GlobalAuthLockGuard
+ *
+ * Tên module:    App Root Layout
+ * Module liên quan: app/(site)/_components/GlobalAuthLockGuard.tsx
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
@@ -5,10 +28,17 @@ import { GlobalAuthLockGuard } from "./(site)/_components/GlobalAuthLockGuard";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
+/**
+ * Tạo metadata động cho ứng dụng bằng cách fetch cài đặt từ API.
+ * Nếu fetch thất bại, fallback về giá trị mặc định để tránh crash.
+ *
+ * @async
+ * @returns {Promise<Metadata>} Object metadata gồm title, description và favicon.
+ */
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const res = await fetch(`${API_BASE}/settings`, {
-      next: { revalidate: 0 },
+      next: { revalidate: 0 }, // Không cache — luôn lấy dữ liệu mới nhất
     });
     if (res.ok) {
       const data = await res.json();
@@ -26,7 +56,7 @@ export async function generateMetadata(): Promise<Metadata> {
       };
     }
   } catch {
-    // fallback bên dưới
+    // Fallback bên dưới nếu API không khả dụng
   }
 
   return {
@@ -36,6 +66,14 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+/**
+ * Root layout component — bao bọc toàn bộ ứng dụng.
+ * Nhúng Bootstrap 5 và Font Awesome 6 qua CDN,
+ * bọc children trong GlobalAuthLockGuard để xử lý bảo vệ route và chế độ bảo trì.
+ *
+ * @param {{ children: ReactNode }} props
+ * @returns {JSX.Element} HTML document với head và body đầy đủ.
+ */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="vi">

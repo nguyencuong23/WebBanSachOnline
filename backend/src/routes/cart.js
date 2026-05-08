@@ -1,3 +1,29 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      cart.js
+ * Mục đích:      Định tuyến các API quản lý giỏ hàng của người dùng đã đăng nhập.
+ *                Giỏ hàng được lưu server-side trong bảng cart_items.
+ * Các chức năng chính:
+ *   - GET    /cart           : Lấy toàn bộ giỏ hàng kèm thông tin sách
+ *   - POST   /cart           : Thêm sách vào giỏ (tự động tăng số lượng nếu đã có)
+ *   - PATCH  /cart/:bookId   : Cập nhật số lượng một sản phẩm trong giỏ
+ *   - DELETE /cart/:bookId   : Xóa một sản phẩm khỏi giỏ
+ *   - DELETE /cart           : Xóa toàn bộ giỏ hàng
+ *
+ * Tên module:    Cart Management
+ * Module liên quan: supabase.js, auth/verify.js, http/errors.js
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * Ghi chú:       Tất cả các route đều yêu cầu xác thực (requireUser).
+ *                Kiểm tra tồn kho khi thêm/cập nhật để tránh đặt quá số lượng có sẵn.
+ * ============================================================================
+ */
+
 import express from "express";
 import { z } from "zod";
 import { requireUser } from "../auth/verify.js";
@@ -6,10 +32,21 @@ import { assert } from "../http/errors.js";
 
 export const cartRouter = express.Router();
 
-// Tất cả các route đều yêu cầu đăng nhập
+// Áp dụng requireUser cho tất cả các route bắt đầu bằng /cart
 cartRouter.use("/cart", requireUser);
 
-// GET /cart - Lấy toàn bộ giỏ hàng của user hiện tại (kèm thông tin sách)
+/**
+ * Lấy toàn bộ giỏ hàng của người dùng hiện tại, kèm thông tin sách.
+ * Sắp xếp theo thời gian thêm vào giỏ mới nhất trước.
+ *
+ * @route   GET /cart
+ * @access  Private (requireUser)
+ * @async
+ * @param {import("express").Request} req - Request object, chứa `req.auth.jwt` và `req.auth.user.id`.
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON `{ items: CartItem[] }` — mỗi item kèm thông tin sách.
+ * @throws {HttpError} 400 nếu truy vấn database thất bại.
+ */
 cartRouter.get("/cart", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const userId = req.auth.user.id;
@@ -24,7 +61,22 @@ cartRouter.get("/cart", async (req, res) => {
   res.json({ items: data || [] });
 });
 
-// POST /cart - Thêm sản phẩm vào giỏ hàng (nếu đã có thì tăng số lượng)
+/**
+ * Thêm sách vào giỏ hàng.
+ * Nếu sách đã có trong giỏ, tự động cộng thêm số lượng thay vì tạo bản ghi mới.
+ * Kiểm tra tồn kho trước khi thêm để đảm bảo không vượt quá số lượng có sẵn.
+ *
+ * @route   POST /cart
+ * @access  Private (requireUser)
+ * @async
+ * @param {import("express").Request} req - Request body gồm:
+ *   @param {string} req.body.book_id  - Mã sách cần thêm vào giỏ.
+ *   @param {number} [req.body.quantity=1] - Số lượng cần thêm (tối thiểu 1).
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} HTTP 201 (thêm mới) hoặc 200 (cập nhật) với JSON `{ item: CartItem }`.
+ * @throws {HttpError} 404 nếu sách không tồn tại.
+ * @throws {HttpError} 400 nếu số lượng vượt quá tồn kho hoặc lỗi DB.
+ */
 cartRouter.post("/cart", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const userId = req.auth.user.id;
@@ -45,7 +97,7 @@ cartRouter.post("/cart", async (req, res) => {
   assert(!bookErr && book, 404, "Sách không tồn tại", "book_not_found");
   assert((book.quantity ?? 0) >= body.quantity, 400, `Sách '${book.title}' không đủ số lượng tồn kho.`, "out_of_stock");
 
-  // Kiểm tra xem đã có trong giỏ chưa
+  // Kiểm tra xem sách đã có trong giỏ chưa để quyết định insert hay update
   const { data: existing } = await sb
     .from("cart_items")
     .select("id, quantity")
@@ -54,7 +106,7 @@ cartRouter.post("/cart", async (req, res) => {
     .maybeSingle();
 
   if (existing) {
-    // Đã có => tăng số lượng
+    // Đã có trong giỏ → cộng thêm số lượng, kiểm tra lại tồn kho với tổng mới
     const newQty = existing.quantity + body.quantity;
     assert((book.quantity ?? 0) >= newQty, 400, `Số lượng vượt quá tồn kho (còn ${book.quantity}).`, "out_of_stock");
 
@@ -69,7 +121,7 @@ cartRouter.post("/cart", async (req, res) => {
     return res.json({ item: data });
   }
 
-  // Chưa có => thêm mới
+  // Chưa có trong giỏ → thêm mới
   const { data, error } = await sb
     .from("cart_items")
     .insert({ user_id: userId, book_id: body.book_id, quantity: body.quantity })
@@ -80,7 +132,19 @@ cartRouter.post("/cart", async (req, res) => {
   res.status(201).json({ item: data });
 });
 
-// PATCH /cart/:bookId - Cập nhật số lượng sản phẩm trong giỏ
+/**
+ * Cập nhật số lượng của một sản phẩm trong giỏ hàng.
+ * Kiểm tra tồn kho trước khi cập nhật.
+ *
+ * @route   PATCH /cart/:bookId
+ * @access  Private (requireUser)
+ * @async
+ * @param {import("express").Request} req - Route param: `bookId`. Body: `{ quantity: number }`.
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON `{ item: CartItem }` với số lượng đã cập nhật.
+ * @throws {HttpError} 400 nếu số lượng vượt tồn kho hoặc lỗi DB.
+ * @throws {HttpError} 404 nếu không tìm thấy sản phẩm trong giỏ.
+ */
 cartRouter.patch("/cart/:bookId", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const userId = req.auth.user.id;
@@ -91,7 +155,7 @@ cartRouter.patch("/cart/:bookId", async (req, res) => {
   });
   const body = schema.parse(req.body ?? {});
 
-  // Kiểm tra tồn kho
+  // Kiểm tra tồn kho — không bắt buộc (sách có thể đã bị xóa), chỉ kiểm tra nếu còn tồn tại
   const { data: book } = await sb
     .from("books")
     .select("title, quantity")
@@ -114,7 +178,17 @@ cartRouter.patch("/cart/:bookId", async (req, res) => {
   res.json({ item: data });
 });
 
-// DELETE /cart/:bookId - Xóa một sản phẩm khỏi giỏ
+/**
+ * Xóa một sản phẩm cụ thể khỏi giỏ hàng.
+ *
+ * @route   DELETE /cart/:bookId
+ * @access  Private (requireUser)
+ * @async
+ * @param {import("express").Request} req - Route param: `bookId`.
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON `{ ok: true }`.
+ * @throws {HttpError} 400 nếu lỗi DB.
+ */
 cartRouter.delete("/cart/:bookId", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const userId = req.auth.user.id;
@@ -130,7 +204,18 @@ cartRouter.delete("/cart/:bookId", async (req, res) => {
   res.json({ ok: true });
 });
 
-// DELETE /cart - Xóa toàn bộ giỏ hàng của user
+/**
+ * Xóa toàn bộ giỏ hàng của người dùng hiện tại.
+ * Thường được gọi sau khi checkout thành công.
+ *
+ * @route   DELETE /cart
+ * @access  Private (requireUser)
+ * @async
+ * @param {import("express").Request} req - Request object, chứa `req.auth.user.id`.
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON `{ ok: true }`.
+ * @throws {HttpError} 400 nếu lỗi DB.
+ */
 cartRouter.delete("/cart", async (req, res) => {
   const sb = createSupabaseUser(req.auth.jwt);
   const userId = req.auth.user.id;

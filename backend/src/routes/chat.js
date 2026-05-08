@@ -1,3 +1,30 @@
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      chat.js
+ * Mục đích:      Định tuyến API chat AI hỗ trợ khách hàng, tích hợp Groq LLM
+ *                (llama-3.1-8b-instant) với dữ liệu thực từ cửa hàng (sách,
+ *                đơn hàng, cài đặt) để trả lời câu hỏi của người dùng.
+ * Các chức năng chính:
+ *   - POST /chat              : Gửi tin nhắn và nhận phản hồi từ AI
+ *   - webSearch()             : Tìm kiếm thông tin sách trên Wikipedia
+ *   - buildStoreContext()     : Xây dựng context từ DB (sách, đơn hàng, cài đặt)
+ *   - detectIntent()          : Phân tích intent để quyết định cần load dữ liệu gì
+ *   - callGroq()              : Gọi Groq API với messages và tools
+ *
+ * Tên module:    AI Chat
+ * Module liên quan: supabase.js, env.js, http/errors.js
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * Ghi chú:       Yêu cầu GROQ_API_KEY trong biến môi trường.
+ *                Nếu user đã đăng nhập, AI có thể truy cập lịch sử đơn hàng.
+ * ============================================================================
+ */
+
 import express from "express";
 import { createSupabaseUser, createSupabaseAdmin } from "../supabase.js";
 import { env } from "../env.js";
@@ -6,9 +33,15 @@ import { z } from "zod";
 
 export const chatRouter = express.Router();
 
+// URL endpoint của Groq API (tương thích OpenAI format)
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.1-8b-instant"; // Model nhỏ nhưng ổn định
+// Model nhỏ nhưng ổn định, phù hợp cho chat hỗ trợ khách hàng
+const MODEL = "llama-3.1-8b-instant";
 
+/**
+ * Map trạng thái đơn hàng sang tiếng Việt để hiển thị trong chat.
+ * @type {Record<string, string>}
+ */
 const ORDER_STATUS_VI = {
   pending: "Chờ xác nhận", confirmed: "Đã xác nhận", processing: "Đang xử lý",
   shipping: "Đang giao hàng", delivered: "Đã giao hàng", cancelled: "Đã hủy", returned: "Đã hoàn trả",
@@ -21,15 +54,33 @@ const PAYMENT_METHOD_VI = {
   cod: "Thanh toán khi nhận hàng (COD)", bank_transfer: "Chuyển khoản ngân hàng",
 };
 
+/**
+ * Định dạng số tiền sang chuỗi tiếng Việt (ví dụ: 150000 → "150.000đ").
+ * @param {number|null|undefined} val - Giá trị cần định dạng.
+ * @returns {string} Chuỗi tiền tệ hoặc "N/A" nếu không có giá trị.
+ */
 function fmt(val) {
   return val != null ? Number(val).toLocaleString("vi-VN") + "đ" : "N/A";
 }
+/**
+ * Định dạng chuỗi ISO datetime sang dạng dd/MM/yyyy HH:mm.
+ * @param {string|null|undefined} iso - Chuỗi ISO datetime.
+ * @returns {string} Chuỗi ngày giờ đã định dạng hoặc "N/A".
+ */
 function fmtDate(iso) {
   if (!iso) return "N/A";
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
+/**
+ * Tìm kiếm thông tin sách/series trên Wikipedia (không cần API key).
+ * Dùng Wikipedia Search API để tìm bài viết phù hợp nhất, sau đó lấy tóm tắt.
+ *
+ * @async
+ * @param {string} query - Tên sách/series cần tìm (nên dùng tiếng Anh hoặc tên gốc).
+ * @returns {Promise<string|null>} Đoạn tóm tắt từ Wikipedia hoặc null nếu không tìm thấy.
+ */
 // ── Wikipedia search (không cần API key) ─────────────────────────────────────
 async function webSearch(query) {
   try {
@@ -88,6 +139,16 @@ const TOOLS = [{
   },
 }];
 
+/**
+ * Phân tích intent của cuộc hội thoại để quyết định cần load dữ liệu gì từ DB.
+ * Tránh load dữ liệu không cần thiết để giảm latency và token context.
+ *
+ * @param {Array<{role: string, content: string}>} messages - Lịch sử hội thoại.
+ * @returns {{ needsOrders: boolean, needsBooks: boolean, searchKeyword: string }}
+ *   - needsOrders: true nếu user hỏi về đơn hàng/giao hàng/thanh toán
+ *   - needsBooks: true nếu cần tìm sách trong DB
+ *   - searchKeyword: từ khóa để tìm sách trong DB
+ */
 // ── Detect intent ─────────────────────────────────────────────────────────────
 function detectIntent(messages) {
   const fullText = messages.map((m) => m.content).join(" ").toLowerCase();
@@ -114,6 +175,15 @@ function detectIntent(messages) {
   return { needsOrders, needsBooks, searchKeyword };
 }
 
+/**
+ * Xây dựng context string từ dữ liệu thực của cửa hàng để đưa vào system prompt.
+ * Bao gồm: thông tin cửa hàng, danh sách sách phù hợp, lịch sử đơn hàng (nếu đăng nhập).
+ *
+ * @async
+ * @param {string|null} jwt - JWT của user (null nếu chưa đăng nhập).
+ * @param {Array<{role: string, content: string}>} messages - Lịch sử hội thoại để phân tích intent.
+ * @returns {Promise<string>} Chuỗi context đã được định dạng để đưa vào system prompt.
+ */
 // ── Build store context ───────────────────────────────────────────────────────
 async function buildStoreContext(jwt, messages) {
   const sbPublic = createSupabaseAdmin();
@@ -305,6 +375,16 @@ ${orderLines.join("\n\n")}`;
   return [storeInfo, booksSection, ordersSection].filter(Boolean).join("\n\n").trim();
 }
 
+/**
+ * Gọi Groq API để lấy phản hồi từ LLM.
+ *
+ * @async
+ * @param {Array<{role: string, content: string}>} msgs - Danh sách messages gửi lên Groq.
+ * @param {boolean} allowTools - Có cho phép AI dùng function calling (tools) không.
+ * @param {string} groqApiKey - API key của Groq.
+ * @returns {Promise<object>} Response JSON từ Groq API.
+ * @throws {Error} Ném lỗi với httpStatus nếu Groq trả về lỗi (429 rate limit, 400, v.v.).
+ */
 // ── Gọi Groq API ─────────────────────────────────────────────────────────────
 async function callGroq(msgs, allowTools, groqApiKey) {
   const body = {
@@ -340,6 +420,21 @@ async function callGroq(msgs, allowTools, groqApiKey) {
   return groqRes.json();
 }
 
+/**
+ * Xử lý tin nhắn chat từ người dùng và trả về phản hồi từ AI.
+ * Quy trình: validate → lấy JWT (nếu có) → build store context → gọi Groq → trả về reply.
+ *
+ * @route   POST /chat
+ * @access  Public (JWT tùy chọn — nếu có sẽ load thêm đơn hàng của user)
+ * @async
+ * @param {import("express").Request} req - Request body:
+ *   @param {Array<{role: "user"|"assistant", content: string}>} req.body.messages
+ *     Lịch sử hội thoại (tối đa 50 tin, mỗi tin tối đa 2000 ký tự).
+ * @param {import("express").Response} res - Response object.
+ * @returns {Promise<void>} JSON `{ reply: string }`.
+ * @throws {HttpError} 503 nếu chưa cấu hình GROQ_API_KEY.
+ * @throws {HttpError} 429 nếu Groq rate limit.
+ */
 // ── POST /chat ────────────────────────────────────────────────────────────────
 chatRouter.post("/chat", async (req, res) => {
   assert(env.groqApiKey, 503, "Tính năng chat AI chưa được cấu hình", "chat_not_configured");

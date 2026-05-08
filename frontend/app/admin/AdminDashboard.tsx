@@ -1,5 +1,29 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      AdminDashboard.tsx
+ * Mục đích:      Trang dashboard quản trị — hiển thị tổng quan kinh doanh
+ *                với các thẻ thống kê và 4 biểu đồ trực quan hóa dữ liệu.
+ * Các chức năng chính:
+ *   - Thẻ thống kê: tổng sách, khách hàng, đơn hàng, doanh thu tháng
+ *   - Biểu đồ đường: xu hướng doanh thu & số đơn 30 ngày qua
+ *   - Biểu đồ donut: phân phối trạng thái đơn hàng
+ *   - Biểu đồ cột ngang: top 10 sách bán chạy
+ *   - Biểu đồ cột chồng: doanh thu COD vs chuyển khoản theo tháng
+ *
+ * Tên module:    Admin Dashboard
+ * Module liên quan: lib/api.ts, recharts, lucide-react
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";

@@ -1,4 +1,30 @@
-"use client";
+﻿"use client";
+
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      home.tsx
+ * Mục đích:      Component trang chủ — hiển thị hero banner, danh mục thể loại,
+ *                các kệ sách (mới nhất, đang giảm giá, bán chạy) với infinite
+ *                scroll slider và banner flash sale.
+ * Các chức năng chính:
+ *   - Hero section với thống kê tổng quan (số sách, thể loại, freeship)
+ *   - Grid thể loại sách với icon và số lượng sách mỗi loại
+ *   - InfiniteShelf: slider vô hạn cho sách mới nhất và đang giảm giá
+ *   - BestsellerCard: danh sách top 10 sách bán chạy dạng rank
+ *   - ShelfCard: card sách với badge (new/sale/hot) và nút thêm giỏ
+ *   - Toast notification khi thêm vào giỏ thành công
+ *
+ * Tên module:    Home Page
+ * Module liên quan: lib/api.ts, lib/cart.ts, lib/bookImage.ts
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";

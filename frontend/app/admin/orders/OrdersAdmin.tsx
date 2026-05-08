@@ -1,5 +1,31 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      OrdersAdmin.tsx
+ * Mục đích:      Trang quản lý đơn hàng trong khu vực admin — cho phép xem,
+ *                tạo mới, chỉnh sửa, xóa đơn hàng và cập nhật trạng thái nhanh.
+ * Các chức năng chính:
+ *   - Hiển thị danh sách đơn hàng với tìm kiếm, lọc theo trạng thái/thanh toán
+ *   - Xem chi tiết đơn hàng kèm danh sách sản phẩm và thông tin giao hàng
+ *   - Tạo đơn hàng mới thay mặt khách hàng (dùng EntityPicker)
+ *   - Chỉnh sửa thông tin đơn hàng (trạng thái, địa chỉ, phí ship, v.v.)
+ *   - Cập nhật nhanh trạng thái đơn hàng từ modal chi tiết
+ *   - Xóa đơn hàng vĩnh viễn
+ *
+ * Tên module:    Admin Order Management
+ * Module liên quan: lib/api.ts, _components/EntityPicker.tsx, lib/bookImage.ts,
+ *                   routes/admin.js (backend)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { EntityPicker } from "../_components/EntityPicker";
@@ -19,6 +45,11 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "refunded", label: "Đã hoàn tiền" },
 ];
 
+/**
+ * @component AdminOrdersPage
+ * @description Trang quản lý đơn hàng trong khu vực admin.
+ *              Cung cấp giao diện đầy đủ để quản lý vòng đời đơn hàng.
+ */
 export function AdminOrdersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -46,6 +77,12 @@ export function AdminOrdersPage() {
     lines: [{ book_id: "", quantity: 1 }]
   });
 
+  /**
+   * Tải danh sách đơn hàng từ API với các tham số lọc và sắp xếp hiện tại.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function load() {
     setLoading(true);
     setError(null);
@@ -80,6 +117,13 @@ export function AdminOrdersPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy, filterStatus, filterPayment]);
 
+  /**
+   * Mở modal xem chi tiết đơn hàng kèm danh sách sản phẩm.
+   *
+   * @async
+   * @param {number} orderId - ID của đơn hàng cần xem chi tiết.
+   * @returns {Promise<void>}
+   */
   async function openDetail(orderId: number) {
     try {
       const res = await apiFetch<{ item: any }>(`/admin/orders/${orderId}`);
@@ -106,6 +150,12 @@ export function AdminOrdersPage() {
     setModalMode("edit");
   }
 
+  /**
+   * Lưu các thay đổi chỉnh sửa đơn hàng.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function handleSaveEdit() {
     setSaving(true);
     setSaveError(null);
@@ -123,6 +173,14 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Xóa đơn hàng vĩnh viễn sau khi xác nhận.
+   *
+   * @async
+   * @param {number} orderId   - ID của đơn hàng cần xóa.
+   * @param {string} orderCode - Mã đơn hàng để hiển thị trong confirm dialog.
+   * @returns {Promise<void>}
+   */
   async function deleteOrder(orderId: number, orderCode: string) {
     if (!window.confirm(`Xóa vĩnh viễn đơn hàng "${orderCode}"?\nHành động này không thể hoàn tác.`)) return;
     try {
@@ -134,6 +192,15 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Cập nhật nhanh một trường của đơn hàng (ví dụ: status, payment_status).
+   * Dùng cho các thao tác nhanh từ modal chi tiết mà không cần mở form chỉnh sửa.
+   *
+   * @async
+   * @param {number} orderId - ID của đơn hàng cần cập nhật.
+   * @param {object} patch   - Object chứa các trường cần cập nhật.
+   * @returns {Promise<void>}
+   */
   async function quickPatch(orderId: number, patch: any) {
     try {
       await apiFetch(`/admin/orders/${orderId}`, {
@@ -149,6 +216,13 @@ export function AdminOrdersPage() {
     }
   }
 
+  /**
+   * Xử lý submit form tạo đơn hàng mới từ phía admin.
+   * Validate danh sách sản phẩm trước khi gọi API.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function handleAddSubmit() {
     setSaving(true);
     setSaveError(null);

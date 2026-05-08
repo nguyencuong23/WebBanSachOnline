@@ -1,9 +1,40 @@
 "use client";
 
+/**
+ * ============================================================================
+ * CHÚ THÍCH FILE & MODULE
+ * ============================================================================
+ * Tên file:      NotificationsAdmin.tsx
+ * Mục đích:      Trang quản lý thông báo trong khu vực admin — cho phép gửi,
+ *                xem chi tiết, chỉnh sửa và xóa thông báo đến người dùng.
+ * Các chức năng chính:
+ *   - Hiển thị danh sách thông báo với tìm kiếm và sắp xếp
+ *   - Gửi thông báo mới: đến tất cả user hoặc chọn người dùng cụ thể
+ *   - Hỗ trợ đính kèm ảnh (upload lên Storage)
+ *   - Chỉnh sửa nội dung thông báo đã gửi
+ *   - Xem chi tiết thông báo kèm danh sách người nhận
+ *   - Xóa thông báo (thu hồi khỏi người nhận)
+ *
+ * Tên module:    Admin Notification Management
+ * Module liên quan: lib/api.ts, _components/EntityPicker.tsx, routes/admin.js (backend)
+ *
+ * Phiên bản:     1.0.0
+ * Tác giả:       Nguyễn Mạnh Cường
+ * Ngày tạo:      2026-05-07
+ * Ngày cập nhật: 2026-05-07
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { EntityPicker } from "../_components/EntityPicker";
 
+/**
+ * @component NotificationsAdmin
+ * @description Trang quản lý thông báo trong khu vực admin.
+ *              Cho phép gửi thông báo đến tất cả hoặc người dùng cụ thể,
+ *              kèm hỗ trợ đính kèm ảnh và quản lý lịch sử thông báo.
+ */
 export function NotificationsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -30,6 +61,12 @@ export function NotificationsAdmin() {
   const [detailRecipients, setDetailRecipients] = useState<any[]>([]);
   const [loadingRecipients, setLoadingRecipients] = useState(false);
 
+  /**
+   * Tải danh sách thông báo từ API với tham số tìm kiếm và sắp xếp hiện tại.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function load() {
     setLoading(true);
     setError(null);
@@ -65,6 +102,14 @@ export function NotificationsAdmin() {
     setModalMode("add");
   }
 
+  /**
+   * Mở modal xem chi tiết thông báo.
+   * Nếu thông báo gửi cho người dùng cụ thể, tải thêm thông tin profile của họ.
+   *
+   * @async
+   * @param {number} id - ID của thông báo cần xem chi tiết.
+   * @returns {Promise<void>}
+   */
   async function openDetail(id: number) {
     try {
       const res = await apiFetch<{ item: any }>(`/admin/notifications/${id}`);
@@ -107,6 +152,13 @@ export function NotificationsAdmin() {
     setModalMode("edit");
   }
 
+  /**
+   * Xử lý submit form gửi thông báo mới.
+   * Validate dữ liệu và gọi API để tạo thông báo.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function handleAddSubmit() {
     setSaving(true);
     setSaveError(null);
@@ -134,6 +186,13 @@ export function NotificationsAdmin() {
     }
   }
 
+  /**
+   * Xử lý submit form chỉnh sửa thông báo.
+   * Cập nhật nội dung thông báo đã gửi (áp dụng cho tất cả người nhận).
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function handleEditSubmit() {
     setSaving(true);
     setSaveError(null);
@@ -154,6 +213,13 @@ export function NotificationsAdmin() {
     }
   }
 
+  /**
+   * Xóa thông báo và thu hồi khỏi người nhận sau khi xác nhận.
+   *
+   * @async
+   * @param {number} id - ID của thông báo cần xóa.
+   * @returns {Promise<void>}
+   */
   async function deleteNotif(id: number) {
     if (!window.confirm(`Xóa lịch sử thông báo này và thu hồi khỏi người nhận?`)) return;
     try {

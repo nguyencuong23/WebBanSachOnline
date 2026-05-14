@@ -52,7 +52,7 @@ categoriesRouter.get("/categories", async (req, res) => {
   const jwt = (req.header("authorization") || "").replace(/^Bearer\s+/i, "");
   const sb = jwt ? createSupabaseUser(jwt) : createSupabaseAnon();
 
-  let q = sb.from("categories").select("*");
+  let q = sb.from("categories").select("*, books(count)");
 
   if (search) {
     if (searchBy === "all") {

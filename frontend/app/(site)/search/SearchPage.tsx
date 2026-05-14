@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -55,6 +55,7 @@ interface Book {
 interface Category {
   category_id: string;
   name: string;
+  books?: { count: number }[];
 }
 
 const PAGE_SIZE = 20;
@@ -396,12 +397,16 @@ export function SearchPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Category counts
+  // Category counts (từ backend trả về)
   const catCounts = useMemo(() => {
     const map: Record<string, number> = {};
-    allBooks.forEach(b => { map[b.category_id] = (map[b.category_id] || 0) + 1; });
+    categories.forEach(c => { map[c.category_id] = c.books?.[0]?.count || 0; });
     return map;
-  }, [allBooks]);
+  }, [categories]);
+
+  const totalBooksCount = useMemo(() => {
+    return Object.values(catCounts).reduce((a, b) => a + b, 0);
+  }, [catCounts]);
 
   // Active filter tags
   const activeTags = useMemo(() => {
@@ -550,7 +555,7 @@ export function SearchPage() {
                     onClick={() => { setCategoryId(""); setPage(1); }}
                   >
                     <span>Tất cả</span>
-                    <span className="cat-count">{allBooks.length}</span>
+                    <span className="cat-count">{totalBooksCount}</span>
                   </button>
                   {categories.map(cat => (
                     <button

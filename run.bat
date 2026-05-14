@@ -63,8 +63,6 @@ if errorlevel 1 (
   exit /b 1
 )
 
-start "Smee Webhook Proxy" cmd /c "echo Dang doi he thong khoi dong... && timeout /t 10 >nul && echo Dang ket noi Webhook... && docker compose exec api npx smee-client -u https://smee.io/umUYvz7hjnV73Z7i -t http://localhost:4000/hooks/sepay-payment"
-
 echo.
 echo Started successfully:
 echo - Web: http://localhost:8080

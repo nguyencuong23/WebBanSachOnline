@@ -104,6 +104,10 @@ settingsRouter.post("/admin/settings/upload-image", requireUser, requireAdmin, a
   const body = schema.parse(req.body ?? {});
 
   const sb = createSupabaseAdmin();
+
+  // Lấy URL cũ từ database để có thể xóa file cũ sau khi upload file mới
+  const { data: oldSetting } = await sb.from("settings").select("value").eq("key", body.key).single();
+
   // Xóa Data URL prefix nếu có (ví dụ: "data:image/png;base64,")
   const base64Data = body.base64.replace(/^data:image\/\w+;base64,/, "");
   const buffer = Buffer.from(base64Data, "base64");
@@ -118,5 +122,24 @@ settingsRouter.post("/admin/settings/upload-image", requireUser, requireAdmin, a
   assert(!error, 400, "Lỗi upload ảnh", "upload_failed", error?.message);
 
   const { data: publicUrlData } = sb.storage.from("web-images").getPublicUrl(fileName);
-  res.json({ url: publicUrlData.publicUrl });
+  const newUrl = publicUrlData.publicUrl;
+
+  // Nếu có ảnh cũ trong bucket web-images, tiến hành xóa để giải phóng dung lượng
+  if (oldSetting && oldSetting.value && typeof oldSetting.value === "string") {
+    const match = oldSetting.value.match(/\/web-images\/(.+)$/);
+    if (match && match[1]) {
+      const oldFileName = match[1];
+      // Xóa file cũ nhưng không ném lỗi nếu thất bại (tránh làm gián đoạn luồng)
+      await sb.storage.from("web-images").remove([oldFileName]).catch(() => {});
+    }
+  }
+
+  // Cập nhật ngay giá trị mới vào database để áp dụng ngay lập tức trên web
+  await sb.from("settings").upsert({
+    key: body.key,
+    value: newUrl,
+    updated_at: new Date().toISOString()
+  });
+
+  res.json({ url: newUrl });
 });

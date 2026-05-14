@@ -2857,6 +2857,53 @@
           }
         }
       }
+    },
+    "/hooks/sepay-payment": {
+      "post": {
+        "summary": "Webhook nhận thông báo thanh toán từ SePay",
+        "tags": [
+          "Payment"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Key cấu hình trên SePay (định dạng: Apikey <KEY>)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Nội dung chuyển khoản (chứa mã đơn hàng bắt đầu bằng BP)"
+                  },
+                  "transferAmount": {
+                    "type": "number",
+                    "description": "Số tiền được nhận vào tài khoản"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook được xử lý (trả về 200 ngay cả khi không khớp mã đơn để SePay không gọi lại)"
+          },
+          "401": {
+            "description": "Sai API Key hoặc không có API Key"
+          }
+        }
+      }
     }
   }
 }

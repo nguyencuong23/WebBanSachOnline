@@ -28,5 +28,5 @@ if errorlevel 1 (
 )
 
 echo Starting DEV API + DEV Web (hot reload)...
+start "Smee Webhook Proxy" cmd /c "echo Dang doi he thong khoi dong... && timeout /t 10 >nul && echo Dang ket noi Webhook... && docker compose -f docker-compose.dev.yml exec api npx smee-client -u https://smee.io/umUYvz7hjnV73Z7i -t http://localhost:4000/hooks/sepay-payment"
 docker compose -f docker-compose.dev.yml up
-

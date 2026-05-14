@@ -14,6 +14,8 @@ export function OrderDetailsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bankId, setBankId] = useState("MB");
+  const [bankAccount, setBankAccount] = useState("123456789");
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
@@ -21,17 +23,47 @@ export function OrderDetailsPage() {
     fetchOrder();
   }, [code]);
 
-  const fetchOrder = () => {
+  useEffect(() => {
+    // Nếu chưa load xong, hoặc không có đơn hàng, hoặc không phải chuyển khoản, hoặc đã thanh toán thì bỏ qua
+    if (!data?.order || data.order.payment_method !== "bank_transfer" || data.order.payment_status === "paid") return;
+
+    // Tự động kiểm tra trạng thái đơn hàng mỗi 3 giây để phát hiện thanh toán
+    const interval = setInterval(() => {
+      apiFetch(`/orders/${code}`).then((res) => {
+        if (res.order && res.order.payment_status === "paid") {
+          setData(res); // Cập nhật lại UI
+          clearInterval(interval);
+        }
+      }).catch(() => {});
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [data?.order?.payment_status, data?.order?.payment_method, code]);
+
+  const fetchOrder = async () => {
     setLoading(true);
-    apiFetch(`/orders/${code}`)
-      .then((res) => {
-        setData(res);
-        setLoading(false);
-      })
-      .catch((e: any) => {
-        setError(e.message || String(e));
-        setLoading(false);
-      });
+    try {
+      const [orderRes, settingsRes] = await Promise.allSettled([
+        apiFetch(`/orders/${code}`),
+        apiFetch<{ items: any[] }>("/settings"),
+      ]);
+
+      if (orderRes.status === "fulfilled") {
+        setData(orderRes.value);
+      } else {
+        setError(orderRes.reason?.message || "Lỗi tải đơn hàng");
+      }
+
+      if (settingsRes.status === "fulfilled") {
+        const getSet = (k: string) => settingsRes.value.items?.find((x: any) => x.key === k)?.value;
+        setBankId(getSet("BankId") || "MB");
+        setBankAccount(getSet("BankAccount") || "123456789");
+      }
+    } catch (e: any) {
+      setError(e.message || String(e));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = async () => {
@@ -68,7 +100,7 @@ export function OrderDetailsPage() {
   }
 
   const { order, items } = data;
-  
+
   const steps = [
     { key: "pending", label: "Chờ xác nhận", icon: "fa-clock" },
     { key: "confirmed", label: "Đã xác nhận", icon: "fa-check" },
@@ -94,7 +126,7 @@ export function OrderDetailsPage() {
             let statusClass = "";
             if (index < currentStepIndex) statusClass = "completed";
             else if (index === currentStepIndex) statusClass = "active";
-            
+
             return (
               <div key={step.key} className={`timeline-step ${statusClass}`}>
                 <div className="step-icon">
@@ -130,14 +162,30 @@ export function OrderDetailsPage() {
             Phương thức: <strong>{order.payment_method === "cod" ? "Thanh toán khi nhận hàng (COD)" : "Chuyển khoản ngân hàng"}</strong>
           </div>
           <div className="d-flex align-items-center gap-2">
-            Trạng thái: 
+            Trạng thái:
             <span className={`payment-badge payment-${order.payment_status}`}>
-              {order.payment_status === "unpaid" ? "Chưa thanh toán" : 
-               order.payment_status === "paid" ? "Đã thanh toán" :
-               order.payment_status === "refunded" ? "Đã hoàn tiền" : 
-               order.payment_status === "pending_confirmation" ? "Chờ xác nhận" : order.payment_status}
+              {order.payment_status === "unpaid" ? "Chưa thanh toán" :
+                order.payment_status === "paid" ? "Đã thanh toán" :
+                  order.payment_status === "refunded" ? "Đã hoàn tiền" :
+                    order.payment_status === "pending_confirmation" ? "Chờ xác nhận" : order.payment_status}
             </span>
           </div>
+          {order.payment_method === "bank_transfer" && order.payment_status === "unpaid" && (
+            <div className="mt-3 text-center border rounded p-3 bg-white shadow-sm">
+              <h5 className="text-primary mb-2"><i className="fas fa-qrcode me-2" />Quét QR để thanh toán</h5>
+              <p className="small text-muted mb-2">Đơn hàng của bạn đã được ghi nhận. Vui lòng quét mã bên dưới để thanh toán số tiền <strong>{Number(order.total).toLocaleString()}đ</strong></p>
+              <img
+                src={`https://img.vietqr.io/image/${bankId}-${bankAccount}-compact2.png?amount=${order.total}&addInfo=${order.order_code}`}
+                alt="VietQR"
+                style={{ width: "200px", height: "200px", objectFit: "contain" }}
+              />
+              <div className="alert alert-info mt-3 small text-start mb-0">
+                <i className="fas fa-info-circle me-1" />
+                Nội dung chuyển khoản: <strong>{order.order_code}</strong><br/>
+                <span className="text-success"><i className="fas fa-spinner fa-spin me-1" /> Hệ thống đang tự động theo dõi giao dịch...</span>
+              </div>
+            </div>
+          )}
         </div>
         <div className="info-box">
           <h4><i className="fas fa-info-circle me-2" /> Ghi chú</h4>
@@ -165,8 +213,8 @@ export function OrderDetailsPage() {
                 <tr key={it.order_item_id}>
                   <td className="px-4">
                     <div className="d-flex align-items-center gap-3">
-                      <img 
-                        src={getBookImageUrl(it.books?.image_url, it.books?.category_id) || "https://placehold.co/100x150?text=No+Image"} 
+                      <img
+                        src={getBookImageUrl(it.books?.image_url, it.books?.category_id) || "https://placehold.co/100x150?text=No+Image"}
                         alt={it.books?.title}
                         className="rounded"
                         style={{ width: "40px", height: "60px", objectFit: "cover" }}
@@ -217,8 +265,8 @@ export function OrderDetailsPage() {
           Quay lại danh sách
         </Link>
         {order.status === "pending" && (
-          <button 
-            className="btn btn-danger px-4 rounded-pill" 
+          <button
+            className="btn btn-danger px-4 rounded-pill"
             onClick={handleCancel}
             disabled={cancelling}
           >

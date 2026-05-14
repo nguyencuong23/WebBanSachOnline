@@ -29,7 +29,7 @@ export function OrderDetailsPage() {
 
     // Tự động kiểm tra trạng thái đơn hàng mỗi 3 giây để phát hiện thanh toán
     const interval = setInterval(() => {
-      apiFetch(`/orders/${code}`).then((res) => {
+      apiFetch(`/orders/${code}`).then((res: any) => {
         if (res.order && res.order.payment_status === "paid") {
           setData(res); // Cập nhật lại UI
           clearInterval(interval);

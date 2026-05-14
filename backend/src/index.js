@@ -50,6 +50,7 @@ import { cartRouter } from "./routes/cart.js";
 import { reviewsRouter } from "./routes/reviews.js";
 import { forgotPasswordRouter } from "./routes/forgot-password.js";
 import { chatRouter } from "./routes/chat.js";
+import { paymentRouter } from "./routes/payment.js";
 
 const app = express();
 
@@ -87,6 +88,7 @@ app.use(cartRouter);
 app.use(reviewsRouter);
 app.use(forgotPasswordRouter);
 app.use(chatRouter);
+app.use(paymentRouter);
 
 // Route kiểm tra nhanh API còn sống
 app.get("/", (req, res) => {

@@ -122,7 +122,7 @@ ordersRouter.patch("/orders/:orderId/cancel", requireUser, async (req, res) => {
     .select("status, user_id")
     .eq("order_id", orderId)
     .maybeSingle();
-  
+
   assert(!fErr, 400, "Failed to check order", "check_failed", fErr?.message);
   assert(order, 404, "Order not found", "not_found");
   assert(order.user_id === req.auth.user.id, 403, "You don't have permission to cancel this order", "forbidden");
@@ -132,7 +132,7 @@ ordersRouter.patch("/orders/:orderId/cancel", requireUser, async (req, res) => {
     .from("orders")
     .update({ status: "cancelled" })
     .eq("order_id", orderId);
-  
+
   assert(!uErr, 400, "Failed to cancel order", "cancel_failed", uErr?.message);
 
   // Hoàn trả tồn kho: duyệt từng sản phẩm trong đơn và cộng lại số lượng đã đặt.
@@ -256,14 +256,13 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
   // BƯỚC 6: Tính tổng tiền cuối cùng và sinh mã đơn hàng duy nhất.
   const total = subtotal + shipping_fee - discount;
   const now = new Date();
-  // Mã đơn hàng có dạng: BP + timestamp (YYYYMMDDHHmmss) + 3 chữ số ngẫu nhiên.
-  // Ví dụ: BP20260508143022847
-  const order_code = `BP${now.toISOString().slice(0, 19).replace(/[-:T]/g, "")}${Math.floor(
+  // Mã đơn hàng: Lấy từ frontend truyền lên (để quét QR trước) HOẶC tự tạo mới
+  const order_code = body.order_code || `BP${now.toISOString().slice(0, 19).replace(/[-:T]/g, "")}${Math.floor(
     100 + Math.random() * 900
   )}`;
 
-  // Đơn chuyển khoản được coi là đã thanh toán ngay; COD thì chưa.
-  const payment_status = body.payment_method === "bank_transfer" ? "paid" : "unpaid";
+  // Đơn hàng luôn ở trạng thái unpaid lúc mới tạo, webhook sẽ chuyển thành paid sau
+  const payment_status = "unpaid";
 
   // BƯỚC 7: Lưu đơn hàng vào database.
   const { data: order, error: oErr } = await sb
@@ -281,9 +280,7 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
       subtotal,
       shipping_fee,
       discount,
-      total,
-      voucher_code: appliedVoucherCode,
-      bank_transfer_reference: body.payment_method === "bank_transfer" ? body.bank_transfer_reference ?? null : null
+      total
     })
     .select("*")
     .maybeSingle();

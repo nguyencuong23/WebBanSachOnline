@@ -41,7 +41,8 @@ const EXPECTED_SETTINGS = [
 
   { key: "DefaultShippingFee", label: "Phí giao hàng mặc định (VNĐ)", type: "number", tab: "sales" },
   { key: "FreeShippingThreshold", label: "Mua trên bao nhiêu thì Freeship (VNĐ)", type: "number", tab: "sales" },
-  { key: "BankTransferInfo", label: "Ảnh QR chuyển khoản ngân hàng", type: "image", tab: "sales" },
+  { key: "BankId", label: "Mã ngân hàng (Ví dụ: MB, VCB, ACB...)", type: "text", tab: "sales" },
+  { key: "BankAccount", label: "Số tài khoản nhận tiền", type: "text", tab: "sales" },
 
   { key: "Hotline", label: "Số điện thoại Hotline", type: "text", tab: "contact" },
   { key: "SupportEmail", label: "Email hỗ trợ", type: "text", tab: "contact" },

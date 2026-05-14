@@ -80,4 +80,6 @@ export const env = {
   gmailAppPassword: process.env.GMAIL_APP_PASSWORD || "",
   // API key của Groq để chạy tính năng chat AI (tùy chọn)
   groqApiKey: process.env.GROQ_API_KEY || "",
+  // API key để xác thực Webhook gửi từ SePay
+  sepayApiKey: process.env.SEPAY_API_KEY || "",
 };

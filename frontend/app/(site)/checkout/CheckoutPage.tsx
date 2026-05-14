@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -58,31 +58,39 @@ export function CheckoutPage() {
   const searchParams = useSearchParams();
 
   const buyNowBookId = searchParams.get("book_id");
-  const buyNowQty   = Math.max(1, Number(searchParams.get("qty") || 1));
-  const isBuyNow    = !!buyNowBookId;
+  const buyNowQty = Math.max(1, Number(searchParams.get("qty") || 1));
+  const isBuyNow = !!buyNowBookId;
 
-  const [items, setItems]               = useState<CartItem[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState<string | null>(null);
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [receiverName, setReceiverName]         = useState("");
-  const [receiverPhone, setReceiverPhone]       = useState("");
-  const [shippingAddress, setShippingAddress]   = useState("");
-  const [note, setNote]                         = useState("");
-  const [paymentMethod, setPaymentMethod]       = useState("cod");
+  const [receiverName, setReceiverName] = useState("");
+  const [receiverPhone, setReceiverPhone] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [note, setNote] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cod");
 
-  const [bankTransferInfo, setBankTransferInfo]         = useState("");
-  const [defaultShippingFee, setDefaultShippingFee]     = useState(30000);
+  const [bankId, setBankId] = useState("MB");
+  const [bankAccount, setBankAccount] = useState("123456789");
+  const [defaultShippingFee, setDefaultShippingFee] = useState(30000);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(300000);
 
   // Voucher state
-  const [voucherInput, setVoucherInput]     = useState("");
-  const [voucherResult, setVoucherResult]   = useState<VoucherResult | null>(null);
-  const [voucherError, setVoucherError]     = useState<string | null>(null);
+  const [voucherInput, setVoucherInput] = useState("");
+  const [voucherResult, setVoucherResult] = useState<VoucherResult | null>(null);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
   const [voucherLoading, setVoucherLoading] = useState(false);
   const voucherInputRef = useRef<HTMLInputElement>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [preOrderCode, setPreOrderCode] = useState("");
+
+  useEffect(() => {
+    const now = new Date();
+    const code = `BP${now.toISOString().slice(0, 19).replace(/[-:T]/g, "")}${Math.floor(100 + Math.random() * 900)}`;
+    setPreOrderCode(code);
+  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -102,7 +110,8 @@ export function CheckoutPage() {
 
         if (settingsRes.status === "fulfilled") {
           const getSet = (k: string) => settingsRes.value.items?.find((x: any) => x.key === k)?.value;
-          setBankTransferInfo(getSet("BankTransferInfo") || "");
+          setBankId(getSet("BankId") || "MB");
+          setBankAccount(getSet("BankAccount") || "123456789");
           setDefaultShippingFee(Number(getSet("DefaultShippingFee") || 30000));
           setFreeShippingThreshold(Number(getSet("FreeShippingThreshold") || 300000));
         }
@@ -150,7 +159,7 @@ export function CheckoutPage() {
     : defaultShippingFee;
 
   const discount = voucherResult?.discount ?? 0;
-  const total    = subtotal + shippingFee - discount;
+  const total = subtotal + shippingFee - discount;
 
   // ── Áp dụng voucher ────────────────────────────────────────────────────────
   async function handleApplyVoucher() {
@@ -193,7 +202,7 @@ export function CheckoutPage() {
       ? Math.min(rawDiscount, voucherResult.max_discount_amount)
       : rawDiscount;
     setVoucherResult(prev => prev ? { ...prev, discount: newDiscount } : null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subtotal]);
 
   // ── Submit ─────────────────────────────────────────────────────────────────
@@ -212,6 +221,7 @@ export function CheckoutPage() {
           note: note || undefined,
           voucher_code: voucherResult?.code || undefined,
           lines: items.map((x) => ({ book_id: x.book_id, quantity: x.quantity })),
+          order_code: preOrderCode,
         }),
       });
       router.push(`/user/orders/${res.order_code}`);
@@ -354,21 +364,8 @@ export function CheckoutPage() {
                   {paymentMethod === "bank_transfer" && (
                     <div className="co-bank-info">
                       <p className="co-bank-desc">
-                        Vui lòng chuyển khoản số tiền{" "}
-                        <strong style={{ color: "#dc2626" }}>{fmt(total)}</strong> theo thông tin bên dưới.
+                        Sau khi bấm <strong>Đặt hàng</strong>, hệ thống sẽ tạo đơn và cung cấp <strong>Mã QR</strong> để bạn quét thanh toán ở trang tiếp theo.
                       </p>
-                      {bankTransferInfo ? (
-                        <img src={bankTransferInfo} alt="QR thanh toán" className="co-qr-img" />
-                      ) : (
-                        <div className="co-qr-placeholder">
-                          <i className="fas fa-qrcode" />
-                          <span>Chưa cấu hình QR Code</span>
-                        </div>
-                      )}
-                      <div className="co-bank-note">
-                        <i className="fas fa-info-circle" />
-                        Hệ thống thử nghiệm: Nhấn xác nhận là đơn hàng sẽ được đánh dấu đã thanh toán.
-                      </div>
                     </div>
                   )}
                 </div>
@@ -522,17 +519,10 @@ export function CheckoutPage() {
                 >
                   {isSubmitting ? (
                     <><i className="fas fa-spinner fa-spin" /> Đang xử lý...</>
-                  ) : paymentMethod === "bank_transfer" ? (
-                    <><i className="fas fa-check-circle" /> Xác nhận đã thanh toán</>
                   ) : (
-                    <><i className="fas fa-paper-plane" /> Đặt hàng (COD)</>
+                    <><i className="fas fa-paper-plane" /> Đặt hàng</>
                   )}
                 </button>
-
-                <p className="co-terms">
-                  Bằng cách đặt hàng, bạn đồng ý với{" "}
-                  <a href="#">điều khoản sử dụng</a> của chúng tôi.
-                </p>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -32,6 +32,7 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { addToCart } from "@/lib/cart";
 import { getBookImageUrl } from "@/lib/bookImage";
+import { useLoading } from "./_components/LoadingContext";
 import "./home.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -325,6 +326,7 @@ function InfiniteShelf({
 
 export function HomePage() {
   const router = useRouter();
+  const { setIsPageLoading } = useLoading();
 
   const [latestBooks, setLatestBooks]         = useState<Book[]>([]);
   const [featuredBooks, setFeaturedBooks]     = useState<Book[]>([]);
@@ -339,6 +341,7 @@ export function HomePage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setIsPageLoading(true);
       try {
         const [latestRes, featuredRes, bestRes, catRes, allBooksRes, settingsRes] = await Promise.allSettled([
           apiFetch<{ items: Book[] }>("/books/latest?limit=12"),
@@ -368,9 +371,13 @@ export function HomePage() {
         }
       } finally {
         setLoading(false);
+        setIsPageLoading(false);
       }
     }
     load();
+    return () => {
+      setIsPageLoading(false);
+    };
   }, []);
 
   function showToast(msg: string) {
@@ -390,6 +397,10 @@ export function HomePage() {
     } else {
       router.push("/search");
     }
+  }
+
+  if (loading) {
+    return null;
   }
 
   const totalBooks = Object.values(catCounts).reduce((a, b) => a + b, 0);
@@ -520,36 +531,28 @@ export function HomePage() {
             </Link>
           </div>
 
-          {loading ? (
-            <div className="categories-grid">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="home-skeleton" style={{ height: 110, borderRadius: 18 }} />
-              ))}
-            </div>
-          ) : (
-            <div className="categories-grid categories-grid-2rows">
-              {categories.map((cat) => {
-                const meta = getCatMeta(cat.category_id);
-                const count = catCounts[cat.category_id] || 0;
-                return (
-                  <Link
-                    key={cat.category_id}
-                    href={`/search?cat=${cat.category_id}`}
-                    className="category-card"
+          <div className="categories-grid categories-grid-2rows">
+            {categories.map((cat) => {
+              const meta = getCatMeta(cat.category_id);
+              const count = catCounts[cat.category_id] || 0;
+              return (
+                <Link
+                  key={cat.category_id}
+                  href={`/search?cat=${cat.category_id}`}
+                  className="category-card"
+                >
+                  <div
+                    className="category-icon-wrap"
+                    style={{ background: meta.bg, color: meta.color }}
                   >
-                    <div
-                      className="category-icon-wrap"
-                      style={{ background: meta.bg, color: meta.color }}
-                    >
-                      <i className={`fas ${meta.icon}`} />
-                    </div>
-                    <div className="category-name">{cat.name}</div>
-                    {count > 0 && <div className="category-count">{count} cuốn</div>}
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+                    <i className={`fas ${meta.icon}`} />
+                  </div>
+                  <div className="category-name">{cat.name}</div>
+                  {count > 0 && <div className="category-count">{count} cuốn</div>}
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -568,9 +571,7 @@ export function HomePage() {
             </Link>
           </div>
 
-          {loading ? (
-            <ShelfSkeleton />
-          ) : latestBooks.length === 0 ? (
+          {latestBooks.length === 0 ? (
             <p style={{ color: "#9ca3af", textAlign: "center", padding: "40px 0" }}>Chưa có sách nào.</p>
           ) : (
             <InfiniteShelf books={latestBooks} badge="new" onAddCart={handleAddCart} />
@@ -594,7 +595,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {(loading || featuredBooks.length > 0) && (
+      {featuredBooks.length > 0 && (
         <section className="home-section home-section-alt">
           <div className="container">
             <div className="home-section-header">
@@ -610,11 +611,7 @@ export function HomePage() {
               </Link>
             </div>
 
-            {loading ? (
-              <ShelfSkeleton />
-            ) : (
-              <InfiniteShelf books={featuredBooks} badge="sale" onAddCart={handleAddCart} />
-            )}
+            <InfiniteShelf books={featuredBooks} badge="sale" onAddCart={handleAddCart} />
           </div>
         </section>
       )}
@@ -634,13 +631,7 @@ export function HomePage() {
             </Link>
           </div>
 
-          {loading ? (
-            <div className="bestsellers-grid">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="home-skeleton" style={{ height: 120, borderRadius: 16 }} />
-              ))}
-            </div>
-          ) : bestsellerBooks.length === 0 ? (
+          {bestsellerBooks.length === 0 ? (
             <p style={{ color: "#9ca3af", textAlign: "center", padding: "40px 0" }}>Chưa có dữ liệu.</p>
           ) : (
             <div className="bestsellers-grid bestsellers-grid-2rows">

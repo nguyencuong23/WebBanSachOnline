@@ -27,12 +27,13 @@
  * ============================================================================
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { addToCart } from "@/lib/cart";
 import { getBookImageUrl } from "@/lib/bookImage";
+import { useLoading } from "../_components/LoadingContext";
 import "./search.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -313,6 +314,8 @@ function BookModal({ book, onClose, onAddCart }: {
 export function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setIsPageLoading } = useLoading();
+  const isFirstLoad = useRef(true);
 
   // Search state (from URL)
   const [q, setQ]               = useState(searchParams.get("q") || "");
@@ -349,15 +352,39 @@ export function SearchPage() {
     setPage(1);
   }, [searchParams]);
 
-  // Load categories once
+  // Load categories and initial books on mount
   useEffect(() => {
-    apiFetch<{ items: Category[] }>("/categories")
-      .then(r => setCategories(r.items || []))
-      .catch(() => {});
+    async function initLoad() {
+      setIsPageLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (q) { params.set("search", q); params.set("searchBy", searchBy); }
+        if (sort) params.set("sort", sort);
+        if (categoryId) params.set("category_id", categoryId);
+
+        const [catRes, booksRes] = await Promise.all([
+          apiFetch<{ items: Category[] }>("/categories").catch(() => ({ items: [] })),
+          apiFetch<{ items: Book[] }>(`/books?${params}`).catch(() => ({ items: [] }))
+        ]);
+
+        setCategories(catRes.items || []);
+        setAllBooks(booksRes.items || []);
+        setPage(1);
+      } finally {
+        setIsLoading(false);
+        setIsPageLoading(false);
+        isFirstLoad.current = false;
+      }
+    }
+    initLoad();
+    return () => {
+      setIsPageLoading(false);
+    };
   }, []);
 
-  // Load books when filters change
+  // Load books when filters change (subsequent loads)
   const fetchBooks = useCallback(async () => {
+    if (isFirstLoad.current) return;
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -473,6 +500,10 @@ export function SearchPage() {
         </button>
       </div>
     );
+  }
+
+  if (isLoading && isFirstLoad.current) {
+    return null;
   }
 
   return (

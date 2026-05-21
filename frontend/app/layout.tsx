@@ -25,6 +25,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { GlobalAuthLockGuard } from "./(site)/_components/GlobalAuthLockGuard";
+import { LoadingProvider } from "./(site)/_components/LoadingContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
@@ -88,7 +89,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="app-root">
-        <GlobalAuthLockGuard>{children}</GlobalAuthLockGuard>
+        <LoadingProvider>
+          <GlobalAuthLockGuard>{children}</GlobalAuthLockGuard>
+        </LoadingProvider>
       </body>
     </html>
   );

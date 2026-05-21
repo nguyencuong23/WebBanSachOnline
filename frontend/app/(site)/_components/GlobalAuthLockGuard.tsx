@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -31,6 +31,82 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getProfile, type Profile } from "@/lib/auth";
 import { useSiteSettings } from "../_hooks/useSiteSettings";
+import { useLoading } from "./LoadingContext";
+
+const PremiumLoadingOverlay = () => (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      backgroundColor: "rgba(15, 23, 42, 0.85)", // dark slate with transparency
+      backdropFilter: "blur(12px)", // glassmorphism
+      WebkitBackdropFilter: "blur(12px)",
+      zIndex: 999999,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      transition: "all 0.3s ease-in-out"
+    }}
+  >
+    <div className="text-center">
+      {/* Animated Book Icon */}
+      <div className="mb-4 position-relative" style={{ display: "inline-block" }}>
+        <i
+          className="fas fa-book-open text-warning"
+          style={{
+            fontSize: "4.5rem",
+            color: "#fbbf24", // elegant gold
+            filter: "drop-shadow(0 0 15px rgba(251, 191, 36, 0.6))",
+            animation: "book-pulse 2s infinite ease-in-out"
+          }}
+        />
+        {/* Subtle spinning glow/border */}
+        <div
+          style={{
+            position: "absolute",
+            inset: "-15px",
+            border: "2px solid transparent",
+            borderTopColor: "#fbbf24",
+            borderBottomColor: "#fbbf24",
+            borderRadius: "50%",
+            animation: "spin-slow 1.5s linear infinite"
+          }}
+        />
+      </div>
+      <h3
+        className="fw-bold text-white mb-2"
+        style={{
+          fontFamily: "'Outfit', 'Inter', sans-serif",
+          letterSpacing: "1px",
+          textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+          fontSize: "1.5rem"
+        }}
+      >
+        ĐANG TẢI DỮ LIỆU
+      </h3>
+      <p className="small mb-0" style={{ color: "#94a3b8", letterSpacing: "0.5px" }}>
+        Vui lòng chờ trong giây lát...
+      </p>
+    </div>
+    <style dangerouslySetInnerHTML={{ __html: `
+      @keyframes book-pulse {
+        0%, 100% {
+          transform: scale(1);
+          opacity: 0.9;
+        }
+        50% {
+          transform: scale(1.1) translateY(-5px);
+          opacity: 1;
+        }
+      }
+      @keyframes spin-slow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `}} />
+  </div>
+);
 
 const BYPASS_KEY = process.env.NEXT_PUBLIC_MAINTENANCE_BYPASS_KEY ?? "";
 
@@ -39,6 +115,7 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isPageLoading } = useLoading();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
@@ -136,13 +213,7 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
 
   // Chờ load xong mới render
   if (isSettingsLoading || isSessionLoading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100 bg-white">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Đang tải...</span>
-        </div>
-      </div>
-    );
+    return <PremiumLoadingOverlay />;
   }
 
   const isMaintenance = settings["MaintenanceMode"] === "true";
@@ -182,20 +253,17 @@ function GlobalAuthLockGuardInner({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {isPageLoading && <PremiumLoadingOverlay />}
+    </>
+  );
 }
 
 export function GlobalAuthLockGuard({ children }: { children: ReactNode }) {
   return (
-    <Suspense
-      fallback={
-        <div className="d-flex justify-content-center align-items-center vh-100 bg-white">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Đang tải...</span>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<PremiumLoadingOverlay />}>
       <GlobalAuthLockGuardInner>{children}</GlobalAuthLockGuardInner>
     </Suspense>
   );

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -407,7 +407,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault(); reset();
-    const id = loginId.trim().toLowerCase();
+    const id = loginId.replace(/\s+/g, '').toLowerCase();
     if (!id) { setFE("login_email", "Không được để trống."); return; }
     if (!loginPw) { setFE("login_password", "Không được để trống."); return; }
     setSubmitting(true);

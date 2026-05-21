@@ -252,7 +252,7 @@ export function AdminSettingsPage() {
             </div>
             <div className="d-flex justify-content-between mb-2">
               <span className="text-muted">Phiên bản</span>
-              <span className="fw-semibold">v1.1.0</span>
+              <span className="fw-semibold">v1.2</span>
             </div>
           </div>
         </div>

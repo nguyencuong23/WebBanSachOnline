@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -35,10 +35,12 @@ import { useSessionProfile } from "../_hooks/useSessionProfile";
 import { useSiteSettings } from "../_hooks/useSiteSettings";
 import { NotificationBell } from "./NotificationBell";
 import { ChatWidget } from "./ChatWidget";
+import { useLoading } from "./LoadingContext";
 
 export function MainSiteLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { setIsPageLoading } = useLoading();
   
   // Xóa userLabel vì chúng ta không dùng chữ "Khách" nữa
   const { email, profile, logout, isLoading } = useSessionProfile(); 
@@ -51,20 +53,26 @@ export function MainSiteLayout({ children }: { children: ReactNode }) {
   // State quản lý việc hiển thị dropdown khi hover
   const [showDropdown, setShowDropdown] = useState(false);
 
+  const isTryingToAccessProtected = ["/user/orders", "/cart", "/profile", "/checkout"].some((route) =>
+    pathname.startsWith(route)
+  );
+
+  const isAuthBlocked = !isLoading && !isLoggedIn && isTryingToAccessProtected;
+
   // --- LOGIC BẢO VỆ ROUTE ---
   // Nếu chưa đăng nhập mà cố tình vào các trang này, đẩy về /auth
   useEffect(() => {
     if (isLoading) return;
     
-    const protectedRoutes = ["/user/orders", "/cart", "/profile"];
-    const isTryingToAccessProtected = protectedRoutes.some((route) =>
-      pathname.startsWith(route)
-    );
-
-    if (!isLoggedIn && isTryingToAccessProtected) {
+    if (isAuthBlocked) {
+      setIsPageLoading(true);
       router.push(`/auth?redirect=${encodeURIComponent(pathname)}`);
     }
-  }, [isLoading, isLoggedIn, pathname, router]);
+  }, [isLoading, isAuthBlocked, pathname, router, setIsPageLoading]);
+
+  useEffect(() => {
+    setIsPageLoading(false);
+  }, [pathname, setIsPageLoading]);
 
   return (
     <>
@@ -174,7 +182,7 @@ export function MainSiteLayout({ children }: { children: ReactNode }) {
       </header>
 
       <main id="pageContent" className={`container-fluid px-0 ${isAuthPage ? "main-auth-page" : ""}`}>
-        {children}
+        {isAuthBlocked || isLoading ? null : children}
       </main>
 
       <ChatWidget />

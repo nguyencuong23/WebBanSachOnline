@@ -34,6 +34,7 @@ import { apiFetch } from "@/lib/api";
 import { addToCart } from "@/lib/cart";
 import { getBookImageUrl } from "@/lib/bookImage";
 import { ReviewsSection } from "./ReviewsSection";
+import { useLoading } from "../../_components/LoadingContext";
 import "./book-detail.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -100,6 +101,7 @@ function Skeleton() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function BookDetailPage({ bookId }: { bookId: string }) {
   const router = useRouter();
+  const { setIsPageLoading } = useLoading();
 
   const [book, setBook]           = useState<Book | null>(null);
   const [related, setRelated]     = useState<Book[]>([]);
@@ -180,6 +182,7 @@ export function BookDetailPage({ bookId }: { bookId: string }) {
   useEffect(() => {
     async function load() {
       setIsLoading(true);
+      setIsPageLoading(true);
       try {
         const [bookRes, settingsRes] = await Promise.all([
           apiFetch<{ item: Book }>(`/books/${bookId}`),
@@ -204,9 +207,13 @@ export function BookDetailPage({ bookId }: { bookId: string }) {
         if (e?.status === 404) setNotFound(true);
       } finally {
         setIsLoading(false);
+        setIsPageLoading(false);
       }
     }
     load();
+    return () => {
+      setIsPageLoading(false);
+    };
   }, [bookId]);
 
   function showToast(msg: string) {
@@ -236,7 +243,7 @@ export function BookDetailPage({ bookId }: { bookId: string }) {
     }
   }
 
-  if (isLoading) return <Skeleton />;
+  if (isLoading) return null;
 
   if (notFound || !book) {
     return (

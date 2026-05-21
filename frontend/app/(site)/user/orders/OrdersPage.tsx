@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -26,27 +26,35 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { useLoading } from "../../_components/LoadingContext";
 import "./orders.css";
 
 export function OrdersPage() {
+  const { setIsPageLoading } = useLoading();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
+    return () => {
+      setIsPageLoading(false);
+    };
   }, []);
 
   const fetchOrders = () => {
     setLoading(true);
+    setIsPageLoading(true);
     apiFetch<{ items: any[] }>("/orders")
       .then((r) => {
         setItems(r.items);
         setLoading(false);
+        setIsPageLoading(false);
       })
       .catch((e) => {
         setError(String(e.message || e));
         setLoading(false);
+        setIsPageLoading(false);
       });
   };
 
@@ -106,14 +114,7 @@ export function OrdersPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container py-5 text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Đang tải...</span>
-        </div>
-        <p className="mt-3 text-muted">Đang tải danh sách đơn hàng...</p>
-      </div>
-    );
+    return null;
   }
 
   return (

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -28,6 +28,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { getBookImageUrl } from "@/lib/bookImage";
+import { useLoading } from "../_components/LoadingContext";
 import Link from "next/link";
 import "./cart.css";
 
@@ -55,6 +56,7 @@ interface CartItem {
 
 export function CartPage() {
   const router = useRouter();
+  const { setIsPageLoading } = useLoading();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,7 @@ export function CartPage() {
   const fetchCart = useCallback(async () => {
     try {
       setLoading(true);
+      setIsPageLoading(true);
       setError(null);
       const res = await apiFetch<{ items: CartItem[] }>("/cart");
       setItems(res.items || []);
@@ -71,10 +74,16 @@ export function CartPage() {
       setError((e as Error).message || "Không thể tải giỏ hàng.");
     } finally {
       setLoading(false);
+      setIsPageLoading(false);
     }
-  }, []);
+  }, [setIsPageLoading]);
 
-  useEffect(() => { fetchCart(); }, [fetchCart]);
+  useEffect(() => {
+    fetchCart();
+    return () => {
+      setIsPageLoading(false);
+    };
+  }, [fetchCart, setIsPageLoading]);
 
   const unitPrice = (item: CartItem) =>
     item.books?.is_on_sale && item.books?.sale_price
@@ -129,16 +138,7 @@ export function CartPage() {
   }
 
   if (loading) {
-    return (
-      <div className="cart-page">
-        <div className="cart-container">
-          <div className="cart-loading">
-            <div className="cart-spinner" />
-            <p>Đang tải giỏ hàng...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (error) {

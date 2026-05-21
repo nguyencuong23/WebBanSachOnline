@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -28,6 +28,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { getAvatarUrl } from "@/lib/avatar";
+import { useLoading } from "../_components/LoadingContext";
 import "./profile.css";
 
 const FULL_NAME_REGEX = /^[\p{L}](?:[\p{L}\s'.-]{0,98}[\p{L}])?$/u;
@@ -36,6 +37,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,64}$/;
 
 export function ProfilePage() {
+  const { setIsPageLoading } = useLoading();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +69,7 @@ export function ProfilePage() {
 
   const fetchProfile = async () => {
     setLoading(true);
+    setIsPageLoading(true);
     try {
       const res = await apiFetch<{ profile: any }>("/me");
       setProfile(res.profile);
@@ -80,11 +83,15 @@ export function ProfilePage() {
       setError(e.message || String(e));
     } finally {
       setLoading(false);
+      setIsPageLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProfile();
+    return () => {
+      setIsPageLoading(false);
+    };
   }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -201,12 +208,7 @@ export function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="container py-5 text-center">
-        <div className="spinner-border text-primary" role="status" />
-        <p className="mt-3 text-muted">Đang tải thông tin cá nhân...</p>
-      </div>
-    );
+    return null;
   }
 
   if (error) {

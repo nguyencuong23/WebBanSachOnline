@@ -175,7 +175,9 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
   const schema = z.object({
     receiver_name: z.string().trim().min(1).max(100),
     receiver_phone: z.string().trim().min(8).max(15),
-    shipping_address: z.string().trim().min(1).max(300),
+    shipping_address: z.string().trim().min(1).max(300).refine((val) => !/[@#$^*]/.test(val), {
+      message: "Địa chỉ không được chứa các ký tự đặc biệt không hợp lệ.",
+    }),
     note: z.string().trim().max(500).optional(),
     payment_method: z.enum(["cod", "bank_transfer"]),
     bank_transfer_reference: z.string().trim().max(100).optional(),
@@ -263,6 +265,10 @@ ordersRouter.post("/checkout", requireUser, async (req, res) => {
 
   // Đơn hàng luôn ở trạng thái unpaid lúc mới tạo, webhook sẽ chuyển thành paid sau
   const payment_status = "unpaid";
+
+  if (total > 99999999) {
+    throw new HttpError(400, "Tổng giá trị đơn hàng vượt mức cho phép (tối đa 99,999,999 đ). Vui lòng chia nhỏ đơn hàng.", "order_total_exceeded");
+  }
 
   // BƯỚC 7: Lưu đơn hàng vào database.
   const { data: order, error: oErr } = await sb

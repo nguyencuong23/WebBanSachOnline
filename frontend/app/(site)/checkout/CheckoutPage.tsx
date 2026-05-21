@@ -28,6 +28,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { useLoading } from "../_components/LoadingContext";
 import Link from "next/link";
 import "./checkout.css";
 
@@ -56,6 +57,7 @@ function fmt(n: number) {
 export function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setIsPageLoading } = useLoading();
 
   const buyNowBookId = searchParams.get("book_id");
   const buyNowQty = Math.max(1, Number(searchParams.get("qty") || 1));
@@ -96,6 +98,7 @@ export function CheckoutPage() {
     async function loadData() {
       try {
         setLoading(true);
+        setIsPageLoading(true);
         const [profileRes, settingsRes] = await Promise.allSettled([
           apiFetch<{ profile: any }>("/me"),
           apiFetch<{ items: any[] }>("/settings"),
@@ -133,6 +136,7 @@ export function CheckoutPage() {
           const cartRes = await apiFetch<{ items: CartItem[] }>("/cart");
           if (!cartRes.items || cartRes.items.length === 0) {
             router.replace("/cart");
+            setIsPageLoading(false);
             return;
           }
           setItems(cartRes.items);
@@ -141,10 +145,14 @@ export function CheckoutPage() {
         setError(err.message || String(err));
       } finally {
         setLoading(false);
+        setIsPageLoading(false);
       }
     }
     loadData();
-  }, [router, isBuyNow, buyNowBookId, buyNowQty]);
+    return () => {
+      setIsPageLoading(false);
+    };
+  }, [router, isBuyNow, buyNowBookId, buyNowQty, setIsPageLoading]);
 
   // ── Tính tiền ──────────────────────────────────────────────────────────────
   const subtotal = items.reduce((sum, item) => {
@@ -234,12 +242,7 @@ export function CheckoutPage() {
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="co-loading">
-        <div className="co-spinner" />
-        <p>Đang tải thông tin thanh toán...</p>
-      </div>
-    );
+    return null;
   }
 
   return (

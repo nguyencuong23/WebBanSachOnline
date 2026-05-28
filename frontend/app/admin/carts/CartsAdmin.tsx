@@ -295,6 +295,10 @@ export function CartsAdmin() {
                 <div className="modal-body">
                   {addError && <div className="alert alert-danger py-2 small">{addError}</div>}
                   <div className="mb-3">
+                    <label className="form-label fw-semibold text-muted">ID Chi tiết giỏ hàng</label>
+                    <input className="form-control bg-light font-monospace" readOnly value="(Tự động tăng)" />
+                  </div>
+                  <div className="mb-3">
                     <label className="form-label fw-semibold">User (UUID) <span className="text-danger">*</span></label>
                     <EntityPicker
                       entityType="users"

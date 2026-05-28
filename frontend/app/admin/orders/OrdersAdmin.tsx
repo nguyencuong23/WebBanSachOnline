@@ -467,6 +467,13 @@ export function AdminOrdersPage() {
                         <div className="card-header bg-white fw-bold"><i className="fas fa-credit-card me-2 text-success" />Thanh toán & Trạng thái</div>
                         <div className="card-body">
                           <div className="mb-3">
+                            <div className="text-muted small mb-1">ID Đơn hàng / Mã đơn hàng</div>
+                            <div className="d-flex gap-2">
+                              <input className="form-control form-control-sm bg-light font-monospace text-center" style={{ maxWidth: "100px" }} readOnly value={`ID: ${selectedOrder.order_id}`} />
+                              <input className="form-control form-control-sm bg-light font-monospace text-center fw-bold text-primary" readOnly value={selectedOrder.order_code} />
+                            </div>
+                          </div>
+                          <div className="mb-3">
                             <div className="text-muted small mb-1">Trạng thái đơn hàng</div>
                             <StatusBadge status={selectedOrder.status} />
                           </div>
@@ -523,6 +530,14 @@ export function AdminOrdersPage() {
                 <div className="modal-body">
                   {saveError && <div className="alert alert-danger py-2 mb-3">{saveError}</div>}
                   <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold text-muted">ID Đơn hàng</label>
+                      <input className="form-control bg-light font-monospace text-center" readOnly value={selectedOrder.order_id} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold text-muted">Mã đơn hàng</label>
+                      <input className="form-control bg-light font-monospace text-center fw-bold text-primary" readOnly value={selectedOrder.order_code} />
+                    </div>
                     <div className="col-md-6">
                       <label className="form-label fw-semibold">Trạng thái đơn hàng</label>
                       <select className="form-select" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
@@ -588,6 +603,14 @@ export function AdminOrdersPage() {
                         <div className="card-body">
                           <h6 className="fw-bold mb-3 pb-2 border-bottom">Thông tin Khách hàng & Giao hàng</h6>
                           <div className="row g-3">
+                            <div className="col-md-6">
+                              <label className="form-label fw-semibold text-muted">ID Đơn hàng</label>
+                              <input className="form-control bg-light text-center font-monospace" readOnly value="(Tự động tăng)" />
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label fw-semibold text-muted">Mã đơn hàng</label>
+                              <input className="form-control bg-light text-center font-monospace" readOnly value="(Tự động tạo)" />
+                            </div>
                             <div className="col-12">
                               <label className="form-label fw-semibold">Khách hàng (User ID) <span className="text-danger">*</span></label>
                               <EntityPicker 

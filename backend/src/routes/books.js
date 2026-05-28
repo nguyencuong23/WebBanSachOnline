@@ -274,6 +274,16 @@ booksRouter.post("/admin/books", requireUser, async (req, res) => {
   });
   const body = schema.parse(req.body ?? {});
 
+  // Kiểm tra sách trùng lặp (trùng Tiêu đề + Tác giả + Nhà xuất bản)
+  const { data: existing } = await sb
+    .from("books")
+    .select("book_id")
+    .ilike("title", body.title.trim())
+    .ilike("author", body.author.trim())
+    .ilike("publisher", (body.publisher || "").trim())
+    .maybeSingle();
+  assert(!existing, 400, "Sách này đã tồn tại trong hệ thống (trùng Tên sách, Tác giả và Nhà xuất bản)!", "book_duplicate");
+
   const { data, error } = await sb.from("books").insert(body).select("*").maybeSingle();
   assert(!error, 400, "Lỗi tạo sách", "book_create_failed", error?.message);
   res.status(201).json({ item: data });
@@ -313,6 +323,31 @@ booksRouter.patch("/admin/books/:bookId", requireUser, async (req, res) => {
     is_on_sale: z.boolean().optional()
   });
   const body = schema.parse(req.body ?? {});
+
+  // Nếu cập nhật các thông tin định danh sách, kiểm tra xem có trùng lặp không
+  if (body.title || body.author || body.publisher !== undefined) {
+    const { data: currentBook } = await sb
+      .from("books")
+      .select("title, author, publisher")
+      .eq("book_id", req.params.bookId)
+      .single();
+
+    if (currentBook) {
+      const titleToCheck = body.title !== undefined ? body.title : currentBook.title;
+      const authorToCheck = body.author !== undefined ? body.author : currentBook.author;
+      const publisherToCheck = body.publisher !== undefined ? body.publisher : currentBook.publisher;
+
+      const { data: existing } = await sb
+        .from("books")
+        .select("book_id")
+        .ilike("title", (titleToCheck || "").trim())
+        .ilike("author", (authorToCheck || "").trim())
+        .ilike("publisher", (publisherToCheck || "").trim())
+        .neq("book_id", req.params.bookId)
+        .maybeSingle();
+      assert(!existing, 400, "Sách này đã tồn tại trong hệ thống (trùng Tên sách, Tác giả và Nhà xuất bản)!", "book_duplicate");
+    }
+  }
 
   const { data, error } = await sb
     .from("books")

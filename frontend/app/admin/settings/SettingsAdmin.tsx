@@ -28,10 +28,33 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
+const BANK_OPTIONS = [
+  { value: "MB", label: "MBBank - Ngân hàng Quân Đội" },
+  { value: "VCB", label: "Vietcombank - Ngân hàng Ngoại thương Việt Nam" },
+  { value: "TCB", label: "Techcombank - Ngân hàng Kỹ thương Việt Nam" },
+  { value: "ICB", label: "VietinBank - Ngân hàng Công thương Việt Nam" },
+  { value: "BIDV", label: "BIDV - Ngân hàng Đầu tư và Phát triển Việt Nam" },
+  { value: "ACB", label: "ACB - Ngân hàng Á Châu" },
+  { value: "VBA", label: "Agribank - Ngân hàng Nông nghiệp & Phát triển Nông thôn" },
+  { value: "TPB", label: "TPBank - Ngân hàng Tiên Phong" },
+  { value: "VPB", label: "VPBank - Ngân hàng Việt Nam Thịnh Vượng" },
+  { value: "STB", label: "Sacombank - Ngân hàng Sài Gòn Thương Tín" },
+  { value: "HDB", label: "HDBank - Ngân hàng Phát triển TP.HCM" },
+  { value: "SHB", label: "SHB - Ngân hàng Sài Gòn - Hà Nội" },
+  { value: "VIB", label: "VIB - Ngân hàng Quốc tế" },
+  { value: "MSB", label: "MSB - Ngân hàng Hàng Hải Việt Nam" },
+  { value: "OCB", label: "OCB - Ngân hàng Phương Đông" },
+  { value: "SEAB", label: "SeABank - Ngân hàng Đông Nam Á" },
+  { value: "EIB", label: "Eximbank - Ngân hàng Xuất Nhập Khẩu Việt Nam" },
+  { value: "LPB", label: "LPBank - Ngân hàng Bưu điện Liên Việt" },
+  { value: "BAB", label: "Bac A Bank - Ngân hàng Bắc Á" },
+  { value: "PVB", label: "PVcomBank - Ngân hàng Đại Chúng Việt Nam" },
+];
+
 /**
  * Danh sách định nghĩa các trường cài đặt hệ thống.
  * Mỗi item chứa key (tên trong DB), label (hiển thị), type (loại input) và tab (nhóm).
- * @type {Array<{key: string, label: string, type: string, tab: string}>}
+ * @type {Array<{key: string, label: string, type: string, tab: string, options?: Array<{value: string, label: string}>}>}
  */
 const EXPECTED_SETTINGS = [
   { key: "SiteTitle", label: "Tiêu đề trang web (hiển thị trên tab trình duyệt)", type: "text", tab: "general" },
@@ -41,7 +64,7 @@ const EXPECTED_SETTINGS = [
 
   { key: "DefaultShippingFee", label: "Phí giao hàng mặc định (VNĐ)", type: "number", tab: "sales" },
   { key: "FreeShippingThreshold", label: "Mua trên bao nhiêu thì Freeship (VNĐ)", type: "number", tab: "sales" },
-  { key: "BankId", label: "Mã ngân hàng (Ví dụ: MB, VCB, ACB...)", type: "text", tab: "sales" },
+  { key: "BankId", label: "Chọn ngân hàng (VietQR)", type: "select", tab: "sales", options: BANK_OPTIONS },
   { key: "BankAccount", label: "Số tài khoản nhận tiền", type: "text", tab: "sales" },
 
   { key: "Hotline", label: "Số điện thoại Hotline", type: "text", tab: "contact" },
@@ -182,6 +205,19 @@ export function AdminSettingsPage() {
         </div>
       );
     }
+    if (def.type === "select") {
+      return (
+        <div className="mb-3" key={def.key}>
+          <label className="form-label fw-bold small">{def.label}</label>
+          <select className="form-select" value={val} onChange={e => updateValue(def.key, e.target.value)}>
+            <option value="">-- Chọn ngân hàng --</option>
+            {def.options?.map((opt: any) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      );
+    }
     return (
       <div className="mb-3" key={def.key}>
         <label className="form-label fw-bold small">{def.label}</label>
@@ -252,7 +288,7 @@ export function AdminSettingsPage() {
             </div>
             <div className="d-flex justify-content-between mb-2">
               <span className="text-muted">Phiên bản</span>
-              <span className="fw-semibold">v1.2</span>
+              <span className="fw-semibold">v1.3</span>
             </div>
           </div>
         </div>

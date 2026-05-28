@@ -33,10 +33,7 @@ import { z } from "zod";
 
 export const chatRouter = express.Router();
 
-// URL endpoint của Groq API (tương thích OpenAI format)
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-// Model nhỏ nhưng ổn định, phù hợp cho chat hỗ trợ khách hàng
-const MODEL = "llama-3.1-8b-instant";
+// Backend chatbot using Gemini
 
 /**
  * Map trạng thái đơn hàng sang tiếng Việt để hiển thị trong chat.
@@ -196,7 +193,7 @@ async function buildStoreContext(jwt, messages) {
   for (const row of settingsRows || []) s[row.key] = row.value;
 
   const storeInfo = `=== THÔNG TIN CỬA HÀNG ===
-- Tên: ${s["store_name"] || "Cửa hàng sách"}
+- Tên: ${s["store_name"] || "CCTV Bookstore"}
 - Hotline: ${s["store_phone"] || "Chưa cài đặt"}
 - Địa chỉ: ${s["store_address"] || "Chưa cài đặt"}
 - Email: ${s["store_email"] || "Chưa cài đặt"}
@@ -223,24 +220,40 @@ ${s["working_hours"] ? `- Giờ làm việc: ${s["working_hours"]}` : ""}
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content || "";
     const isPriceFollowUp = /có bán|co ban|có không|co khong|giá bao nhiêu|gia bao nhieu|bao nhiêu tiền|bao nhieu tien|mua ở đâu|mua o dau|web có|web co|shop có|shop co|cửa hàng có|cua hang co|còn hàng|con hang|hết hàng|het hang/i.test(lastUserMsg);
 
+    // Bỏ qua tin nhắn chào đầu tiên của assistant (nếu có) khi quét từ khóa cuộc hội thoại
+    const conversationMsgs = messages[0]?.role === "assistant" ? messages.slice(1) : messages;
+
     // Nếu là follow-up về giá → tìm tên sách từ TOÀN BỘ conversation (bao gồm cả assistant replies)
-    // Vì tên sách có thể xuất hiện trong câu trả lời của AI
+    // ƯU TIÊN tin nhắn mới nhất bằng cách đảo ngược thứ tự cuộc hội thoại trước khi nối chuỗi, giúp các từ khóa mới nhất không bị cắt mất khi slice(0, 10)
     const keywordSource = isPriceFollowUp
-      ? messages.map((m) => m.content).join(" ")
+      ? [...conversationMsgs].reverse().map((m) => m.content).join(" ")
       : lastUserMsg;
 
-    // Stopwords nhẹ hơn - chỉ xóa các từ thật sự không liên quan
-    const stopWords = /\b(có|không|cho|tôi|xem|mua|tìm|hỏi|về|của|nào|thế|nói|thêm|kể|chi tiết|giá|bao nhiêu|còn|hàng|cuốn|sách|book|truyện|hay|phết|vậy|đi|đó|này|kia|ơi|ạ|nhé|nha|ok|oke|nói về|kể về|nội dung|cốt truyện|web|shop|cửa hàng|bán|co|khong|cho|tim|hoi|ve|cua|nao|the|noi|them|ke|gia|bao|nhieu|con|hang|cuon|sach|truyen|hay|vay|di|do|nay|kia|nha|ok|oke|à|thế|ko)\b/gi;
+    // Stopwords Set giúp lọc từ tiếng Việt chuẩn xác không bị lỗi word boundary (\b) của Regex JS với Unicode
+    const stopWordsSet = new Set([
+      "có", "không", "cho", "tôi", "xem", "mua", "tìm", "hỏi", "về", "của", "nào", "thế", "nói", "thêm", "kể", 
+      "chi tiết", "giá", "bao nhiêu", "còn", "hàng", "cuốn", "sách", "book", "truyện", "hay", "phết", "vậy", "đi", 
+      "đó", "này", "kia", "ơi", "ạ", "nhé", "nha", "ok", "oke", "nói về", "kể về", "nội dung", "cốt truyện", 
+      "web", "shop", "cửa hàng", "bán", "co", "khong", "cho", "tim", "hoi", "ve", "cua", "nao", "the", "noi", 
+      "them", "ke", "gia", "bao", "nhieu", "con", "hang", "cuon", "sach", "truyen", "hay", "vay", "di", "do", 
+      "nay", "kia", "nha", "ok", "oke", "à", "thế", "ko", "mấy", "cái", "kiểu", "như", "chả", "hạn", "là", 
+      "ở", "đâu", "được", "với", "và", "hoặc", "nhưng", "tại", "vì", "nên", "thì", "lại", "thích", "đọc", "cơ", "gì", "nào",
+      "alo", "chào", "bạn", "thể", "giúp", "hôm", "nay", "ngày", "xin", "nghe", "anh", "chị", "em", "quý", "khách", "đến",
+      "mình", "các", "tín", "đồ", "tất", "cả", "những", "nhiều", "bộ", "tập", "bản", "tiểu", "thuyết", "loại", "thể", "ủa", "vậy"
+    ]);
     
-    // Giữ lại các cụm từ quan trọng như "re zero", "light novel"
-    let cleanedKeyword = keywordSource
+    // Giữ lại các cụm từ quan trọng như "re zero", "light novel" và chuyển về chữ thường
+    const cleanedKeyword = keywordSource
+      .toLowerCase()
       .replace(/re\s+zero/gi, "rezero") // Gộp "re zero" thành 1 từ
-      .replace(/light\s+novel/gi, "lightnovel") // Gộp "light novel"
-      .replace(stopWords, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+      .replace(/light\s+novel/gi, "lightnovel"); // Gộp "light novel"
     
-    const keywords = cleanedKeyword.split(/\s+/).filter((w) => w.length >= 2).slice(0, 6);
+    // Tách từ theo khoảng trắng hoặc các ký tự đặc biệt khác
+    const rawWords = cleanedKeyword.split(/[\s,.:;!?()""'']+/).filter(Boolean);
+    const keywords = rawWords
+      .filter((w) => !stopWordsSet.has(w) && w.length >= 2)
+      .slice(0, 10); // Tăng giới hạn lên 10 để tránh lọc sót từ khóa chính
+      
     console.log(`[DB search] isPriceFollowUp=${isPriceFollowUp} keywords:`, keywords);
 
     let searchedBooks = [];
@@ -376,48 +389,128 @@ ${orderLines.join("\n\n")}`;
 }
 
 /**
- * Gọi Groq API để lấy phản hồi từ LLM.
+ * Gọi OpenRouter API để lấy phản hồi từ LLM.
  *
  * @async
- * @param {Array<{role: string, content: string}>} msgs - Danh sách messages gửi lên Groq.
- * @param {boolean} allowTools - Có cho phép AI dùng function calling (tools) không.
- * @param {string} groqApiKey - API key của Groq.
- * @returns {Promise<object>} Response JSON từ Groq API.
- * @throws {Error} Ném lỗi với httpStatus nếu Groq trả về lỗi (429 rate limit, 400, v.v.).
+ * @param {Array<{role: string, content: string}>} msgs - Danh sách messages gửi lên OpenRouter.
+ * @param {string} apiKey - API key của OpenRouter.
+ * @returns {Promise<object>} Response JSON từ OpenRouter API.
+ * @throws {Error} Ném lỗi với httpStatus nếu OpenRouter trả về lỗi.
  */
-// ── Gọi Groq API ─────────────────────────────────────────────────────────────
-async function callGroq(msgs, allowTools, groqApiKey) {
-  const body = {
-    model: MODEL,
-    messages: msgs,
-    max_tokens: 700,
-    temperature: 0.3, // Tăng lên một chút để tool calling ổn định hơn
-  };
-  if (allowTools) {
-    body.tools = TOOLS;
-    body.tool_choice = "auto";
+// Định nghĩa tools (Function Calling) chuẩn cho Gemini REST API
+const GEMINI_TOOLS = [
+  {
+    function_declarations: [
+      {
+        name: "search_book_info",
+        description: "Tìm thông tin NỘI DUNG, CỐT TRUYỆN, TÁC GIẢ của sách/series trên Wikipedia. CHỈ dùng khi: (1) Khách hỏi về nội dung/cốt truyện của một cuốn sách CỤ THỂ (ví dụ: 'Arya là truyện gì', 'Re Zero nói về gì'), VÀ (2) Dữ liệu cửa hàng không có mô tả chi tiết. TUYỆT ĐỐI KHÔNG dùng cho câu hỏi về giá, tồn kho, mua hàng.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            query: {
+              type: "STRING",
+              description: "Tên sách/series bằng TIẾNG ANH hoặc tên gốc (romaji). Ví dụ: 'Alya Sometimes Hides Her Feelings in Russian' (không phải 'Arya Bàn Bên'), 'Re:Zero' (không phải 'Re:Zero - Bắt Đầu Lại'), 'Frieren: Beyond Journey\'s End' (không phải 'Frieren - Pháp Sư Tiễn Táng'). Thêm 'light novel' hoặc 'manga' để chính xác hơn."
+            }
+          },
+          required: ["query"]
+        }
+      }
+    ]
+  }
+];
+
+// URL endpoint của Google Gemini API
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent";
+
+// ── Gọi Google Gemini API ────────────────────────────────────────────────────────
+async function callGemini(msgs, apiKey) {
+  const systemMsg = msgs.find(m => m.role === "system");
+  const chatMsgs = msgs.filter(m => m.role !== "system").map(m => ({
+    role: m.role === "user" ? "user" : "model",
+    parts: [{ text: m.content }]
+  }));
+
+  let currentChatMsgs = [...chatMsgs];
+  let loopCount = 0;
+
+  while (loopCount < 5) {
+    loopCount++;
+    const body = {
+      contents: currentChatMsgs,
+      systemInstruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,
+      tools: GEMINI_TOOLS,
+      generationConfig: {
+        maxOutputTokens: 1000,
+        temperature: 0.3,
+      }
+    };
+
+    const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      console.error("[Gemini API error]", res.status, JSON.stringify(errBody));
+      const status = res.status;
+      const message = status === 429
+        ? "AI đang bận, vui lòng thử lại sau vài giây."
+        : "Lỗi kết nối AI Chatbot (Gemini)";
+      const code = status === 429 ? "rate_limited" : "gemini_error";
+      throw Object.assign(new Error(message), { httpStatus: status, code });
+    }
+
+    const data = await res.json();
+    const candidate = data?.candidates?.[0];
+    const part = candidate?.content?.parts?.[0];
+
+    if (part?.functionCall) {
+      const { name, args } = part.functionCall;
+      console.log(`[Gemini Function Call] Executing: ${name} with`, args);
+
+      // Nếu model gọi hàm không tồn tại hoặc không được hỗ trợ
+      if (name !== "search_book_info") {
+        console.warn(`[Gemini Function Call] Unsupported function call: ${name}`);
+        return { choices: [{ message: { content: "Xin lỗi, Shop chưa hỗ trợ tính năng tự động này. Bạn vui lòng liên hệ hotline hoặc làm theo hướng dẫn trên website để được hỗ trợ nhé." } }] };
+      }
+
+      let result = await webSearch(args.query);
+
+      // Thêm lượt gọi hàm của model vào lịch sử
+      currentChatMsgs.push({
+        role: "model",
+        parts: [part]
+      });
+
+      // Thêm phản hồi của hàm vào lịch sử
+      currentChatMsgs.push({
+        role: "function",
+        parts: [
+          {
+            functionResponse: {
+              name,
+              response: {
+                content: result || "Không tìm thấy thông tin trên Wikipedia"
+              }
+            }
+          }
+        ]
+      });
+
+      // Tiếp tục vòng lặp để gửi kết quả về cho Gemini trả lời
+      continue;
+    }
+
+    const text = part?.text;
+    return { choices: [{ message: { content: text } }] };
   }
 
-  const groqRes = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqApiKey}` },
-    body: JSON.stringify(body),
-  });
-
-  if (!groqRes.ok) {
-    const errBody = await groqRes.json().catch(() => ({}));
-    console.error("[Groq error]", groqRes.status, JSON.stringify(errBody));
-    const status = groqRes.status;
-    const message = status === 429
-      ? "AI đang bận, vui lòng thử lại sau vài giây."
-      : status === 400 && errBody?.error?.code === "tool_use_failed"
-      ? "Xin lỗi, tôi không thể tìm kiếm thông tin lúc này."
-      : "Lỗi kết nối AI";
-    const code = status === 429 ? "rate_limited" : "groq_error";
-    throw Object.assign(new Error(message), { httpStatus: status, code });
-  }
-
-  return groqRes.json();
+  // Fallback nếu lặp quá 5 lần (đề phòng vòng lặp vô hạn)
+  return { choices: [{ message: { content: "Xin lỗi, Shop không thể xử lý yêu cầu này lúc này. Bạn vui lòng thử lại sau nhé." } }] };
 }
 
 /**
@@ -437,7 +530,7 @@ async function callGroq(msgs, allowTools, groqApiKey) {
  */
 // ── POST /chat ────────────────────────────────────────────────────────────────
 chatRouter.post("/chat", async (req, res) => {
-  assert(env.groqApiKey, 503, "Tính năng chat AI chưa được cấu hình", "chat_not_configured");
+  assert(env.geminiApiKey, 503, "Tính năng chat AI chưa được cấu hình", "chat_not_configured");
 
   const schema = z.object({
     messages: z.array(
@@ -453,7 +546,7 @@ chatRouter.post("/chat", async (req, res) => {
 
   const storeContext = await buildStoreContext(jwt, messages);
 
-  const systemPrompt = `Bạn là trợ lý AI chính thức của cửa hàng sách.
+  const systemPrompt = `Bạn là trợ lý AI chính thức của cửa hàng sách CCTV Bookstore.
 
 QUY TẮC QUAN TRỌNG - ĐỌC KỸ:
 
@@ -461,23 +554,31 @@ QUY TẮC QUAN TRỌNG - ĐỌC KỸ:
    - Nếu có "KẾT QUẢ TÌM KIẾM TRONG CỬA HÀNG" → dùng dữ liệu đó để trả lời MỌI câu hỏi về sách (giá, tồn kho, tác giả, v.v.)
    - Khi khách hỏi follow-up ("giá bao nhiêu", "còn hàng không") → XEM LẠI dữ liệu cửa hàng đã có trong context
 
-2. **KHI KHÁCH HỎI VỀ NỘI DUNG/CỐT TRUYỆN:**
-   - Nếu dữ liệu cửa hàng KHÔNG có mô tả → nói thẳng "Xin lỗi, tôi không có thông tin chi tiết về nội dung sách này"
-   - Gợi ý khách tìm trên Google hoặc đọc review
+2. **KHI KHÁCH HỎI VỀ NỘI DUNG/CỐT TRUYỆN/TÁC GIẢ:**
+   - Nếu dữ liệu cửa hàng không có mô tả chi tiết → Hãy gọi tool \`search_book_info\` để tra cứu thông tin trên Wikipedia.
+   - Chỉ trả lời "Xin lỗi, Shop không tìm thấy thông tin chi tiết về nội dung sách này" nếu đã dùng tool mà vẫn không tìm thấy kết quả.
 
 3. **XỬ LÝ FOLLOW-UP:**
    - Khi khách hỏi "giá bao nhiêu" sau khi đã nói về một cuốn sách → tìm lại thông tin sách đó trong dữ liệu đã có
 
 4. **KHÔNG BỊA ĐẶT:**
-   - Chỉ dùng thông tin có trong dữ liệu cửa hàng
-   - Nếu không tìm thấy → nói thẳng và gợi ý cách khác
+   - Chỉ dùng thông tin giá cả, số lượng tồn kho có trong dữ liệu cửa hàng. Tuyệt đối KHÔNG được tự ý bịa đặt giá cả hoặc số lượng của sách.
+   - Nếu không tìm thấy sách trong cửa hàng → báo thẳng là cửa hàng chưa có hàng, và gợi ý các sách tương tự khác.
 
 5. **ĐĂNG NHẬP:**
    - Nếu khách hỏi đơn hàng mà chưa đăng nhập → yêu cầu đăng nhập
 
-6. **PHONG CÁCH:**
-   - Trả lời tiếng Việt, ngắn gọn, thân thiện, tự nhiên
-   - Không dài dòng, không lặp lại thông tin không cần thiết
+6. **PHONG CÁCH & ĐỊNH DẠNG:**
+   - Trả lời tiếng Việt, ngắn gọn, thân thiện, tự nhiên.
+   - Nhất quán xưng hô: Tự xưng là "Shop", gọi khách hàng là "bạn" hoặc "quý khách". Tuyệt đối KHÔNG lúc xưng "em", lúc xưng "mình", lúc xưng "shop", hoặc gọi khách là "bạn ơi", "cậu" trong cùng một phiên chat.
+   - Luôn trả lời trọn vẹn, đầy đủ ý, không bỏ dở câu nói hay ngắt quãng giữa chừng.
+   - Hạn chế tối đa việc sử dụng ký tự in đậm \`**\`. Chỉ được dùng \`**\` duy nhất để in đậm tên sách (ví dụ: **Nhà Giả Kim**, **Re:Zero**). Tuyệt đối không dùng \`**\` để in đậm giá tiền, tập số, chương, tên tác giả, tiêu đề, hoặc các từ ngữ khác trong câu trả lời (ví dụ: KHÔNG viết \`**Tập 1:**\`, KHÔNG viết \`**Giá bán:**\`).
+   - Không dài dòng, không lặp lại thông tin không cần thiết.
+
+7. **GIỚI HẠN NĂNG LỰC:**
+   - Bạn chỉ là trợ lý AI tư vấn. Bạn KHÔNG có quyền hạn hoặc công cụ để thực hiện các thay đổi dữ liệu như: đặt giữ hàng (reserve/hold), đặt giao hàng, thanh toán trực tiếp, hoặc chỉnh sửa thông tin đơn hàng.
+   - Tuyệt đối KHÔNG tự ý đề xuất hoặc hỏi khách hàng làm những việc ngoài tầm kiểm soát của bạn (ví dụ: KHÔNG hỏi "Bạn có muốn Shop giữ hàng cho bạn không?").
+   - Nếu khách hàng yêu cầu thực hiện hoặc đề nghị bạn làm các việc ngoài khả năng, hãy trả lời lịch sự: "Xin lỗi, Shop chưa hỗ trợ tính năng tự động này. Bạn vui lòng liên hệ hotline hoặc làm theo hướng dẫn trên website để được hỗ trợ nhé."
 
 --- DỮ LIỆU CỬA HÀNG ---
 ${storeContext}
@@ -491,8 +592,8 @@ LƯU Ý: Dữ liệu trên đã bao gồm tất cả thông tin về sách có t
   ];
 
   try {
-    // Không dùng tool - chỉ gọi AI 1 lần
-    const response = await callGroq(groqMessages, false, env.groqApiKey);
+    // Gọi Gemini API
+    const response = await callGemini(groqMessages, env.geminiApiKey);
     const reply = response?.choices?.[0]?.message?.content || "Xin lỗi, tôi không thể trả lời lúc này.";
     return res.json({ reply });
 

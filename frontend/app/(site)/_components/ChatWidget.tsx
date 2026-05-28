@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * ============================================================================
@@ -35,6 +35,17 @@ interface Message {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
+
+function formatMessageContent(content: string) {
+  // Regex tách chuỗi theo các phần được bọc bởi **...**
+  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
 
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -92,7 +103,7 @@ export function ChatWidget() {
         headers,
         body: JSON.stringify({
           // Bỏ tin nhắn chào đầu tiên của assistant ra khỏi history gửi lên
-          messages: newMessages.filter((m) => !(m.role === "assistant")),
+          messages: newMessages.slice(newMessages[0]?.role === "assistant" ? 1 : 0),
         }),
       });
 
@@ -193,7 +204,7 @@ export function ChatWidget() {
                     <i className="fas fa-robot" />
                   </div>
                 )}
-                <div className="chat-msg-bubble">{msg.content}</div>
+                <div className="chat-msg-bubble">{formatMessageContent(msg.content)}</div>
               </div>
             ))}
 

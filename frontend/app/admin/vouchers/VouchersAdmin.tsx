@@ -88,6 +88,15 @@ export function AdminVouchersPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
 
+    // Kiểm tra trùng lặp mã voucher
+    const isDuplicate = items.some(
+      (item) => item.code.trim().toUpperCase() === form.code.trim().toUpperCase()
+    );
+    if (modalMode === "add" && isDuplicate) {
+      alert("Mã voucher này đã tồn tại! Vui lòng nhập mã khác.");
+      return;
+    }
+
     try {
       const saveData = {
         code: form.code.toUpperCase(),

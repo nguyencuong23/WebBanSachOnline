@@ -99,6 +99,14 @@ categoriesRouter.post("/admin/categories", requireUser, async (req, res) => {
   });
   const body = schema.parse(req.body ?? {});
 
+  // Kiểm tra tên thể loại đã tồn tại chưa (không phân biệt hoa thường)
+  const { data: existing } = await sb
+    .from("categories")
+    .select("category_id")
+    .ilike("name", body.name.trim())
+    .maybeSingle();
+  assert(!existing, 400, "Tên thể loại này đã tồn tại! Vui lòng nhập tên khác.", "category_name_duplicate");
+
   const { data, error } = await sb.from("categories").insert(body).select("*").maybeSingle();
   assert(!error, 400, "Lỗi tạo thể loại", "category_create_failed", error?.message);
   res.status(201).json({ item: data });
@@ -124,6 +132,17 @@ categoriesRouter.patch("/admin/categories/:categoryId", requireUser, async (req,
     description: z.string().optional().nullable()
   });
   const body = schema.parse(req.body ?? {});
+
+  // Nếu cập nhật tên thể loại, kiểm tra xem tên mới có trùng lặp không
+  if (body.name) {
+    const { data: existing } = await sb
+      .from("categories")
+      .select("category_id")
+      .ilike("name", body.name.trim())
+      .neq("category_id", req.params.categoryId)
+      .maybeSingle();
+    assert(!existing, 400, "Tên thể loại này đã tồn tại! Vui lòng nhập tên khác.", "category_name_duplicate");
+  }
 
   const { data, error } = await sb
     .from("categories")

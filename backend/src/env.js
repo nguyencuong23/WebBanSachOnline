@@ -59,7 +59,7 @@ function required(name) {
  *   webOrigins: string[],
  *   gmailUser: string,
  *   gmailAppPassword: string,
- *   groqApiKey: string
+ *   geminiApiKey: string
  * }}
  */
 export const env = {
@@ -78,8 +78,8 @@ export const env = {
   // Thông tin Gmail để gửi email OTP quên mật khẩu (tùy chọn)
   gmailUser: process.env.GMAIL_USER || "",
   gmailAppPassword: process.env.GMAIL_APP_PASSWORD || "",
-  // API key của Groq để chạy tính năng chat AI (tùy chọn)
-  groqApiKey: process.env.GROQ_API_KEY || "",
+  // API key của Google Gemini
+  geminiApiKey: process.env.GEMINI_API_KEY || "",
   // API key để xác thực Webhook gửi từ SePay
   sepayApiKey: process.env.SEPAY_API_KEY || "",
 };

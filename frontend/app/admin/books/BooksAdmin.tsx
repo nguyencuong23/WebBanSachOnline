@@ -125,12 +125,42 @@ export function AdminBooksPage() {
     return () => clearTimeout(timer);
   }, [keyword, searchBy, sortBy]);
 
-  useEffect(() => {
-    if (modalMode === "add" && form.category_id && skuNumber) {
-      const formattedNum = skuNumber.padStart(3, "0");
-      setForm((f: any) => ({ ...f, book_id: `${form.category_id.toUpperCase()}-${formattedNum}` }));
+  async function fetchNextSkuNumber(catId: string) {
+    if (!catId) return "";
+    try {
+      const res = await apiFetch<{ items: any[] }>(`/books?category_id=${catId}`);
+      let maxNum = 0;
+      (res.items || []).forEach((book) => {
+        const parts = book.book_id.split("-");
+        if (parts.length > 1) {
+          const num = parseInt(parts[1], 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      });
+      return String(maxNum + 1);
+    } catch (e) {
+      console.error("Lỗi tính số thứ tự:", e);
+      return "1";
     }
-  }, [form.category_id, skuNumber, modalMode]);
+  }
+
+  const handleCategoryChange = async (catId: string) => {
+    if (!catId) {
+      setSkuNumber("");
+      setForm((f: any) => ({ ...f, category_id: "", book_id: "" }));
+      return;
+    }
+    const nextNum = await fetchNextSkuNumber(catId);
+    setSkuNumber(nextNum);
+    const formattedNum = nextNum.padStart(3, "0");
+    setForm((f: any) => ({
+      ...f,
+      category_id: catId,
+      book_id: `${catId.toUpperCase()}-${formattedNum}`
+    }));
+  };
 
   /**
    * Tạo slug URL-friendly từ tiêu đề sách.
@@ -362,6 +392,19 @@ export function AdminBooksPage() {
       return;
     }
 
+    // Kiểm tra trùng lặp sách (trùng Tên sách, Tác giả và Nhà xuất bản)
+    const isDuplicate = items.some(
+      (item) =>
+        item.title.trim().toLowerCase() === form.title.trim().toLowerCase() &&
+        item.author.trim().toLowerCase() === form.author.trim().toLowerCase() &&
+        (item.publisher || "").trim().toLowerCase() === (form.publisher || "").trim().toLowerCase() &&
+        item.book_id !== form.book_id
+    );
+    if (isDuplicate) {
+      alert("Sách này đã tồn tại trong hệ thống (trùng Tên sách, Tác giả và Nhà xuất bản)!");
+      return;
+    }
+
     try {
       const bucket = getBucketName(form.category_id);
       let finalImageUrl = form.image_url;
@@ -461,6 +504,12 @@ export function AdminBooksPage() {
       setSelectedFile(null);
       setLocalPreview(null);
       setModalMode("edit");
+      const parts = res.item.book_id.split("-");
+      if (parts.length > 1) {
+        setSkuNumber(parts[1]);
+      } else {
+        setSkuNumber("");
+      }
     } catch (e: any) {
       alert("Lỗi tải chi tiết: " + (e.message || String(e)));
     }
@@ -473,6 +522,12 @@ export function AdminBooksPage() {
       setSelectedFile(null);
       setLocalPreview(null);
       setModalMode("detail");
+      const parts = res.item.book_id.split("-");
+      if (parts.length > 1) {
+        setSkuNumber(parts[1]);
+      } else {
+        setSkuNumber("");
+      }
     } catch (e: any) {
       alert("Lỗi tải chi tiết: " + (e.message || String(e)));
     }
@@ -708,14 +763,14 @@ export function AdminBooksPage() {
                         <div className="row g-3">
                           <div className="col-md-4">
                             <label className="form-label fw-bold small">Thể loại</label>
-                            <select className="form-select" required disabled={modalMode !== "add"} value={form.category_id} onChange={(e) => setForm((f: any) => ({ ...f, category_id: e.target.value }))}>
+                            <select className="form-select" required disabled={modalMode !== "add"} value={form.category_id} onChange={(e) => handleCategoryChange(e.target.value)}>
                               <option value="">-- Chọn --</option>
                               {categories.map(c => <option key={c.category_id} value={c.category_id}>{c.name}</option>)}
                             </select>
                           </div>
                           <div className="col-md-4">
                             <label className="form-label fw-bold small">Số thứ tự</label>
-                            <input type="number" className="form-control" required disabled={modalMode !== "add"} value={skuNumber} onChange={(e) => setSkuNumber(e.target.value)} />
+                            <input type="text" className="form-control bg-light fw-bold text-center" readOnly placeholder="Hệ thống tự động" value={skuNumber ? skuNumber.padStart(3, "0") : ""} />
                           </div>
                           <div className="col-md-4">
                             <label className="form-label fw-bold small">Mã hệ thống</label>

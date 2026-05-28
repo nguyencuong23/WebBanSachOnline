@@ -205,8 +205,16 @@ vouchersRouter.post("/admin/vouchers", requireUser, async (req, res) => {
   
   const body = schema.parse(req.body ?? {});
 
+  // Kiểm tra mã voucher đã tồn tại chưa
+  const { data: existing } = await sb
+    .from("vouchers")
+    .select("code")
+    .eq("code", body.code)
+    .maybeSingle();
+  assert(!existing, 400, "Mã voucher này đã tồn tại! Vui lòng chọn mã khác.", "voucher_code_duplicate");
+
   const { data, error } = await sb.from("vouchers").insert(body).select("*").maybeSingle();
-  assert(!error, 400, "Lỗi tạo voucher (Mã đã tồn tại?)", "voucher_create_failed", error?.message);
+  assert(!error, 400, "Lỗi tạo voucher", "voucher_create_failed", error?.message);
   res.status(201).json({ item: data });
 });
 

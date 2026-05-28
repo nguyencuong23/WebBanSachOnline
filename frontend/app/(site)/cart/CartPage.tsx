@@ -62,6 +62,7 @@ export function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [clearingAll, setClearingAll] = useState(false);
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
   const fetchCart = useCallback(async () => {
     try {
@@ -85,12 +86,82 @@ export function CartPage() {
     };
   }, [fetchCart, setIsPageLoading]);
 
+  // Sync local input values with items when cart data is loaded or updated
+  useEffect(() => {
+    setInputValues((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      items.forEach((item) => {
+        const localVal = next[item.book_id];
+        if (localVal === undefined) {
+          next[item.book_id] = String(item.quantity);
+          changed = true;
+        } else {
+          const parsedLocal = parseInt(localVal, 10);
+          // Sync if local value is a valid non-zero number but differs from database
+          if (!isNaN(parsedLocal) && parsedLocal !== 0 && parsedLocal !== item.quantity) {
+            next[item.book_id] = String(item.quantity);
+            changed = true;
+          }
+        }
+      });
+      // Remove keys for items that were removed
+      Object.keys(next).forEach((key) => {
+        if (!items.some((item) => item.book_id === key)) {
+          delete next[key];
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [items]);
+
+  // Intercept navigation if there is any item with quantity equal to 0
+  useEffect(() => {
+    const hasZero = Object.values(inputValues).some((v) => v === "0");
+    if (!hasZero) return;
+
+    const handleAnchorClick = (e: MouseEvent) => {
+      let target = e.target as HTMLElement | null;
+      while (target && target.tagName !== "A") {
+        target = target.parentElement;
+      }
+      if (target && target.getAttribute("href")) {
+        const confirmLeave = confirm(
+          "Giỏ hàng của bạn đang có sản phẩm với số lượng bằng 0. Bạn có chắc chắn muốn rời trang?"
+        );
+        if (!confirmLeave) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "Giỏ hàng của bạn đang có sản phẩm với số lượng bằng 0. Bạn có chắc chắn muốn rời trang?";
+      return e.returnValue;
+    };
+
+    document.addEventListener("click", handleAnchorClick, true);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      document.removeEventListener("click", handleAnchorClick, true);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [inputValues]);
+
   const unitPrice = (item: CartItem) =>
     item.books?.is_on_sale && item.books?.sale_price
       ? Number(item.books.sale_price)
       : Number(item.books?.price || 0);
 
-  const subtotal = items.reduce((s, x) => s + unitPrice(x) * x.quantity, 0);
+  const subtotal = items.reduce((s, x) => {
+    const localValStr = inputValues[x.book_id];
+    const qty = localValStr !== undefined ? parseInt(localValStr, 10) : x.quantity;
+    const displayQty = isNaN(qty) ? x.quantity : qty;
+    return s + unitPrice(x) * displayQty;
+  }, 0);
 
   async function updateQty(item: CartItem, newQty: number) {
     if (newQty < 1) return;
@@ -105,8 +176,10 @@ export function CartPage() {
       setItems((prev) =>
         prev.map((x) => (x.book_id === item.book_id ? { ...x, quantity: newQty } : x))
       );
+      setInputValues((prev) => ({ ...prev, [item.book_id]: String(newQty) }));
     } catch (e: unknown) {
       alert((e as Error).message || "Lỗi cập nhật số lượng.");
+      setInputValues((prev) => ({ ...prev, [item.book_id]: String(item.quantity) }));
     } finally {
       setUpdatingId(null);
     }
@@ -198,10 +271,14 @@ export function CartPage() {
                   const isUpdating = updatingId === item.book_id;
                   const stock = item.books?.quantity ?? 0;
 
+                  const localValStr = inputValues[item.book_id];
+                  const displayQty = localValStr !== undefined ? parseInt(localValStr, 10) : item.quantity;
+                  const inputValue = localValStr !== undefined ? localValStr : String(item.quantity);
+
                   return (
                     <div key={item.book_id} className={`cart-item ${isUpdating ? "cart-item--updating" : ""}`}>
                       {/* Ảnh sách */}
-                      <div className="cart-item-image">
+                      <Link href={`/books/${item.book_id}`} className="cart-item-image">
                         {imageUrl ? (
                           <img src={imageUrl} alt={item.books?.title} />
                         ) : (
@@ -210,11 +287,11 @@ export function CartPage() {
                           </div>
                         )}
                         {isOnSale && <span className="sale-badge">Sale</span>}
-                      </div>
+                      </Link>
 
                       {/* Thông tin */}
                       <div className="cart-item-info">
-                        <Link href={`/search?q=${encodeURIComponent(item.books?.title || "")}`} className="cart-item-title">
+                        <Link href={`/books/${item.book_id}`} className="cart-item-title">
                           {item.books?.title || item.book_id}
                         </Link>
                         <p className="cart-item-author">
@@ -240,28 +317,64 @@ export function CartPage() {
                         <div className="qty-control">
                           <button
                             className="qty-btn"
-                            onClick={() => updateQty(item, item.quantity - 1)}
-                            disabled={isUpdating || item.quantity <= 1}
+                            onClick={() => {
+                              const curVal = parseInt(inputValues[item.book_id] || "", 10);
+                              const baseQty = isNaN(curVal) ? item.quantity : curVal;
+                              if (baseQty > 1) {
+                                updateQty(item, baseQty - 1);
+                              }
+                            }}
+                            disabled={isUpdating || displayQty <= 1}
                             aria-label="Giảm số lượng"
                           >
                             <i className="fas fa-minus" />
                           </button>
                           <input
                             className="qty-input"
-                            type="number"
-                            min={1}
-                            max={stock}
-                            value={item.quantity}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={inputValue}
                             onChange={(e) => {
-                              const v = parseInt(e.target.value, 10);
-                              if (!isNaN(v)) updateQty(item, v);
+                              let val = e.target.value;
+                              val = val.replace(/\D/g, "");
+                              if (val === "") {
+                                val = "0";
+                              } else {
+                                val = val.replace(/^0+/, "");
+                                if (val === "") {
+                                  val = "0";
+                                }
+                              }
+                              const parsed = parseInt(val, 10);
+                              if (parsed > stock) {
+                                val = String(stock);
+                              }
+                              setInputValues((prev) => ({ ...prev, [item.book_id]: val }));
+                            }}
+                            onBlur={() => {
+                              const curVal = parseInt(inputValues[item.book_id] || "", 10);
+                              if (!isNaN(curVal) && curVal >= 1 && curVal !== item.quantity) {
+                                updateQty(item, curVal);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.currentTarget.blur();
+                              }
                             }}
                             disabled={isUpdating}
                           />
                           <button
                             className="qty-btn"
-                            onClick={() => updateQty(item, item.quantity + 1)}
-                            disabled={isUpdating || item.quantity >= stock}
+                            onClick={() => {
+                              const curVal = parseInt(inputValues[item.book_id] || "", 10);
+                              const baseQty = isNaN(curVal) ? item.quantity : curVal;
+                              if (baseQty < stock) {
+                                updateQty(item, baseQty + 1);
+                              }
+                            }}
+                            disabled={isUpdating || displayQty >= stock}
                             aria-label="Tăng số lượng"
                           >
                             <i className="fas fa-plus" />
@@ -269,7 +382,7 @@ export function CartPage() {
                         </div>
 
                         <div className="cart-item-subtotal">
-                          {(price * item.quantity).toLocaleString("vi-VN")}đ
+                          {(price * displayQty).toLocaleString("vi-VN")}đ
                         </div>
 
                         <button
@@ -319,7 +432,15 @@ export function CartPage() {
 
                 <button
                   className="btn-checkout"
-                  onClick={() => router.push("/checkout")}
+                  onClick={() => {
+                    const hasZero = Object.values(inputValues).some((v) => v === "0");
+                    if (hasZero) {
+                      if (!confirm("Giỏ hàng của bạn đang có sản phẩm với số lượng bằng 0. Bạn có chắc chắn muốn rời trang?")) {
+                        return;
+                      }
+                    }
+                    router.push("/checkout");
+                  }}
                 >
                   <i className="fas fa-credit-card me-2" />
                   Tiến hành thanh toán

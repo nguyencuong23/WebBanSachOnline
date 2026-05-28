@@ -428,12 +428,10 @@ export function AdminUsersPage() {
                       {/* Cột trái: Thông tin cơ bản */}
                       <div className="col-md-6 border-end pe-4">
                         <h6 className="fw-bold mb-3 border-bottom pb-2">Thông tin cơ bản</h6>
-                        {modalMode === "edit" && (
-                          <div className="mb-3">
-                            <label className="form-label fw-bold small text-muted">ID Người dùng</label>
-                            <input className="form-control form-control-sm bg-light" readOnly value={form.user_id || ""} />
-                          </div>
-                        )}
+                        <div className="mb-3">
+                          <label className="form-label fw-bold small text-muted">ID Người dùng</label>
+                          <input className="form-control form-control-sm bg-light" readOnly value={modalMode === "add" ? "(Tự động tạo)" : (form.user_id || "")} />
+                        </div>
                         <div className="mb-3">
                           <label className="form-label fw-bold small">Tên đăng nhập (Username)</label>
                           <input 

@@ -376,6 +376,10 @@ export function NotificationsAdmin() {
                   {saveError && <div className="alert alert-danger py-2 mb-3">{saveError}</div>}
                   <div className="row g-3">
                     <div className="col-12">
+                      <label className="form-label fw-semibold text-muted">ID Thông báo</label>
+                      <input className="form-control bg-light font-monospace" readOnly value="(Tự động tăng)" />
+                    </div>
+                    <div className="col-12">
                       <label className="form-label fw-semibold">Người nhận</label>
                       <select className="form-select mb-2" value={form.recipients_type} onChange={e => setForm({ ...form, recipients_type: e.target.value })}>
                         <option value="all">Tất cả người dùng</option>
@@ -468,6 +472,10 @@ export function NotificationsAdmin() {
                   </div>
                   <div className="row g-3">
                     <div className="col-12">
+                      <label className="form-label fw-semibold text-muted">ID Thông báo</label>
+                      <input className="form-control bg-light font-monospace" readOnly value={selectedNotif?.id || ""} />
+                    </div>
+                    <div className="col-12">
                       <label className="form-label fw-semibold">Tiêu đề <span className="text-danger">*</span></label>
                       <input className="form-control" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
                     </div>
@@ -538,6 +546,9 @@ export function NotificationsAdmin() {
                     </div>
                   )}
                   <dl className="row mb-0">
+                    <dt className="col-sm-4 text-muted">ID Thông báo</dt>
+                    <dd className="col-sm-8 font-monospace fw-bold text-secondary">{selectedNotif.id}</dd>
+
                     <dt className="col-sm-4 text-muted">Phân loại</dt>
                     <dd className="col-sm-8">
                       <span className="badge bg-secondary">

@@ -40,12 +40,43 @@ paymentRouter.post("/hooks/sepay-payment", async (req, res) => {
       return res.json({ success: true, message: "Đơn hàng không tồn tại" });
     }
 
-    // Nếu số tiền gửi vào lớn hơn hoặc bằng tổng tiền đơn hàng
-    if (data.transferAmount >= order.total) {
+    const transferAmount = Number(data.transferAmount);
+    const orderTotal = Number(order.total);
+
+    // Kiểm tra số tiền chuyển khoản phải khớp chính xác với tổng tiền đơn hàng
+    if (transferAmount === orderTotal) {
       await sb
         .from("orders")
-        .update({ payment_status: "paid", status: "processing" })
+        .update({ 
+          payment_status: "paid", 
+          status: "processing",
+          bank_transfer_reference: data.id ? `SePay ID: ${data.id}` : null
+        })
         .eq("order_code", orderCode);
+    } else {
+      // Trường hợp chuyển khoản sai số tiền (thừa hoặc thiếu)
+      const mismatchMsg = `[Hệ thống: Cảnh báo chuyển khoản sai số tiền. Yêu cầu: ${orderTotal.toLocaleString("vi-VN")}đ, Thực nhận: ${transferAmount.toLocaleString("vi-VN")}đ]`;
+      const updatedNote = order.note ? `${order.note}\n${mismatchMsg}` : mismatchMsg;
+
+      await sb
+        .from("orders")
+        .update({
+          payment_status: "pending_confirmation",
+          note: updatedNote,
+          bank_transfer_reference: data.id ? `SePay ID: ${data.id} (Sai số tiền)` : null
+        })
+        .eq("order_code", orderCode);
+
+      try {
+        await sb.from("admin_notifications").insert({
+          title: `Đơn hàng ${orderCode} thanh toán sai số tiền`,
+          message: `Đơn hàng ${orderCode} yêu cầu ${orderTotal.toLocaleString("vi-VN")}đ nhưng nhận được ${transferAmount.toLocaleString("vi-VN")}đ. Trạng thái đã được chuyển sang Chờ xác nhận thủ công.`,
+          type: "payment",
+          link: "/admin/orders"
+        });
+      } catch (notifErr) {
+        console.error("Không thể tạo thông báo sai số tiền cho admin:", notifErr);
+      }
     }
 
     res.json({ success: true, message: "Cập nhật thanh toán thành công" });

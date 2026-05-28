@@ -84,6 +84,18 @@ export function AdminCategoriesPage() {
    */
   async function saveCategory(e: React.FormEvent) {
     e.preventDefault();
+
+    // Kiểm tra trùng lặp tên thể loại (không phân biệt hoa thường)
+    const isDuplicate = items.some(
+      (item) =>
+        item.name.trim().toLowerCase() === form.name.trim().toLowerCase() &&
+        item.category_id !== form.category_id
+    );
+    if (isDuplicate) {
+      alert("Tên thể loại này đã tồn tại! Vui lòng nhập tên khác.");
+      return;
+    }
+
     try {
       if (modalMode === "add") {
         await apiFetch("/admin/categories", { method: "POST", body: JSON.stringify(form) });
